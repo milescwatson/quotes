@@ -73,3 +73,19 @@ bun run preview
 ```
 
 Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+
+## AWS development deployment
+
+Pushes to the `development` branch automatically deploy the frontend to Amplify
+in the `quotes-development` AWS account (`415221799122`, `us-west-2`):
+
+https://development.d8i1ve5prnr7w.amplifyapp.com
+
+`amplify.yml` builds with Node 22 and Nitro's `aws-amplify` preset. The app is
+currently the Nuxt starter. The infrastructure smoke-test API is:
+
+https://um0ix9fu4i.execute-api.us-west-2.amazonaws.com/health
+
+Terraform and API deployments run locally from the sibling `AWS` directory,
+which is outside this Git repository. Git pushes rebuild only the frontend.
+`main` is not connected to Amplify. Staging and production are not deployed.
