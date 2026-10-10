@@ -46,3 +46,5 @@ The development branch now tracks the full workspace, preserving the existing Gi
 ## Sign-in repair — October 10, 2026
 
 The first full-workspace frontend release exposed missing deployed configuration: Amplify lacked `NUXT_PUBLIC_COGNITO_DOMAIN`, and Lambda/API Gateway still ran the starter API. Applied the existing Terraform sign-in settings, enabled the intended Cognito self-signup flow, deployed the implemented Lambda with restricted DSQL connectivity, and imported the product API routes. API Gateway rejected YAML aliases during the first import; the contract now expands those aliases explicitly. Generated client types are unchanged and all 34 API tests pass. The Amplify frontend must rebuild after the environment change. User credential entry and a real authenticated account bootstrap still require user verification.
+
+The first configuration-only rebuild still served empty public runtime settings: Amplify build variables are not automatically present in the SSR compute process. Nuxt now captures the four public API/Cognito values as build-time defaults, while retaining runtime overrides. No secrets are embedded.
