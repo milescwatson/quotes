@@ -1,0 +1,7 @@
+# Copy to development.auto.tfvars and fill in your verified values.
+account_id = "REPLACE_WITH_VERIFIED_ACCOUNT_ID"
+region = "us-west-2"
+# After the Amplify GitHub App connection is authorized:
+# repository_url = "https://github.com/milescwatson/quotes"
+# Enables an email alarm subscription and a $25 monthly budget alert (not a cap):
+# notification_email = "your-address@example.com"

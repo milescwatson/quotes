@@ -1,0 +1,115 @@
+@import "tailwindcss";
+
+@layer base {
+  body { @apply m-0 bg-gray-50 font-sans text-sm text-gray-900 antialiased; }
+  h1 { @apply text-2xl font-semibold; }
+  h2 { @apply mb-4 text-lg font-semibold; }
+  h3 { @apply mb-2 text-base font-semibold; }
+  p { @apply leading-6; }
+  button, a, input, select { @apply touch-manipulation; }
+  button { @apply cursor-pointer; }
+  button:disabled { @apply cursor-not-allowed opacity-50; }
+  input, select { @apply min-h-10 max-w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm; }
+  input { @apply w-full; }
+  input:read-only { @apply bg-gray-100 text-gray-500; }
+  label { @apply mb-2 mt-4 block text-sm font-medium; }
+  :focus-visible { @apply outline-2 outline-offset-2 outline-blue-600; }
+  table { @apply w-full border-collapse text-sm; }
+  th { @apply bg-gray-50 px-4 py-3 text-left font-medium text-gray-600; }
+  td { @apply border-t border-gray-200 px-4 py-3; }
+  dialog { @apply m-auto w-full max-w-md rounded-md border border-gray-300 bg-white p-6 text-gray-900; max-width: min(28rem, calc(100vw - 2rem)); }
+  dialog::backdrop { @apply bg-black/40; }
+}
+
+/* Small shared primitives, using Tailwind's default palette and spacing. */
+@layer components {
+  .button { @apply inline-flex min-h-10 items-center justify-center gap-2 rounded-md border border-transparent px-4 py-2 text-sm font-medium; }
+  .primary { @apply bg-blue-600 text-white hover:bg-blue-700; }
+  .secondary { @apply border-gray-300 bg-white text-gray-700 hover:bg-gray-50; }
+  .danger { @apply bg-red-600 text-white hover:bg-red-700; }
+  .text-button { @apply whitespace-nowrap min-h-10 px-2 py-2 text-sm text-gray-600 hover:underline; }
+  .danger-text { @apply text-red-600; }
+  .full-width { @apply w-full; }
+  .muted, .subtitle { @apply text-gray-600; }
+  .small { @apply text-xs; }
+  .strong { @apply font-medium; }
+  .skip-link { @apply fixed -top-20 left-4 z-50 bg-white p-3 focus:top-2; }
+  .app-shell { @apply min-h-screen; }
+  .sidebar { @apply fixed inset-y-0 left-0 z-20 hidden w-56 flex-col border-r border-gray-200 bg-white p-4 md:flex; }
+  .sidebar.expanded { @apply flex; }
+  .brand { @apply text-xl font-semibold; }
+  .sidebar-label { @apply mb-2 mt-6 text-xs font-medium text-gray-500; }
+  .sidebar nav { @apply mt-4 space-y-1; }
+  .sidebar nav a { @apply block rounded-md px-3 py-2 text-gray-600 hover:bg-gray-100; }
+  .sidebar nav a.selected { @apply bg-gray-100 font-medium text-gray-900; }
+  .sidebar-bottom { @apply mt-auto pt-6; }
+  .user-link { @apply flex items-center gap-3 border-t border-gray-200 pt-4; }
+  .user-link strong { @apply block text-sm font-medium; }
+  .user-link small { @apply block max-w-36 truncate text-xs text-gray-500; }
+  .avatar, .org-avatar { @apply inline-flex size-9 shrink-0 items-center justify-center rounded-md bg-gray-100 text-xs font-medium text-gray-600; }
+  .app-main { @apply min-w-0 md:ml-56; }
+  .topbar { @apply flex min-h-16 items-center justify-between gap-2 border-b border-gray-200 bg-white px-4 sm:px-6; }
+  .breadcrumb { @apply text-xs text-gray-600 sm:text-sm; }
+  .breadcrumb span { @apply px-1 text-gray-400; }
+  .topbar-right { @apply flex shrink-0 items-center gap-2; }
+  .topbar-right select { @apply max-w-36 text-xs; }
+  .fixture-badge { @apply hidden text-xs text-gray-500 lg:inline; }
+  .content { @apply mx-auto max-w-6xl p-4 sm:p-6; }
+  .page-heading { @apply mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center; }
+  .subtitle { @apply mt-2; }
+  .heading-actions { @apply flex flex-wrap items-center gap-2; }
+  .section-heading { @apply mb-4 flex flex-wrap items-center justify-between gap-2; }
+  .section-heading h2 { @apply mb-0 text-base; }
+  .count { @apply ml-2 text-sm font-normal text-gray-500; }
+  .organization-grid { @apply grid gap-4 sm:grid-cols-2 xl:grid-cols-3; }
+  .org-card { @apply block rounded-md border border-gray-200 bg-white p-4 hover:border-gray-400; }
+  .org-card-top { @apply mb-4 flex items-center justify-between; }
+  .badge, .status-badge { @apply inline-block rounded bg-gray-100 px-2 py-1 text-xs capitalize text-gray-700; }
+  .org-card p { @apply text-gray-600; }
+  .org-card-footer { @apply mt-4 flex justify-between border-t border-gray-200 pt-3 text-sm text-blue-600; }
+  .help-strip { @apply mt-6 border-t border-gray-200 pt-4 text-sm text-gray-600; }
+  .help-strip strong { @apply font-medium; }
+  .help-strip p { @apply mt-1; }
+  .panel { @apply rounded-md border border-gray-200 bg-white; }
+  .empty-state, .status-panel { @apply p-8 text-center; }
+  .empty-state p { @apply mx-auto mb-4 max-w-lg text-gray-600; }
+  .empty-icon { @apply hidden; }
+  .spinner { @apply mr-2 inline-block size-4 animate-spin rounded-full border-2 border-gray-200 border-t-gray-600 motion-reduce:animate-none; }
+  .form-panel { @apply mb-6 max-w-2xl p-4 sm:p-6; }
+  .form-actions { @apply mt-6 flex justify-end border-t border-gray-200 pt-4; }
+  .field-help { @apply mt-2 text-xs text-gray-500; }
+  .error, .success { @apply my-4 rounded-md border p-3 text-sm; }
+  .error { @apply border-red-200 bg-red-50 text-red-700; }
+  .success { @apply border-green-200 bg-green-50 text-green-700; }
+  .table-panel { @apply overflow-hidden; }
+  .panel-heading { @apply flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 p-4; }
+  .panel-heading h2 { @apply mb-0 text-base; }
+  .table-scroll { @apply overflow-x-auto; }
+  .person { @apply flex min-w-44 items-center gap-3; }
+  .person strong { @apply block font-medium; }
+  .person small { @apply block text-xs text-gray-500; }
+  .person strong small { @apply inline; }
+  .align-right { @apply text-right; }
+  .row-actions { @apply whitespace-nowrap; }
+  .role-guide { @apply mt-6 grid gap-4 sm:grid-cols-3; }
+  .role-guide strong { @apply font-medium; }
+  .role-guide p { @apply mt-1 text-sm text-gray-600; }
+  .empty-inline { @apply p-4 text-gray-600; }
+  .member-form { @apply mb-6 p-4; }
+  .member-form form { @apply grid items-end gap-4 lg:grid-cols-[1fr_10rem_auto]; }
+  .member-form label { @apply mt-0; }
+  .member-form select { @apply w-full; }
+  .status-badge.pending { @apply bg-yellow-50 text-yellow-800; }
+  .status-badge.accepted { @apply bg-green-50 text-green-700; }
+  .overview-links { @apply mt-4 grid gap-4 sm:grid-cols-2; }
+  .overview-links .panel { @apply p-4 hover:border-gray-400; }
+  .overview-links p { @apply text-gray-600; }
+  .pagination { @apply mt-4 flex justify-end gap-2; }
+  .dialog-content p { @apply mb-4 text-gray-600; }
+  .dialog-content select { @apply w-full; }
+  .dialog-actions { @apply mt-6 flex justify-end gap-2; }
+  .initial-loading { @apply flex min-h-screen flex-col items-center justify-center gap-4 p-6 text-gray-600; }
+  .mobile-toggle { @apply md:hidden; }
+  .icon-button { @apply min-h-10 min-w-10 text-gray-600; }
+  @media (width < 48rem) { .sidebar { @apply top-16; } }
+}

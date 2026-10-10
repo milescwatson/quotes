@@ -1,0 +1,2226 @@
+openapi: 3.0.1
+info:
+  title: ${api_name}
+  version: 0.3.0
+  description: Quotes identity, organization, quote, and taxonomy MVP API. Authorization and
+    validation are enforced in Lambda.
+paths:
+  /health:
+    get:
+      operationId: getHealth
+      security: []
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Resource unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: State conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+  /v1/session:
+    get:
+      operationId: getSession
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  subject:
+                    type: string
+                required:
+                  - subject
+                additionalProperties: false
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Resource unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: State conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+  /v1/me/bootstrap:
+    post:
+      operationId: bootstrapProfile
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Resource unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: State conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+  /v1/me:
+    get:
+      operationId: getProfile
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Resource unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: State conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+    patch:
+      operationId: updateProfile
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProfileResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Resource unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: State conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileUpdate"
+  /v1/me/organizations:
+    get:
+      operationId: listMyOrganizations
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganizationPage"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Resource unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: State conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+      parameters:
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+  /v1/organizations/{orgId}:
+    get:
+      operationId: getOrganization
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganizationResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Resource unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: State conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+    patch:
+      operationId: updateOrganization
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrganizationResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Resource unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: State conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrganizationUpdate"
+  /v1/organizations/{orgId}/quotes:
+    get:
+      operationId: listQuotes
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuotePage"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Resource unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: State conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: customer
+          in: query
+          schema:
+            type: string
+            maxLength: 120
+          description: Case-insensitive literal substring match.
+        - name: project
+          in: query
+          schema:
+            type: string
+            maxLength: 120
+          description: Case-insensitive literal substring match.
+        - name: ownerId
+          in: query
+          schema:
+            type: string
+          description: Team member ID, or unassigned.
+  /v1/organizations/{orgId}/quote-owners:
+    get:
+      operationId: listQuoteOwners
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuoteOwners"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Resource unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: State conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+  /v1/organizations/{orgId}/quotes/{quoteId}:
+    patch:
+      operationId: updateQuoteOwner
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Success"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Resource unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: State conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+        - name: quoteId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuoteOwnerUpdate"
+  /v1/organizations/{orgId}/members:
+    get:
+      operationId: listMembers
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemberPage"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Resource unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: State conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+    post:
+      operationId: addMember
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemberResponse"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Resource unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: State conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemberCreate"
+  /v1/organizations/{orgId}/members/{membershipId}:
+    patch:
+      operationId: updateMember
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Success"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Resource unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: State conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+        - name: membershipId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoleUpdate"
+    delete:
+      operationId: removeMember
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Success"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Resource unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: State conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+        - name: membershipId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+  /v1/organizations/{orgId}/taxonomies:
+    get:
+      operationId: listTaxonomies
+      description: Owner-organization taxonomy MVP. No automatic retries or history/sharing access.
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      parameters:
+        - in: path
+          name: orgId
+          required: true
+          schema: &a1
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaxonomyListResponse"
+        "401":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+    post:
+      operationId: createTaxonomy
+      description: Owner-organization taxonomy MVP. No automatic retries or history/sharing access.
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      parameters:
+        - in: path
+          name: orgId
+          required: true
+          schema: *a1
+      responses:
+        "201":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaxonomySaveResponse"
+        "401":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaxonomyCreateInput"
+  /v1/organizations/{orgId}/taxonomies/{taxonomyId}:
+    get:
+      operationId: getTaxonomy
+      description: Owner-organization taxonomy MVP. No automatic retries or history/sharing access.
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      parameters:
+        - in: path
+          name: orgId
+          required: true
+          schema: *a1
+        - in: path
+          name: taxonomyId
+          required: true
+          schema: *a1
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaxonomyResponse"
+        "401":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+  /v1/organizations/{orgId}/taxonomies/{taxonomyId}/versions:
+    post:
+      operationId: saveTaxonomyVersion
+      description: Owner-organization taxonomy MVP. No automatic retries or history/sharing access.
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      parameters:
+        - in: path
+          name: orgId
+          required: true
+          schema: *a1
+        - in: path
+          name: taxonomyId
+          required: true
+          schema: *a1
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaxonomySaveResponse"
+        "201":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaxonomySaveResponse"
+        "401":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaxonomySaveInput"
+  /v1/organizations/{orgId}/taxonomies/{taxonomyId}/preview:
+    post:
+      operationId: previewTaxonomy
+      description: Owner-organization taxonomy MVP. No automatic retries or history/sharing access.
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      parameters:
+        - in: path
+          name: orgId
+          required: true
+          schema: *a1
+        - in: path
+          name: taxonomyId
+          required: true
+          schema: *a1
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaxonomyPreviewResponse"
+        "401":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaxonomyPreviewInput"
+  /v1/organizations/{orgId}/taxonomies/{taxonomyId}/archive:
+    post:
+      operationId: archiveTaxonomy
+      description: Owner-organization taxonomy MVP. No automatic retries or history/sharing access.
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      parameters:
+        - in: path
+          name: orgId
+          required: true
+          schema: *a1
+        - in: path
+          name: taxonomyId
+          required: true
+          schema: *a1
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaxonomyArchiveResponse"
+        "401":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaxonomyArchiveInput"
+components:
+  schemas:
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+        service:
+          type: string
+        environment:
+          type: string
+      required:
+        - status
+        - service
+        - environment
+      additionalProperties: false
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        requestId:
+          type: string
+        fieldErrors:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              path:
+                type: string
+              code:
+                type: string
+              message:
+                type: string
+            required:
+              - path
+              - code
+              - message
+          minItems: 0
+        currentVersionId: *a1
+      required:
+        - code
+        - message
+        - requestId
+      additionalProperties: false
+    Quote:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+        organizationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+        customerId:
+          type: integer
+          format: int32
+          nullable: true
+        customerName:
+          type: string
+          minLength: 1
+          maxLength: 120
+        projectName:
+          type: string
+          minLength: 1
+          maxLength: 120
+        title:
+          type: string
+        modifiedBy:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+        modifiedByName:
+          type: string
+        modifiedWhen:
+          type: string
+          format: date-time
+        ownerId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+          nullable: true
+        ownerName:
+          type: string
+          nullable: true
+      required:
+        - id
+        - organizationId
+        - customerId
+        - customerName
+        - projectName
+        - title
+        - modifiedBy
+        - modifiedByName
+        - modifiedWhen
+        - ownerId
+        - ownerName
+      additionalProperties: false
+    QuoteOwner:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+        name:
+          type: string
+      required:
+        - id
+        - name
+      additionalProperties: false
+    QuoteOwners:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuoteOwner"
+      required:
+        - items
+      additionalProperties: false
+    QuoteOwnerUpdate:
+      type: object
+      properties:
+        ownerId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+          nullable: true
+      required:
+        - ownerId
+      additionalProperties: false
+    QuotePage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Quote"
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalItems:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+      required:
+        - items
+        - page
+        - pageSize
+        - totalItems
+        - totalPages
+      additionalProperties: false
+    Profile:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+        email:
+          type: string
+          format: email
+        displayName:
+          type: string
+          nullable: true
+      required:
+        - id
+        - email
+        - displayName
+      additionalProperties: false
+    Organization:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+        name:
+          type: string
+        role:
+          type: string
+          enum:
+            - admin
+            - editor
+            - member
+      required:
+        - id
+        - name
+        - role
+      additionalProperties: false
+    Member:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+        userId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+        email:
+          type: string
+          format: email
+        displayName:
+          type: string
+          nullable: true
+        role:
+          type: string
+          enum:
+            - admin
+            - editor
+            - member
+      required:
+        - id
+        - userId
+        - email
+        - displayName
+        - role
+      additionalProperties: false
+    Success:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required:
+        - success
+      additionalProperties: false
+    ProfileUpdate:
+      type: object
+      properties:
+        displayName:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 120
+      required:
+        - displayName
+      additionalProperties: false
+    OrganizationUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+      required:
+        - name
+      additionalProperties: false
+    RoleUpdate:
+      type: object
+      properties:
+        role:
+          type: string
+          enum:
+            - admin
+            - editor
+            - member
+      required:
+        - role
+      additionalProperties: false
+    ProfileResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/Profile"
+      required:
+        - user
+      additionalProperties: false
+    OrganizationResponse:
+      type: object
+      properties:
+        organization:
+          $ref: "#/components/schemas/Organization"
+      required:
+        - organization
+      additionalProperties: false
+    OrganizationPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Organization"
+        nextCursor:
+          type: string
+          nullable: true
+      required:
+        - items
+        - nextCursor
+      additionalProperties: false
+    MemberPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Member"
+        nextCursor:
+          type: string
+          nullable: true
+      required:
+        - items
+        - nextCursor
+      additionalProperties: false
+    MemberCreate:
+      type: object
+      additionalProperties: false
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        role:
+          type: string
+          enum:
+            - admin
+            - editor
+            - member
+      required:
+        - email
+        - role
+    MemberResponse:
+      type: object
+      properties:
+        member:
+          $ref: "#/components/schemas/Member"
+      required:
+        - member
+    TaxonomyOption:
+      type: object
+      additionalProperties: false
+      properties:
+        id: &a5
+          type: string
+          maxLength: 64
+        code: &a2
+          type: string
+          maxLength: 64
+          minLength: 1
+          pattern: ^[^\s-]+$
+        description: &a3
+          type: string
+          maxLength: 1000
+          nullable: true
+        price: &a4
+          type: string
+          maxLength: 15
+          pattern: ^(0|[1-9][0-9]{0,11})(\.[0-9]{1,2})?$
+      required:
+        - id
+        - code
+        - description
+        - price
+    TaxonomyOptionInput:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          maxLength: 64
+          nullable: true
+        code: *a2
+        description: *a3
+        price: *a4
+      required:
+        - id
+        - code
+        - description
+        - price
+    TaxonomySegment:
+      type: object
+      additionalProperties: false
+      properties:
+        id: *a5
+        placeholder: &a6
+          type: string
+          maxLength: 32
+          minLength: 1
+        name: &a7
+          type: string
+          maxLength: 120
+          nullable: true
+        defaultOptionId:
+          type: string
+          maxLength: 64
+          nullable: true
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaxonomyOption"
+          minItems: 1
+          maxItems: 500
+      required:
+        - id
+        - placeholder
+        - name
+        - defaultOptionId
+        - options
+    TaxonomySegmentInput:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          maxLength: 64
+          nullable: true
+        placeholder: *a6
+        name: *a7
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaxonomyOptionInput"
+          minItems: 1
+          maxItems: 500
+        defaultOptionIndex:
+          type: integer
+          minimum: 0
+          maximum: 499
+          nullable: true
+      required:
+        - id
+        - placeholder
+        - name
+        - options
+        - defaultOptionIndex
+    TaxonomyContentInput:
+      type: object
+      additionalProperties: false
+      properties:
+        productFamilyName: &a8
+          type: string
+          maxLength: 120
+          minLength: 1
+        currency: &a9
+          type: string
+          enum:
+            - USD
+        basePrice: *a4
+        segments:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaxonomySegmentInput"
+          minItems: 1
+          maxItems: 50
+      required:
+        - productFamilyName
+        - currency
+        - basePrice
+        - segments
+    TaxonomyContent:
+      type: object
+      additionalProperties: false
+      properties:
+        productFamilyName: *a8
+        currency: *a9
+        basePrice: *a4
+        segments:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaxonomySegment"
+          minItems: 1
+          maxItems: 50
+        schemaVersion:
+          type: integer
+          enum:
+            - 1
+      required:
+        - productFamilyName
+        - currency
+        - basePrice
+        - segments
+        - schemaVersion
+    TaxonomyVersion:
+      type: object
+      additionalProperties: false
+      properties:
+        id: *a1
+        versionNumber: &a12
+          type: integer
+          minimum: 1
+        createdAt: &a10
+          type: string
+          format: date-time
+        modifiedBy: &a13
+          type: object
+          additionalProperties: false
+          properties:
+            id: *a1
+            name:
+              type: string
+          required:
+            - id
+            - name
+        changeSummary:
+          type: string
+          maxLength: 500
+          nullable: true
+        content:
+          $ref: "#/components/schemas/TaxonomyContent"
+      required:
+        - id
+        - versionNumber
+        - createdAt
+        - modifiedBy
+        - changeSummary
+        - content
+    Taxonomy:
+      type: object
+      additionalProperties: false
+      properties:
+        id: *a1
+        ownerOrganizationId: *a1
+        createdAt: *a10
+        archivedAt:
+          type: string
+          format: date-time
+          nullable: true
+        currentVersionId: *a1
+        permissions:
+          type: object
+          additionalProperties: false
+          properties:
+            canEdit: &a11
+              type: boolean
+            canArchive: *a11
+            canPreview: *a11
+          required:
+            - canEdit
+            - canArchive
+            - canPreview
+        version:
+          $ref: "#/components/schemas/TaxonomyVersion"
+      required:
+        - id
+        - ownerOrganizationId
+        - createdAt
+        - archivedAt
+        - currentVersionId
+        - permissions
+        - version
+    TaxonomyResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        taxonomy:
+          $ref: "#/components/schemas/Taxonomy"
+      required:
+        - taxonomy
+    TaxonomySaveResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        taxonomy:
+          $ref: "#/components/schemas/Taxonomy"
+        unchanged: *a11
+      required:
+        - taxonomy
+        - unchanged
+    TaxonomyCreateInput:
+      type: object
+      additionalProperties: false
+      properties:
+        content:
+          $ref: "#/components/schemas/TaxonomyContentInput"
+        changeSummary:
+          type: string
+          maxLength: 500
+          nullable: true
+      required:
+        - content
+    TaxonomySaveInput:
+      type: object
+      additionalProperties: false
+      properties:
+        expectedVersionId: *a1
+        content:
+          $ref: "#/components/schemas/TaxonomyContentInput"
+        changeSummary:
+          type: string
+          maxLength: 500
+          nullable: true
+      required:
+        - expectedVersionId
+        - content
+    TaxonomyArchiveInput:
+      type: object
+      additionalProperties: false
+      properties:
+        expectedVersionId: *a1
+      required:
+        - expectedVersionId
+    TaxonomyArchiveResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        taxonomyId: *a1
+        archivedAt: *a10
+      required:
+        - taxonomyId
+        - archivedAt
+    TaxonomyPreviewInput:
+      type: object
+      additionalProperties: false
+      properties:
+        versionId: *a1
+        selections:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              segmentId: *a5
+              optionId: *a5
+            required:
+              - segmentId
+              - optionId
+          minItems: 0
+          maxItems: 50
+      required:
+        - versionId
+        - selections
+    TaxonomyConfiguration:
+      type: object
+      additionalProperties: false
+      properties:
+        sourceTaxonomyId: *a1
+        sourceVersionId: *a1
+        productFamilyName:
+          type: string
+          maxLength: 120
+        partNumber:
+          type: string
+        currency:
+          type: string
+          enum:
+            - USD
+        basePrice: *a4
+        unitPrice: *a4
+        selections:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              segmentId: *a5
+              placeholder:
+                type: string
+                maxLength: 32
+              name:
+                type: string
+                maxLength: 120
+                nullable: true
+              optionId: *a5
+              code:
+                type: string
+                maxLength: 64
+              description:
+                type: string
+                maxLength: 1000
+                nullable: true
+              price: *a4
+            required:
+              - segmentId
+              - placeholder
+              - name
+              - optionId
+              - code
+              - description
+              - price
+          minItems: 1
+          maxItems: 50
+      required:
+        - sourceTaxonomyId
+        - sourceVersionId
+        - productFamilyName
+        - partNumber
+        - currency
+        - basePrice
+        - unitPrice
+        - selections
+    TaxonomyPreviewResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        configuration:
+          $ref: "#/components/schemas/TaxonomyConfiguration"
+      required:
+        - configuration
+    TaxonomyListResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            properties:
+              id: *a1
+              productFamilyName:
+                type: string
+                maxLength: 120
+              currentVersionId: *a1
+              versionNumber: *a12
+              modifiedAt: *a10
+              modifiedBy: *a13
+            required:
+              - id
+              - productFamilyName
+              - currentVersionId
+              - versionNumber
+              - modifiedAt
+              - modifiedBy
+          minItems: 0
+        page: *a12
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalItems:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+      required:
+        - items
+        - page
+        - pageSize
+        - totalItems
+        - totalPages
+  securitySchemes:
+    CognitoJwt:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: ${authorization_url}
+          tokenUrl: ${token_url}
+          scopes:
+            quotes-api/access: Access the Quotes API
+      x-amazon-apigateway-authorizer:
+        type: jwt
+        identitySource: $request.header.Authorization
+        jwtConfiguration:
+          issuer: ${issuer}
+          audience:
+            - ${client_id}
+x-amazon-apigateway-cors:
+  allowOrigins:
+    - ${frontend_url}
+    - http://localhost:3000
+  allowMethods:
+    - GET
+    - POST
+    - PATCH
+    - DELETE
+    - OPTIONS
+  allowHeaders:
+    - authorization
+    - content-type
+  maxAge: 300

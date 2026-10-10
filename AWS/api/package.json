@@ -1,0 +1,1 @@
+{"name":"quotes-identity-api","private":true,"type":"module","scripts":{"test":"node --test tests/*.test.mjs","build":"node scripts/build.mjs"},"dependencies":{"@aws-sdk/dsql-signer":"^3.0.0","pg":"^8.16.0"},"devDependencies":{"@electric-sql/pglite":"0.5.8","esbuild":"^0.25.0","yaml":"^2.8.0"}}
