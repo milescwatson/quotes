@@ -140,8 +140,8 @@ resource "aws_lambda_alias" "api" {
   function_version = aws_lambda_function.api.version
 }
 resource "aws_apigatewayv2_api" "api" {
-  description      = "Quotes identity and organization API."
-  version          = "0.2.0"
+  description      = "Quotes identity, organization, quote, and taxonomy API."
+  version          = "0.3.0"
   name             = local.name
   protocol_type    = "HTTP"
   fail_on_warnings = true

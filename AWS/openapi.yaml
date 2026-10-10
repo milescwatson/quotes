@@ -2,8 +2,8 @@ openapi: 3.0.1
 info:
   title: ${api_name}
   version: 0.3.0
-  description: Quotes identity, organization, quote, and taxonomy MVP API. Authorization and
-    validation are enforced in Lambda.
+  description: Quotes identity, organization, quote, and taxonomy MVP API.
+    Authorization and validation are enforced in Lambda.
 paths:
   /health:
     get:
@@ -411,7 +411,8 @@ paths:
           schema:
             type: string
             pattern: ^[1-9][0-9]{0,18}$
-            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+            description: Positive bigint identifier encoded as a decimal string (maximum
+              9223372036854775807).
     patch:
       operationId: updateOrganization
       security:
@@ -472,7 +473,8 @@ paths:
           schema:
             type: string
             pattern: ^[1-9][0-9]{0,18}$
-            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+            description: Positive bigint identifier encoded as a decimal string (maximum
+              9223372036854775807).
       requestBody:
         required: true
         content:
@@ -540,7 +542,8 @@ paths:
           schema:
             type: string
             pattern: ^[1-9][0-9]{0,18}$
-            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+            description: Positive bigint identifier encoded as a decimal string (maximum
+              9223372036854775807).
         - name: page
           in: query
           schema:
@@ -632,7 +635,8 @@ paths:
           schema:
             type: string
             pattern: ^[1-9][0-9]{0,18}$
-            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+            description: Positive bigint identifier encoded as a decimal string (maximum
+              9223372036854775807).
   /v1/organizations/{orgId}/quotes/{quoteId}:
     patch:
       operationId: updateQuoteOwner
@@ -694,14 +698,16 @@ paths:
           schema:
             type: string
             pattern: ^[1-9][0-9]{0,18}$
-            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+            description: Positive bigint identifier encoded as a decimal string (maximum
+              9223372036854775807).
         - name: quoteId
           in: path
           required: true
           schema:
             type: string
             pattern: ^[1-9][0-9]{0,18}$
-            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+            description: Positive bigint identifier encoded as a decimal string (maximum
+              9223372036854775807).
       requestBody:
         required: true
         content:
@@ -769,7 +775,8 @@ paths:
           schema:
             type: string
             pattern: ^[1-9][0-9]{0,18}$
-            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+            description: Positive bigint identifier encoded as a decimal string (maximum
+              9223372036854775807).
         - name: cursor
           in: query
           schema:
@@ -841,7 +848,8 @@ paths:
           schema:
             type: string
             pattern: ^[1-9][0-9]{0,18}$
-            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+            description: Positive bigint identifier encoded as a decimal string (maximum
+              9223372036854775807).
       requestBody:
         required: true
         content:
@@ -909,14 +917,16 @@ paths:
           schema:
             type: string
             pattern: ^[1-9][0-9]{0,18}$
-            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+            description: Positive bigint identifier encoded as a decimal string (maximum
+              9223372036854775807).
         - name: membershipId
           in: path
           required: true
           schema:
             type: string
             pattern: ^[1-9][0-9]{0,18}$
-            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+            description: Positive bigint identifier encoded as a decimal string (maximum
+              9223372036854775807).
       requestBody:
         required: true
         content:
@@ -983,18 +993,21 @@ paths:
           schema:
             type: string
             pattern: ^[1-9][0-9]{0,18}$
-            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+            description: Positive bigint identifier encoded as a decimal string (maximum
+              9223372036854775807).
         - name: membershipId
           in: path
           required: true
           schema:
             type: string
             pattern: ^[1-9][0-9]{0,18}$
-            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+            description: Positive bigint identifier encoded as a decimal string (maximum
+              9223372036854775807).
   /v1/organizations/{orgId}/taxonomies:
     get:
       operationId: listTaxonomies
-      description: Owner-organization taxonomy MVP. No automatic retries or history/sharing access.
+      description: Owner-organization taxonomy MVP. No automatic retries or
+        history/sharing access.
       security:
         - CognitoJwt:
             - quotes-api/access
@@ -1002,7 +1015,7 @@ paths:
         - in: path
           name: orgId
           required: true
-          schema: &a1
+          schema:
             type: string
             maxLength: 19
             pattern: ^[1-9][0-9]{0,18}$
@@ -1075,7 +1088,8 @@ paths:
         uri: ${lambda_invoke_arn}
     post:
       operationId: createTaxonomy
-      description: Owner-organization taxonomy MVP. No automatic retries or history/sharing access.
+      description: Owner-organization taxonomy MVP. No automatic retries or
+        history/sharing access.
       security:
         - CognitoJwt:
             - quotes-api/access
@@ -1083,7 +1097,10 @@ paths:
         - in: path
           name: orgId
           required: true
-          schema: *a1
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
       responses:
         "201":
           description: Successful operation
@@ -1147,7 +1164,8 @@ paths:
   /v1/organizations/{orgId}/taxonomies/{taxonomyId}:
     get:
       operationId: getTaxonomy
-      description: Owner-organization taxonomy MVP. No automatic retries or history/sharing access.
+      description: Owner-organization taxonomy MVP. No automatic retries or
+        history/sharing access.
       security:
         - CognitoJwt:
             - quotes-api/access
@@ -1155,11 +1173,17 @@ paths:
         - in: path
           name: orgId
           required: true
-          schema: *a1
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
         - in: path
           name: taxonomyId
           required: true
-          schema: *a1
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
       responses:
         "200":
           description: Successful operation
@@ -1217,7 +1241,8 @@ paths:
   /v1/organizations/{orgId}/taxonomies/{taxonomyId}/versions:
     post:
       operationId: saveTaxonomyVersion
-      description: Owner-organization taxonomy MVP. No automatic retries or history/sharing access.
+      description: Owner-organization taxonomy MVP. No automatic retries or
+        history/sharing access.
       security:
         - CognitoJwt:
             - quotes-api/access
@@ -1225,11 +1250,17 @@ paths:
         - in: path
           name: orgId
           required: true
-          schema: *a1
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
         - in: path
           name: taxonomyId
           required: true
-          schema: *a1
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
       responses:
         "200":
           description: Successful operation
@@ -1299,7 +1330,8 @@ paths:
   /v1/organizations/{orgId}/taxonomies/{taxonomyId}/preview:
     post:
       operationId: previewTaxonomy
-      description: Owner-organization taxonomy MVP. No automatic retries or history/sharing access.
+      description: Owner-organization taxonomy MVP. No automatic retries or
+        history/sharing access.
       security:
         - CognitoJwt:
             - quotes-api/access
@@ -1307,11 +1339,17 @@ paths:
         - in: path
           name: orgId
           required: true
-          schema: *a1
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
         - in: path
           name: taxonomyId
           required: true
-          schema: *a1
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
       responses:
         "200":
           description: Successful operation
@@ -1375,7 +1413,8 @@ paths:
   /v1/organizations/{orgId}/taxonomies/{taxonomyId}/archive:
     post:
       operationId: archiveTaxonomy
-      description: Owner-organization taxonomy MVP. No automatic retries or history/sharing access.
+      description: Owner-organization taxonomy MVP. No automatic retries or
+        history/sharing access.
       security:
         - CognitoJwt:
             - quotes-api/access
@@ -1383,11 +1422,17 @@ paths:
         - in: path
           name: orgId
           required: true
-          schema: *a1
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
         - in: path
           name: taxonomyId
           required: true
-          schema: *a1
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
       responses:
         "200":
           description: Successful operation
@@ -1492,7 +1537,10 @@ components:
               - code
               - message
           minItems: 0
-        currentVersionId: *a1
+        currentVersionId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
       required:
         - code
         - message
@@ -1504,11 +1552,13 @@ components:
         id:
           type: string
           pattern: ^[1-9][0-9]{0,18}$
-          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+          description: Positive bigint identifier encoded as a decimal string (maximum
+            9223372036854775807).
         organizationId:
           type: string
           pattern: ^[1-9][0-9]{0,18}$
-          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+          description: Positive bigint identifier encoded as a decimal string (maximum
+            9223372036854775807).
         customerId:
           type: integer
           format: int32
@@ -1526,7 +1576,8 @@ components:
         modifiedBy:
           type: string
           pattern: ^[1-9][0-9]{0,18}$
-          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+          description: Positive bigint identifier encoded as a decimal string (maximum
+            9223372036854775807).
         modifiedByName:
           type: string
         modifiedWhen:
@@ -1535,7 +1586,8 @@ components:
         ownerId:
           type: string
           pattern: ^[1-9][0-9]{0,18}$
-          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+          description: Positive bigint identifier encoded as a decimal string (maximum
+            9223372036854775807).
           nullable: true
         ownerName:
           type: string
@@ -1559,7 +1611,8 @@ components:
         id:
           type: string
           pattern: ^[1-9][0-9]{0,18}$
-          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+          description: Positive bigint identifier encoded as a decimal string (maximum
+            9223372036854775807).
         name:
           type: string
       required:
@@ -1582,7 +1635,8 @@ components:
         ownerId:
           type: string
           pattern: ^[1-9][0-9]{0,18}$
-          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+          description: Positive bigint identifier encoded as a decimal string (maximum
+            9223372036854775807).
           nullable: true
       required:
         - ownerId
@@ -1620,7 +1674,8 @@ components:
         id:
           type: string
           pattern: ^[1-9][0-9]{0,18}$
-          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+          description: Positive bigint identifier encoded as a decimal string (maximum
+            9223372036854775807).
         email:
           type: string
           format: email
@@ -1638,7 +1693,8 @@ components:
         id:
           type: string
           pattern: ^[1-9][0-9]{0,18}$
-          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+          description: Positive bigint identifier encoded as a decimal string (maximum
+            9223372036854775807).
         name:
           type: string
         role:
@@ -1658,11 +1714,13 @@ components:
         id:
           type: string
           pattern: ^[1-9][0-9]{0,18}$
-          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+          description: Positive bigint identifier encoded as a decimal string (maximum
+            9223372036854775807).
         userId:
           type: string
           pattern: ^[1-9][0-9]{0,18}$
-          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+          description: Positive bigint identifier encoded as a decimal string (maximum
+            9223372036854775807).
         email:
           type: string
           format: email
@@ -1795,19 +1853,19 @@ components:
       type: object
       additionalProperties: false
       properties:
-        id: &a5
+        id:
           type: string
           maxLength: 64
-        code: &a2
+        code:
           type: string
           maxLength: 64
           minLength: 1
           pattern: ^[^\s-]+$
-        description: &a3
+        description:
           type: string
           maxLength: 1000
           nullable: true
-        price: &a4
+        price:
           type: string
           maxLength: 15
           pattern: ^(0|[1-9][0-9]{0,11})(\.[0-9]{1,2})?$
@@ -1824,9 +1882,19 @@ components:
           type: string
           maxLength: 64
           nullable: true
-        code: *a2
-        description: *a3
-        price: *a4
+        code:
+          type: string
+          maxLength: 64
+          minLength: 1
+          pattern: ^[^\s-]+$
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
+        price:
+          type: string
+          maxLength: 15
+          pattern: ^(0|[1-9][0-9]{0,11})(\.[0-9]{1,2})?$
       required:
         - id
         - code
@@ -1836,12 +1904,14 @@ components:
       type: object
       additionalProperties: false
       properties:
-        id: *a5
-        placeholder: &a6
+        id:
+          type: string
+          maxLength: 64
+        placeholder:
           type: string
           maxLength: 32
           minLength: 1
-        name: &a7
+        name:
           type: string
           maxLength: 120
           nullable: true
@@ -1869,8 +1939,14 @@ components:
           type: string
           maxLength: 64
           nullable: true
-        placeholder: *a6
-        name: *a7
+        placeholder:
+          type: string
+          maxLength: 32
+          minLength: 1
+        name:
+          type: string
+          maxLength: 120
+          nullable: true
         options:
           type: array
           items:
@@ -1892,15 +1968,18 @@ components:
       type: object
       additionalProperties: false
       properties:
-        productFamilyName: &a8
+        productFamilyName:
           type: string
           maxLength: 120
           minLength: 1
-        currency: &a9
+        currency:
           type: string
           enum:
             - USD
-        basePrice: *a4
+        basePrice:
+          type: string
+          maxLength: 15
+          pattern: ^(0|[1-9][0-9]{0,11})(\.[0-9]{1,2})?$
         segments:
           type: array
           items:
@@ -1916,9 +1995,18 @@ components:
       type: object
       additionalProperties: false
       properties:
-        productFamilyName: *a8
-        currency: *a9
-        basePrice: *a4
+        productFamilyName:
+          type: string
+          maxLength: 120
+          minLength: 1
+        currency:
+          type: string
+          enum:
+            - USD
+        basePrice:
+          type: string
+          maxLength: 15
+          pattern: ^(0|[1-9][0-9]{0,11})(\.[0-9]{1,2})?$
         segments:
           type: array
           items:
@@ -1939,18 +2027,24 @@ components:
       type: object
       additionalProperties: false
       properties:
-        id: *a1
-        versionNumber: &a12
+        id:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+        versionNumber:
           type: integer
           minimum: 1
-        createdAt: &a10
+        createdAt:
           type: string
           format: date-time
-        modifiedBy: &a13
+        modifiedBy:
           type: object
           additionalProperties: false
           properties:
-            id: *a1
+            id:
+              type: string
+              maxLength: 19
+              pattern: ^[1-9][0-9]{0,18}$
             name:
               type: string
           required:
@@ -1973,22 +2067,35 @@ components:
       type: object
       additionalProperties: false
       properties:
-        id: *a1
-        ownerOrganizationId: *a1
-        createdAt: *a10
+        id:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+        ownerOrganizationId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+        createdAt:
+          type: string
+          format: date-time
         archivedAt:
           type: string
           format: date-time
           nullable: true
-        currentVersionId: *a1
+        currentVersionId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
         permissions:
           type: object
           additionalProperties: false
           properties:
-            canEdit: &a11
+            canEdit:
               type: boolean
-            canArchive: *a11
-            canPreview: *a11
+            canArchive:
+              type: boolean
+            canPreview:
+              type: boolean
           required:
             - canEdit
             - canArchive
@@ -2017,7 +2124,8 @@ components:
       properties:
         taxonomy:
           $ref: "#/components/schemas/Taxonomy"
-        unchanged: *a11
+        unchanged:
+          type: boolean
       required:
         - taxonomy
         - unchanged
@@ -2037,7 +2145,10 @@ components:
       type: object
       additionalProperties: false
       properties:
-        expectedVersionId: *a1
+        expectedVersionId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
         content:
           $ref: "#/components/schemas/TaxonomyContentInput"
         changeSummary:
@@ -2051,15 +2162,23 @@ components:
       type: object
       additionalProperties: false
       properties:
-        expectedVersionId: *a1
+        expectedVersionId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
       required:
         - expectedVersionId
     TaxonomyArchiveResponse:
       type: object
       additionalProperties: false
       properties:
-        taxonomyId: *a1
-        archivedAt: *a10
+        taxonomyId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+        archivedAt:
+          type: string
+          format: date-time
       required:
         - taxonomyId
         - archivedAt
@@ -2067,15 +2186,22 @@ components:
       type: object
       additionalProperties: false
       properties:
-        versionId: *a1
+        versionId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
         selections:
           type: array
           items:
             type: object
             additionalProperties: false
             properties:
-              segmentId: *a5
-              optionId: *a5
+              segmentId:
+                type: string
+                maxLength: 64
+              optionId:
+                type: string
+                maxLength: 64
             required:
               - segmentId
               - optionId
@@ -2088,8 +2214,14 @@ components:
       type: object
       additionalProperties: false
       properties:
-        sourceTaxonomyId: *a1
-        sourceVersionId: *a1
+        sourceTaxonomyId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+        sourceVersionId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
         productFamilyName:
           type: string
           maxLength: 120
@@ -2099,15 +2231,23 @@ components:
           type: string
           enum:
             - USD
-        basePrice: *a4
-        unitPrice: *a4
+        basePrice:
+          type: string
+          maxLength: 15
+          pattern: ^(0|[1-9][0-9]{0,11})(\.[0-9]{1,2})?$
+        unitPrice:
+          type: string
+          maxLength: 15
+          pattern: ^(0|[1-9][0-9]{0,11})(\.[0-9]{1,2})?$
         selections:
           type: array
           items:
             type: object
             additionalProperties: false
             properties:
-              segmentId: *a5
+              segmentId:
+                type: string
+                maxLength: 64
               placeholder:
                 type: string
                 maxLength: 32
@@ -2115,7 +2255,9 @@ components:
                 type: string
                 maxLength: 120
                 nullable: true
-              optionId: *a5
+              optionId:
+                type: string
+                maxLength: 64
               code:
                 type: string
                 maxLength: 64
@@ -2123,7 +2265,10 @@ components:
                 type: string
                 maxLength: 1000
                 nullable: true
-              price: *a4
+              price:
+                type: string
+                maxLength: 15
+                pattern: ^(0|[1-9][0-9]{0,11})(\.[0-9]{1,2})?$
             required:
               - segmentId
               - placeholder
@@ -2161,14 +2306,36 @@ components:
             type: object
             additionalProperties: false
             properties:
-              id: *a1
+              id:
+                type: string
+                maxLength: 19
+                pattern: ^[1-9][0-9]{0,18}$
               productFamilyName:
                 type: string
                 maxLength: 120
-              currentVersionId: *a1
-              versionNumber: *a12
-              modifiedAt: *a10
-              modifiedBy: *a13
+              currentVersionId:
+                type: string
+                maxLength: 19
+                pattern: ^[1-9][0-9]{0,18}$
+              versionNumber:
+                type: integer
+                minimum: 1
+              modifiedAt:
+                type: string
+                format: date-time
+              modifiedBy:
+                type: object
+                additionalProperties: false
+                properties:
+                  id:
+                    type: string
+                    maxLength: 19
+                    pattern: ^[1-9][0-9]{0,18}$
+                  name:
+                    type: string
+                required:
+                  - id
+                  - name
             required:
               - id
               - productFamilyName
@@ -2177,7 +2344,9 @@ components:
               - modifiedAt
               - modifiedBy
           minItems: 0
-        page: *a12
+        page:
+          type: integer
+          minimum: 1
         pageSize:
           type: integer
           minimum: 1
