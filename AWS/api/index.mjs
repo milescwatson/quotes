@@ -3,28 +3,28 @@ import { createIdentityService, HttpError } from './identity.mjs';
 import { createTaxonomyService } from './taxonomy.mjs';
 import { MAX_BYTES } from './taxonomy-content.mjs';
 export const taxonomyRoutes = [
-  'GET /v1/organizations/{orgId}/taxonomies',
-  'POST /v1/organizations/{orgId}/taxonomies',
-  'GET /v1/organizations/{orgId}/taxonomies/{taxonomyId}',
-  'POST /v1/organizations/{orgId}/taxonomies/{taxonomyId}/versions',
-  'POST /v1/organizations/{orgId}/taxonomies/{taxonomyId}/preview',
-  'POST /v1/organizations/{orgId}/taxonomies/{taxonomyId}/archive',
+  'GET /organizations/{orgId}/taxonomies',
+  'POST /organizations/{orgId}/taxonomies',
+  'GET /organizations/{orgId}/taxonomies/{taxonomyId}',
+  'POST /organizations/{orgId}/taxonomies/{taxonomyId}/versions',
+  'POST /organizations/{orgId}/taxonomies/{taxonomyId}/preview',
+  'POST /organizations/{orgId}/taxonomies/{taxonomyId}/archive',
 ];
 const routes = new Set([
   ...taxonomyRoutes,
-  'POST /v1/me/bootstrap',
-  'GET /v1/me',
-  'PATCH /v1/me',
-  'GET /v1/me/organizations',
-  'GET /v1/organizations/{orgId}',
-  'GET /v1/organizations/{orgId}/quotes',
-  'GET /v1/organizations/{orgId}/quote-owners',
-  'PATCH /v1/organizations/{orgId}/quotes/{quoteId}',
-  'PATCH /v1/organizations/{orgId}',
-  'GET /v1/organizations/{orgId}/members',
-  'POST /v1/organizations/{orgId}/members',
-  'PATCH /v1/organizations/{orgId}/members/{membershipId}',
-  'DELETE /v1/organizations/{orgId}/members/{membershipId}',
+  'POST /me/bootstrap',
+  'GET /me',
+  'PATCH /me',
+  'GET /me/organizations',
+  'GET /organizations/{orgId}',
+  'GET /organizations/{orgId}/quotes',
+  'GET /organizations/{orgId}/quote-owners',
+  'PATCH /organizations/{orgId}/quotes/{quoteId}',
+  'PATCH /organizations/{orgId}',
+  'GET /organizations/{orgId}/members',
+  'POST /organizations/{orgId}/members',
+  'PATCH /organizations/{orgId}/members/{membershipId}',
+  'DELETE /organizations/{orgId}/members/{membershipId}',
 ]);
 export function createHandler({
   service,
@@ -49,7 +49,7 @@ export function createHandler({
         service: 'quotes-api',
         environment: env.ENVIRONMENT,
       });
-    if (!routes.has(event.routeKey) && event.routeKey !== 'GET /v1/session')
+    if (!routes.has(event.routeKey) && event.routeKey !== 'GET /session')
       return reply(404, {
         code: 'NOT_FOUND',
         message: 'Route not found.',
@@ -70,7 +70,7 @@ export function createHandler({
       ) {
         throw new HttpError(401, 'UNAUTHORIZED', 'Please sign in to continue.');
       }
-      if (event.routeKey === 'GET /v1/session')
+      if (event.routeKey === 'GET /session')
         return reply(200, { subject: claims.sub });
       const token =
         event.headers?.authorization || event.headers?.Authorization;
@@ -133,7 +133,7 @@ export function createHandler({
         : (service || createIdentityService(transactions(getPool())));
       const result = await execute({
         method: event.requestContext.http.method,
-        path: event.rawPath.replace(/^\/v1/, ''),
+        path: event.rawPath,
         body,
         query: event.queryStringParameters || {},
         identity: {

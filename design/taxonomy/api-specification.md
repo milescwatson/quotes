@@ -55,7 +55,7 @@ A role in another organization grants no access. Return `404 NOT_FOUND` for miss
 
 ## HTTP contracts
 
-Base path: `/v1/organizations/{orgId}`. Requests are JSON; reject unknown fields. Responses use `Cache-Control: no-store`. Taxonomy, version, organization, and user IDs remain positive bigint decimal strings; version numbers and array indexes are JSON integers. Segment/option IDs inside documents are opaque strings, as specified below. Timestamps are ISO 8601 UTC. Money is always a decimal string.
+Base path: `/organizations/{orgId}`. Requests are JSON; reject unknown fields. Responses use `Cache-Control: no-store`. Taxonomy, version, organization, and user IDs remain positive bigint decimal strings; version numbers and array indexes are JSON integers. Segment/option IDs inside documents are opaque strings, as specified below. Timestamps are ISO 8601 UTC. Money is always a decimal string.
 
 | Method and path | Input | Success |
 | --- | --- | --- |

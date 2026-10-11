@@ -1,7 +1,6 @@
 import {
   UserManager,
   WebStorageStateStore,
-  InMemoryWebStorage,
 } from 'oidc-client-ts'
 import { ApiError, safeDestination } from '~/types/identity'
 export function createAuth(config: {
@@ -28,7 +27,7 @@ export function createAuth(config: {
       redirect_uri: `${location.origin}/auth/callback`,
       response_type: 'code',
       scope: 'openid email profile quotes-api/access',
-      userStore: new WebStorageStateStore({ store: new InMemoryWebStorage() }),
+      userStore: new WebStorageStateStore({ store: localStorage }),
       stateStore: new WebStorageStateStore({ store: sessionStorage }),
       automaticSilentRenew: false,
       loadUserInfo: false,

@@ -18,12 +18,12 @@ Fixtures require both development mode and `NUXT_PUBLIC_IDENTITY_FIXTURES=true`.
 
 Set fixtures to false and supply:
 
-- `NUXT_PUBLIC_API_BASE`: API Gateway origin, without `/v1`.
+- `NUXT_PUBLIC_API_BASE`: API Gateway origin. Requests use unversioned paths such as `/me` and `/organizations/{orgId}`.
 - `NUXT_PUBLIC_COGNITO_USER_POOL_ID`: environment-specific user pool ID.
 - `NUXT_PUBLIC_COGNITO_CLIENT_ID`: public app client ID.
 - `NUXT_PUBLIC_COGNITO_DOMAIN`: full HTTPS Cognito domain origin.
 
-The client uses `oidc-client-ts` for authorization code + PKCE. Tokens stay in memory; session storage holds only the temporary OAuth interaction state. On a full browser reload, return through hosted sign-in to obtain fresh tokens; Cognito's own login session can avoid another password prompt. While the app stays open, the client uses its in-memory refresh token when available. Logout attempts revocation, clears local account data, and visits Cognito logout. Register `/auth/callback` and the frontend origin as callback/logout destinations.
+The client uses `oidc-client-ts` for authorization code + PKCE. The signed-in session, including tokens, is persisted in local storage so it survives page reloads and browser restarts on the same origin. Session storage holds only the temporary OAuth interaction state. The client renews expiring access tokens with the stored refresh token when available; signing in again is required when renewal fails or the session expires. Local storage is accessible to JavaScript running on the app origin. Logout attempts revocation, clears local account data, and visits Cognito logout. Register `/auth/callback` and the frontend origin as callback/logout destinations.
 
 Authenticated API data loads only in the browser; it is never serialized into SSR HTML. Role-dependent navigation is presentation only. The API checks membership on every request. Route changes abort page requests, and session changes reject stale results.
 
@@ -37,7 +37,7 @@ npm run test:e2e
 npm run test:auth
 ```
 
-The first browser suite uses explicit demo fixtures. The second exercises the real OIDC and HTTP adapters with mocked authorization/token/API endpoints, checks PKCE and callback state, and verifies that tokens are not persisted. Neither suite contacts a live Cognito account or DSQL cluster.
+The first browser suite uses explicit demo fixtures. The second exercises the real OIDC and HTTP adapters with mocked authorization/token/API endpoints, checks PKCE and callback state, and verifies session persistence across reloads and removal on logout. Neither suite contacts a live Cognito account or DSQL cluster.
 
 Response types are generated from the sibling API contract and committed:
 

@@ -12,7 +12,7 @@ export function createHttp(base: string, token: () => Promise<string>) {
       )
     let response: Response
     try {
-      response = await fetch(`${base.replace(/\/$/, '')}/v1${path}`, {
+      response = await fetch(`${base.replace(/\/$/, '')}${path}`, {
         method: options.method ?? 'GET',
         signal: options.signal,
         headers: {

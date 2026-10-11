@@ -41,7 +41,7 @@ Give the API role SELECT access to quotes for this phase; keep seed writes in a 
 
 ## 2. Add the organization quotes list API
 
-Add `GET /v1/organizations/{orgId}/quotes` to the OpenAPI contract, Gateway configuration, and Lambda route handling.
+Add `GET /organizations/{orgId}/quotes` to the OpenAPI contract, Gateway configuration, and Lambda route handling.
 
 - Reuse current authentication, enabled-user checks, active-organization checks, and current membership authorization. Admins, editors, and members can all view quotes in their organization.
 - Scope every query to the authorized organization ID. Reject access using the existing error conventions; knowing a quote, customer, or organization ID never grants access.

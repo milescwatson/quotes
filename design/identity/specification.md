@@ -69,7 +69,7 @@ The trusted operator workflow creates an active organization and its initial adm
 
 ### Direct member addition
 
-`POST /v1/organizations/{orgId}/members` accepts only `{email, role}`. Resolve exactly one enabled account in the actor's issuer by trimmed, lowercased email. Guard both users in numeric ID order, then the organization; verify the actor is an admin of that active organization before returning account availability errors or granting access.
+`POST /organizations/{orgId}/members` accepts only `{email, role}`. Resolve exactly one enabled account in the actor's issuer by trimmed, lowercased email. Guard both users in numeric ID order, then the organization; verify the actor is an admin of that active organization before returning account availability errors or granting access.
 
 Reject active members with `409 ALREADY_MEMBER` without changing their role. For a removed member, clear `removed_at` and assign the requested role while preserving membership ID and original join time. Otherwise create a membership. Append `membership.added` in the same transaction. The new member's organization list and organization authorization immediately include it; no acceptance step or email delivery is involved. The UI refreshes organization choices on focus and periodically while visible.
 
@@ -89,15 +89,15 @@ These routes are now implemented in `AWS/api/` and declared in `AWS/openapi.yaml
 
 | Operation | Contract |
 | --- | --- |
-| `POST /v1/me/bootstrap` | No caller identity fields. Return `{user: {id,email,displayName}}`; 200 for both initial creation and idempotent repeats. |
-| `GET /v1/me` / `PATCH /v1/me` | Read profile; patch only `{displayName}`. Email changes go through Cognito. |
-| `GET /v1/me/organizations` | Return active organizations with the caller's role; no automatic default organization. |
-| `GET /v1/organizations/{orgId}` | Read name, ID, and caller role for an active membership. |
-| `PATCH /v1/organizations/{orgId}` | Admin-only `{name}`. No status or owner fields. |
-| `GET /v1/organizations/{orgId}/members` | Admin-only membership list with user ID, name/email, role, and membership ID. |
-| `POST /v1/organizations/{orgId}/members` | Admin-only `{email,role}`; return `{member}` with immediate access. |
-| `PATCH /v1/organizations/{orgId}/members/{membershipId}` | Admin-only `{role}`; validate membership belongs to path organization. |
-| `DELETE /v1/organizations/{orgId}/members/{membershipId}` | Admin-only soft removal; preserve history. |
+| `POST /me/bootstrap` | No caller identity fields. Return `{user: {id,email,displayName}}`; 200 for both initial creation and idempotent repeats. |
+| `GET /me` / `PATCH /me` | Read profile; patch only `{displayName}`. Email changes go through Cognito. |
+| `GET /me/organizations` | Return active organizations with the caller's role; no automatic default organization. |
+| `GET /organizations/{orgId}` | Read name, ID, and caller role for an active membership. |
+| `PATCH /organizations/{orgId}` | Admin-only `{name}`. No status or owner fields. |
+| `GET /organizations/{orgId}/members` | Admin-only membership list with user ID, name/email, role, and membership ID. |
+| `POST /organizations/{orgId}/members` | Admin-only `{email,role}`; return `{member}` with immediate access. |
+| `PATCH /organizations/{orgId}/members/{membershipId}` | Admin-only `{role}`; validate membership belongs to path organization. |
+| `DELETE /organizations/{orgId}/members/{membershipId}` | Admin-only soft removal; preserve history. |
 
 Use `{code,message,requestId}` errors: 401 for invalid authentication, 403 for disabled/unverified accounts or insufficient role within an accessible organization, 404 for inaccessible organizations, 409 for last-admin/role/idempotency/state conflicts, 422 for invalid input, and 503 for exhausted transient retries.
 

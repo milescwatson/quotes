@@ -6,7 +6,7 @@ The Git repository begins at the parent workspace. It tracks `app/`, `AWS/`, `da
 
 ## Scope
 
-This first deployment provisions Amplify Hosting, Aurora DSQL, Cognito, an OpenAPI HTTP API with Lambda, daily seven-day backups, and basic CloudWatch alarms. It hosts the existing Nuxt starter. Only `GET /health` and authenticated `GET /v1/session` are implemented; product endpoints, database schema/role bootstrap, user sign-in UI, and recovery drills remain application/operations work.
+This first deployment provisions Amplify Hosting, Aurora DSQL, Cognito, an OpenAPI HTTP API with Lambda, daily seven-day backups, and basic CloudWatch alarms. It hosts the existing Nuxt starter. Only `GET /health` and authenticated `GET /session` are implemented; product endpoints, database schema/role bootstrap, user sign-in UI, and recovery drills remain application/operations work.
 
 Development account: `415221799122`, name `quotes-development`, region `us-west-2`. Staging and production are not deployed.
 

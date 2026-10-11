@@ -84,7 +84,7 @@ Use API Gateway **HTTP API**, proposed for this development baseline, with OpenA
 
 `AWS/openapi.yaml` defines the currently implemented routes, including health, session, identity, organization, and quote operations. Add taxonomy routes only during implementation, following these requirements:
 
-- Explicit versioned business paths under `/v1`, unique operation IDs, request/response schemas, and status codes. Avoid a catch-all route that bypasses the declared API surface.
+- Explicit unversioned business paths, unique operation IDs, request/response schemas, and status codes. Avoid a catch-all route that bypasses the declared API surface.
 - Six taxonomy MVP operations: list owned active taxonomies, create, read current, save a complete version, preview, and archive. Do not add subscriptions, history-read endpoints, or a publishing workflow. Quote-line persistence remains separate work.
 - Reusable error responses, decimal money represented as strings, IDs, pagination where needed, and conflict responses for stale taxonomy versions.
 - Cognito JWT security for every business operation, with a required API scope to ensure access tokens are used. Only a minimal `GET /health` endpoint is public.

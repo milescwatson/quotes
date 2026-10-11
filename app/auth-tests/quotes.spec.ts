@@ -38,14 +38,14 @@ test('quotes HTTP pagination recovers when the last page disappears and clears r
     if (route.request().method() === 'OPTIONS') return route.fulfill({ status: 204, headers })
     expect(route.request().headers().authorization).toBe('Bearer quote-test-token')
     const url = new URL(route.request().url())
-    if (url.pathname === '/v1/me/bootstrap') return route.fulfill({ headers, json: {
+    if (url.pathname === '/me/bootstrap') return route.fulfill({ headers, json: {
       user: { id: '1', displayName: 'Alex', email: 'alex@example.com' },
     } })
-    if (url.pathname === '/v1/me/organizations') return route.fulfill({ headers, json: {
+    if (url.pathname === '/me/organizations') return route.fulfill({ headers, json: {
       items: [{ id: '10', name: 'Test team', role: 'member' }], nextCursor: null,
     } })
-    if (url.pathname === '/v1/organizations/10/quote-owners') return route.fulfill({ headers, json: { items: [{ id: '1', name: 'Alex' }] } })
-    if (url.pathname === '/v1/organizations/10/quotes') {
+    if (url.pathname === '/organizations/10/quote-owners') return route.fulfill({ headers, json: { items: [{ id: '1', name: 'Alex' }] } })
+    if (url.pathname === '/organizations/10/quotes') {
       const requested = Number(url.searchParams.get('page'))
       expect(url.searchParams.get('pageSize')).toBe('50')
       expect(url.searchParams.has('cursor')).toBe(false)

@@ -57,7 +57,7 @@ paths:
         httpMethod: POST
         payloadFormatVersion: "2.0"
         uri: ${lambda_invoke_arn}
-  /v1/session:
+  /session:
     get:
       operationId: getSession
       security:
@@ -117,7 +117,7 @@ paths:
         httpMethod: POST
         payloadFormatVersion: "2.0"
         uri: ${lambda_invoke_arn}
-  /v1/me/bootstrap:
+  /me/bootstrap:
     post:
       operationId: bootstrapProfile
       security:
@@ -171,7 +171,7 @@ paths:
         httpMethod: POST
         payloadFormatVersion: "2.0"
         uri: ${lambda_invoke_arn}
-  /v1/me:
+  /me:
     get:
       operationId: getProfile
       security:
@@ -284,7 +284,7 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/ProfileUpdate"
-  /v1/me/organizations:
+  /me/organizations:
     get:
       operationId: listMyOrganizations
       security:
@@ -350,7 +350,7 @@ paths:
             minimum: 1
             maximum: 100
             default: 50
-  /v1/organizations/{orgId}:
+  /organizations/{orgId}:
     get:
       operationId: getOrganization
       security:
@@ -481,7 +481,7 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/OrganizationUpdate"
-  /v1/organizations/{orgId}/quotes:
+  /organizations/{orgId}/quotes:
     get:
       operationId: listQuotes
       security:
@@ -574,7 +574,7 @@ paths:
           schema:
             type: string
           description: Team member ID, or unassigned.
-  /v1/organizations/{orgId}/quote-owners:
+  /organizations/{orgId}/quote-owners:
     get:
       operationId: listQuoteOwners
       security:
@@ -637,7 +637,7 @@ paths:
             pattern: ^[1-9][0-9]{0,18}$
             description: Positive bigint identifier encoded as a decimal string (maximum
               9223372036854775807).
-  /v1/organizations/{orgId}/quotes/{quoteId}:
+  /organizations/{orgId}/quotes/{quoteId}:
     patch:
       operationId: updateQuoteOwner
       security:
@@ -714,7 +714,7 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/QuoteOwnerUpdate"
-  /v1/organizations/{orgId}/members:
+  /organizations/{orgId}/members:
     get:
       operationId: listMembers
       security:
@@ -856,7 +856,7 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/MemberCreate"
-  /v1/organizations/{orgId}/members/{membershipId}:
+  /organizations/{orgId}/members/{membershipId}:
     patch:
       operationId: updateMember
       security:
@@ -1003,7 +1003,7 @@ paths:
             pattern: ^[1-9][0-9]{0,18}$
             description: Positive bigint identifier encoded as a decimal string (maximum
               9223372036854775807).
-  /v1/organizations/{orgId}/taxonomies:
+  /organizations/{orgId}/taxonomies:
     get:
       operationId: listTaxonomies
       description: Owner-organization taxonomy MVP. No automatic retries or
@@ -1161,7 +1161,7 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/TaxonomyCreateInput"
-  /v1/organizations/{orgId}/taxonomies/{taxonomyId}:
+  /organizations/{orgId}/taxonomies/{taxonomyId}:
     get:
       operationId: getTaxonomy
       description: Owner-organization taxonomy MVP. No automatic retries or
@@ -1238,7 +1238,7 @@ paths:
         httpMethod: POST
         payloadFormatVersion: "2.0"
         uri: ${lambda_invoke_arn}
-  /v1/organizations/{orgId}/taxonomies/{taxonomyId}/versions:
+  /organizations/{orgId}/taxonomies/{taxonomyId}/versions:
     post:
       operationId: saveTaxonomyVersion
       description: Owner-organization taxonomy MVP. No automatic retries or
@@ -1327,7 +1327,7 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/TaxonomySaveInput"
-  /v1/organizations/{orgId}/taxonomies/{taxonomyId}/preview:
+  /organizations/{orgId}/taxonomies/{taxonomyId}/preview:
     post:
       operationId: previewTaxonomy
       description: Owner-organization taxonomy MVP. No automatic retries or
@@ -1410,7 +1410,7 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/TaxonomyPreviewInput"
-  /v1/organizations/{orgId}/taxonomies/{taxonomyId}/archive:
+  /organizations/{orgId}/taxonomies/{taxonomyId}/archive:
     post:
       operationId: archiveTaxonomy
       description: Owner-organization taxonomy MVP. No automatic retries or

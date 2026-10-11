@@ -20,7 +20,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/session": {
+    "/session": {
         parameters: {
             query?: never;
             header?: never;
@@ -36,7 +36,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/me/bootstrap": {
+    "/me/bootstrap": {
         parameters: {
             query?: never;
             header?: never;
@@ -52,7 +52,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/me": {
+    "/me": {
         parameters: {
             query?: never;
             header?: never;
@@ -68,7 +68,7 @@ export interface paths {
         patch: operations["updateProfile"];
         trace?: never;
     };
-    "/v1/me/organizations": {
+    "/me/organizations": {
         parameters: {
             query?: never;
             header?: never;
@@ -84,7 +84,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/organizations/{orgId}": {
+    "/organizations/{orgId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -100,7 +100,7 @@ export interface paths {
         patch: operations["updateOrganization"];
         trace?: never;
     };
-    "/v1/organizations/{orgId}/quotes": {
+    "/organizations/{orgId}/quotes": {
         parameters: {
             query?: never;
             header?: never;
@@ -116,7 +116,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/organizations/{orgId}/quote-owners": {
+    "/organizations/{orgId}/quote-owners": {
         parameters: {
             query?: never;
             header?: never;
@@ -132,7 +132,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/organizations/{orgId}/quotes/{quoteId}": {
+    "/organizations/{orgId}/quotes/{quoteId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -148,7 +148,7 @@ export interface paths {
         patch: operations["updateQuoteOwner"];
         trace?: never;
     };
-    "/v1/organizations/{orgId}/members": {
+    "/organizations/{orgId}/members": {
         parameters: {
             query?: never;
             header?: never;
@@ -164,7 +164,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/organizations/{orgId}/members/{membershipId}": {
+    "/organizations/{orgId}/members/{membershipId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -180,7 +180,7 @@ export interface paths {
         patch: operations["updateMember"];
         trace?: never;
     };
-    "/v1/organizations/{orgId}/taxonomies": {
+    "/organizations/{orgId}/taxonomies": {
         parameters: {
             query?: never;
             header?: never;
@@ -198,7 +198,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/organizations/{orgId}/taxonomies/{taxonomyId}": {
+    "/organizations/{orgId}/taxonomies/{taxonomyId}": {
         parameters: {
             query?: never;
             header?: never;
@@ -215,7 +215,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/organizations/{orgId}/taxonomies/{taxonomyId}/versions": {
+    "/organizations/{orgId}/taxonomies/{taxonomyId}/versions": {
         parameters: {
             query?: never;
             header?: never;
@@ -232,7 +232,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/organizations/{orgId}/taxonomies/{taxonomyId}/preview": {
+    "/organizations/{orgId}/taxonomies/{taxonomyId}/preview": {
         parameters: {
             query?: never;
             header?: never;
@@ -249,7 +249,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/organizations/{orgId}/taxonomies/{taxonomyId}/archive": {
+    "/organizations/{orgId}/taxonomies/{taxonomyId}/archive": {
         parameters: {
             query?: never;
             header?: never;

@@ -343,8 +343,8 @@ test('handler validates gateway claims and trusted verified email', async () => 
     COGNITO_DOMAIN: 'https://example.auth.us-west-2.amazoncognito.com',
   };
   const event = {
-    routeKey: 'GET /v1/me',
-    rawPath: '/v1/me',
+    routeKey: 'GET /me',
+    rawPath: '/me',
     headers: { authorization: 'Bearer test' },
     requestContext: {
       requestId: 'test-request',
@@ -366,7 +366,8 @@ test('handler validates gateway claims and trusted verified email', async () => 
   let calls = 0;
   const handler = createHandler({
     env,
-    service: async () => {
+    service: async ({ path }) => {
+      assert.equal(path, '/me');
       calls++;
       return { user: { id: '1' } };
     },
@@ -406,9 +407,19 @@ test('handler validates gateway claims and trusted verified email', async () => 
   });
   assert.equal((await unverified(event)).statusCode, 403);
   assert.equal(
-    (await handler({ ...event, routeKey: 'POST /v1/unknown' })).statusCode,
+    (await handler({ ...event, routeKey: 'POST /unknown' })).statusCode,
     404,
   );
+  for (const path of ['/v1/me', '/v1/session']) {
+    assert.equal(
+      (await handler({ ...event, routeKey: `GET ${path}`, rawPath: path })).statusCode,
+      404,
+    );
+  }
+  assert.equal(calls, 1);
+  const session = await handler({ ...event, routeKey: 'GET /session', rawPath: '/session' });
+  assert.equal(session.statusCode, 200);
+  assert.deepEqual(JSON.parse(session.body), { subject: 'subject' });
 });
 test('serialization failure retries entire transaction', async () => {
   let calls = 0,

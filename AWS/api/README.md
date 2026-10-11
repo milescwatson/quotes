@@ -33,7 +33,7 @@ Database migrations, an operator interface are not automatically executed or pro
 
 ## Quotes list
 
-`GET /v1/organizations/{orgId}/quotes?page=1&pageSize=50` is available to all active organization members. It returns rows and page totals, ordered by most recently modified. Customer IDs are nullable integers; bigint quote/organization/user IDs are decimal strings. Apply the [quote schema and grants](../../design/quotes/specification.md) before releasing this route. The API supports quote owner reassignment via PATCH; other quote writes remain out of scope. See the quote specification for filter and owner-choice contracts.
+`GET /organizations/{orgId}/quotes?page=1&pageSize=50` is available to all active organization members. It returns rows and page totals, ordered by most recently modified. Customer IDs are nullable integers; bigint quote/organization/user IDs are decimal strings. Apply the [quote schema and grants](../../design/quotes/specification.md) before releasing this route. The API supports quote owner reassignment via PATCH; other quote writes remain out of scope. See the quote specification for filter and owner-choice contracts.
 
 ## Taxonomy MVP
 

@@ -8,12 +8,12 @@ const jsonHeaders = {
   'access-control-allow-headers': 'authorization,content-type',
   'access-control-allow-methods': 'GET,POST,PATCH,DELETE,OPTIONS',
 }
-test('real OIDC adapter uses PKCE, returns to organization, and uses HTTP client without storing tokens', async ({
+test('real OIDC adapter uses PKCE and restores the persisted session after reload', async ({
   page,
 }) => {
   let challenge = '',
     nonce = '',
-    exchanged = false,
+    exchanges = 0,
     authenticatedCalls = 0,
     addedOrganization = false
   await page.route(`${issuer}/.well-known/openid-configuration`, (route) =>
@@ -60,7 +60,7 @@ test('real OIDC adapter uses PKCE, returns to organization, and uses HTTP client
         Buffer.from(JSON.stringify(value)).toString('base64url')
       const now = Math.floor(Date.now() / 1000)
       const idToken = `${encode({ alg: 'RS256', typ: 'JWT' })}.${encode({ iss: issuer, aud: 'test-client', sub: 'test-subject', exp: now + 3600, iat: now, ...(nonce ? { nonce } : {}) })}.test-signature`
-      exchanged = true
+      exchanges++
       return route.fulfill({
         headers: jsonHeaders,
         json: {
@@ -83,7 +83,7 @@ test('real OIDC adapter uses PKCE, returns to organization, and uses HTTP client
     authenticatedCalls++
     const path = new URL(route.request().url()).pathname
     const data =
-      path === '/v1/me/bootstrap'
+      path === '/me/bootstrap'
         ? {
             user: {
               id: '1',
@@ -91,7 +91,7 @@ test('real OIDC adapter uses PKCE, returns to organization, and uses HTTP client
               email: 'alex@example.com',
             },
           }
-        : path === '/v1/me/organizations'
+        : path === '/me/organizations'
           ? {
               items: [
                 { id: organizationId, name: 'Quotes', role: 'member' },
@@ -107,11 +107,11 @@ test('real OIDC adapter uses PKCE, returns to organization, and uses HTTP client
               ],
               nextCursor: null,
             }
-          : path === `/v1/organizations/${organizationId}/quotes`
+          : path === `/organizations/${organizationId}/quotes`
             ? { items: [], page: 1, pageSize: 50, totalItems: 0, totalPages: 0 }
-            : path === `/v1/organizations/${organizationId}/quote-owners`
+            : path === `/organizations/${organizationId}/quote-owners`
               ? { items: [] }
-          : path === `/v1/organizations/${organizationId}`
+          : path === `/organizations/${organizationId}`
             ? {
                 organization: {
                   id: organizationId,
@@ -142,16 +142,33 @@ test('real OIDC adapter uses PKCE, returns to organization, and uses HTTP client
       .getByRole('navigation', { name: 'Organization navigation' })
       .getByRole('link', { name: 'New team', exact: true }),
   ).toBeVisible()
-  expect(exchanged).toBe(true)
+  expect(exchanges).toBe(1)
   expect(authenticatedCalls).toBeGreaterThanOrEqual(3)
-  const stored = await page.evaluate(() =>
-    JSON.stringify({
-      local: { ...localStorage },
-      session: { ...sessionStorage },
-    }),
-  )
-  expect(stored).not.toContain('test-access-token')
-  expect(stored).not.toContain('test-signature')
+  const stored = await page.evaluate(() => ({
+    local: JSON.stringify({ ...localStorage }),
+    session: JSON.stringify({ ...sessionStorage }),
+  }))
+  expect(stored.local).toContain('test-access-token')
+  expect(stored.local).toContain('test-signature')
+  expect(stored.session).not.toContain('test-access-token')
+  expect(stored.session).not.toContain('test-signature')
+
+  const destination = page.url()
+  const callsBeforeReload = authenticatedCalls
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Quotes', exact: true })).toBeVisible()
+  await expect(page).toHaveURL(destination)
+  expect(authenticatedCalls).toBeGreaterThan(callsBeforeReload)
+  expect(exchanges).toBe(1)
+
+  await page.route('https://login.quotes.test/logout**', route => route.fulfill({
+    contentType: 'text/html', body: '<p>Signed out</p>',
+  }))
+  await page.getByRole('button', { name: 'Sign out', exact: true }).click()
+  await expect(page).toHaveURL(/login\.quotes\.test\/logout/)
+  await page.goto('/login')
+  await expect(page.getByRole('button', { name: 'Continue to sign in' })).toBeVisible()
+  expect(await page.evaluate(() => JSON.stringify({ ...localStorage }))).not.toContain('test-access-token')
 })
 test('an unsolicited OAuth callback is rejected', async ({ page }) => {
   await page.goto('/auth/callback?code=forged&state=unknown')

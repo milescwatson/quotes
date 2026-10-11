@@ -194,7 +194,7 @@ test('quotes schema, list service, and organization access', async t => {
 
 test('quotes Gateway route reaches authenticated service with page query and no-store response', async () => {
   const api = YAML.parse(await read('../../openapi.yaml'));
-  const route = api.paths['/v1/organizations/{orgId}/quotes'].get;
+  const route = api.paths['/organizations/{orgId}/quotes'].get;
   assert.equal(route.operationId, 'listQuotes');
   assert.deepEqual(route.security, [{ CognitoJwt: ['quotes-api/access'] }]);
   assert.equal(route['x-amazon-apigateway-integration'].uri, '${lambda_invoke_arn}');
@@ -206,7 +206,7 @@ test('quotes Gateway route reaches authenticated service with page query and no-
     fetchUser: async () => ({ ok: true, json: async () => ({ sub: 'admin', email: 'admin@example.com', email_verified: true }) }),
   });
   const event = {
-    routeKey: 'GET /v1/organizations/{orgId}/quotes', rawPath: '/v1/organizations/10/quotes',
+    routeKey: 'GET /organizations/{orgId}/quotes', rawPath: '/organizations/10/quotes',
     queryStringParameters: { page: '2', pageSize: '50' }, headers: { authorization: 'Bearer test' },
     requestContext: { requestId: 'test', http: { method: 'GET' }, authorizer: { jwt: { claims: {
       iss: issuer, sub: 'admin', client_id: 'client', token_use: 'access', exp: Date.now() / 1000 + 600, scope: 'quotes-api/access',

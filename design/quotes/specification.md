@@ -12,7 +12,7 @@ Customer Name and Project Name are independent required fields, trimmed and limi
 
 ## List contract
 
-`GET /v1/organizations/{orgId}/quotes?page=1&pageSize=50` returns `{ items, page, pageSize, totalItems, totalPages }`. The [OpenAPI contract](../../AWS/openapi.yaml) defines item fields and errors. Defaults are page 1 and 50 items, with a maximum page size of 100. Invalid, nonpositive, fractional, or unsafe integer inputs return 422.
+`GET /organizations/{orgId}/quotes?page=1&pageSize=50` returns `{ items, page, pageSize, totalItems, totalPages }`. The [OpenAPI contract](../../AWS/openapi.yaml) defines item fields and errors. Defaults are page 1 and 50 items, with a maximum page size of 100. Invalid, nonpositive, fractional, or unsafe integer inputs return 422.
 
 The API authorizes the current viewer before reading rows or totals, using the same user and organization transaction guards as the identity service. Count and list queries use the authorized organization ID in one transaction. Sorting is `modified_when DESC, id DESC`; pagination uses LIMIT/OFFSET. Empty organizations return zero total pages. Out-of-range pages return empty items with accurate totals. Each request reflects current data, so concurrent changes can move rows between separate page requests.
 
@@ -43,9 +43,9 @@ The list accepts optional `customer` and `project` parameters (up to 120 charact
 
 `owner_user_id` is a nullable bigint reference to users, separate from `modified_by`. Existing quotes stay unassigned rather than inferring ownership from their last editor. `ownerId` and `ownerName` are returned for each quote; historical ownership remains visible after a member leaves or is disabled.
 
-`GET /v1/organizations/{orgId}/quote-owners` returns `{items: [{id, name}]}` for active, enabled team members. It is available to all active organization members and exposes only the identifiers and display labels needed for assignment, not the admin membership-management contract.
+`GET /organizations/{orgId}/quote-owners` returns `{items: [{id, name}]}` for active, enabled team members. It is available to all active organization members and exposes only the identifiers and display labels needed for assignment, not the admin membership-management contract.
 
-`PATCH /v1/organizations/{orgId}/quotes/{quoteId}` accepts only `{ownerId: string | null}` and returns `{success: true}`. Any active organization member may assign an enabled member of the same organization or clear the owner. Quote lookup is organization-scoped. The acting user and proposed owner are guarded before the organization, so concurrent disabling, removal, and ownership writes participate in the existing transaction conflict protocol. The same transaction writes the owner, acting user's ID, and database modification time. Concurrent successful edits use last-committed-write behavior.
+`PATCH /organizations/{orgId}/quotes/{quoteId}` accepts only `{ownerId: string | null}` and returns `{success: true}`. Any active organization member may assign an enabled member of the same organization or clear the owner. Quote lookup is organization-scoped. The acting user and proposed owner are guarded before the organization, so concurrent disabling, removal, and ownership writes participate in the existing transaction conflict protocol. The same transaction writes the owner, acting user's ID, and database modification time. Concurrent successful edits use last-committed-write behavior.
 
 The Tailwind filter toolbar uses compact customer/project buttons with focused search popovers, a team member dropdown, removable active values, and a conditional Clear filters action. Text filtering applies after a 300ms typing pause or Enter; owner changes apply immediately. Escape closes a popover and restores focus to its trigger; clicking or tabbing outside dismisses it. Pending text updates are canceled when the component unmounts. A labeled select in each row saves owner changes immediately and disables while saving. Failed saves restore the previous selection and display an inline error. The list refreshes after a successful save so filtering, order, counts, and attribution remain current.
 
