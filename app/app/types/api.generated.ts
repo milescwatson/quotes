@@ -266,6 +266,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/organizations/{orgId}/principals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Shared principal directory; active organization membership required. */
+        get: operations["listPrincipals"];
+        put?: never;
+        /** @description Organization admins add a global principal. Name and registrable website domain are independently unique. */
+        post: operations["createPrincipal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -439,6 +457,7 @@ export interface components {
             };
             changeSummary: string | null;
             content: components["schemas"]["TaxonomyContent"];
+            principalId: string | null;
         };
         Taxonomy: {
             id: string;
@@ -454,6 +473,8 @@ export interface components {
                 canPreview: boolean;
             };
             version: components["schemas"]["TaxonomyVersion"];
+            principalId: string;
+            principalName: string;
         };
         TaxonomyResponse: {
             taxonomy: components["schemas"]["Taxonomy"];
@@ -465,11 +486,13 @@ export interface components {
         TaxonomyCreateInput: {
             content: components["schemas"]["TaxonomyContentInput"];
             changeSummary?: string | null;
+            principalId: string;
         };
         TaxonomySaveInput: {
             expectedVersionId: string;
             content: components["schemas"]["TaxonomyContentInput"];
             changeSummary?: string | null;
+            principalId: string;
         };
         TaxonomyArchiveInput: {
             expectedVersionId: string;
@@ -520,7 +543,29 @@ export interface components {
                     id: string;
                     name: string;
                 };
+                principalId: string;
+                principalName: string;
             }[];
+            page: number;
+            pageSize: number;
+            totalItems: number;
+            totalPages: number;
+        };
+        Principal: {
+            id: string;
+            name: string;
+            /** Format: uri */
+            websiteUrl: string;
+        };
+        PrincipalInput: {
+            name: string;
+            websiteUrl: string;
+        };
+        PrincipalResponse: {
+            principal: components["schemas"]["Principal"];
+        };
+        PrincipalListResponse: {
+            items: components["schemas"]["Principal"][];
             page: number;
             pageSize: number;
             totalItems: number;
@@ -1708,6 +1753,8 @@ export interface operations {
             query?: {
                 page?: number;
                 pageSize?: number;
+                /** @description Limit to this principal within the current organization. */
+                principalId?: string;
             };
             header?: never;
             path: {
@@ -2178,6 +2225,183 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TaxonomyArchiveResponse"];
+                };
+            };
+            /** @description Request failed; see error code */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed; see error code */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed; see error code */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed; see error code */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed; see error code */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed; see error code */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed; see error code */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listPrincipals: {
+        parameters: {
+            query?: {
+                page?: number;
+                pageSize?: number;
+            };
+            header?: never;
+            path: {
+                orgId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful operation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrincipalListResponse"];
+                };
+            };
+            /** @description Request failed; see error code */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed; see error code */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed; see error code */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed; see error code */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed; see error code */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed; see error code */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed; see error code */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    createPrincipal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orgId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrincipalInput"];
+            };
+        };
+        responses: {
+            /** @description Successful operation */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrincipalResponse"];
                 };
             };
             /** @description Request failed; see error code */

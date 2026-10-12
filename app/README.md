@@ -54,3 +54,9 @@ Pushes to `development` rebuild only the Amplify frontend. The API and Terraform
 Admins add an existing account by email and role from Members. Users must sign in once to initialize their account. Membership is immediately available through the API; the organization chooser refreshes on focus and every 30 seconds while visible. No acceptance or email delivery is required.
 
 This change does not deploy resources, run database migrations, or create organizations. Deploy the matching API contract and bundle with the frontend.
+
+## Product configurations
+
+Admin settings contains Product Configurations (with one Principal filter) and the shared Principals directory. Admins can add a principal with a unique name and root-domain website. New/open links lead to the Configuration Editor, which saves complete snapshots and preserves defaults/hidden names. A new configuration starts blank. The editor includes principal assignment, base price, inline segment/options, drag handles, keyboard arrows, explicit Save, and unsaved-navigation guards.
+
+Local development fixtures include these flows. Run `npm run test:e2e` for browser coverage and `npm run typecheck`/`npm run build` for validation. Live use requires the 0003 database migration and matching API release.

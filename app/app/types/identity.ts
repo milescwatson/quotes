@@ -18,6 +18,8 @@ export class ApiError extends Error {
     public code: string,
     message: string,
     public requestId?: string,
+    public fieldErrors?: { path: string; code: string; message: string }[],
+    public currentVersionId?: string,
   ) {
     super(message)
   }

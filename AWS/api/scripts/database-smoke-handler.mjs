@@ -1,6 +1,7 @@
 // Invoked only by the temporary deployment-verification Lambda; no HTTP route.
 import assert from 'node:assert/strict';
 import { getPool } from '../database.mjs';
+import { createPrincipalService } from '../principals.mjs';
 import { createTaxonomyService } from '../taxonomy.mjs';
 export async function handler(event) {
  const db=await getPool().connect();const checks=[];const q=async(sql,args=[]) => (await db.query(sql,args)).rows;
@@ -10,12 +11,16 @@ export async function handler(event) {
   assert.equal((await q('SELECT current_user'))[0].current_user,'quotes_api');check('IAM-authenticated quotes_api connection');
   await q('BEGIN ISOLATION LEVEL REPEATABLE READ');
   await q("INSERT INTO users(cognito_issuer,cognito_subject,email,normalized_email) VALUES ($1,'rollback-only','rollback@example.invalid','rollback@example.invalid')",[event.identity.issuer]);check('Runtime identity insert with generated ID');
+  const principalService=createPrincipalService(async work=>work(db));
+  const unique=crypto.randomUUID();
+  const principal=(await principalService({method:'POST',path:`/organizations/${event.orgId}/principals`,body:{name:`Smoke ${unique}`,websiteUrl:`https://smoke-${unique}.com`},identity:event.identity})).body.principal;
+  check('Shared principal created with root-domain uniqueness');
   const service=createTaxonomyService(async work=>work(db));
-  const call=(method,suffix='',body={})=>service({method,path:`/organizations/${event.orgId}/taxonomies${suffix}`,body,identity:event.identity});
+  const call=(method,suffix='',body={})=>service({method,path:`/organizations/${event.orgId}/taxonomies${suffix}`,body:method==='POST'&&(!suffix||suffix.endsWith('/versions'))?{principalId:principal.id,...body}:body,identity:event.identity});
   const content={productFamilyName:'Smoke',currency:'USD',basePrice:'0.10',segments:[{id:null,placeholder:'X',name:null,defaultOptionIndex:null,options:[{id:null,code:'01',description:null,price:'0.20'}]}]};
   let t=(await call('POST','',{content})).body.taxonomy;
   assert.equal(t.version.versionNumber,1);check('Create with generated IDs and deferred current-version foreign key');
-  assert.equal((await call('GET')).body.items.length,1);assert.equal((await call('GET',`/${t.id}`)).body.taxonomy.id,t.id);check('Catalog and detail');
+  assert.equal((await call('GET')).body.items.some(item=>item.id===t.id),true);assert.equal((await call('GET',`/${t.id}`)).body.taxonomy.id,t.id);check('Catalog and detail');
   assert.equal((await call('POST',`/${t.id}/preview`,{versionId:t.currentVersionId,selections:[]})).body.configuration.unitPrice,'0.30');check('Exact-price configuration preview');
   assert.equal((await call('POST',`/${t.id}/versions`,{expectedVersionId:t.currentVersionId,content:editable(t.version.content)})).body.unchanged,true);check('No-op save retains version');
   const old=t.currentVersionId;const changed=editable(t.version.content);changed.basePrice='1.00';

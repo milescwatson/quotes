@@ -37,6 +37,8 @@ export function createHttp(base: string, token: () => Promise<string>) {
         data.code ?? 'REQUEST_FAILED',
         data.message ?? 'Something went wrong. Please try again.',
         data.requestId,
+        data.fieldErrors,
+        data.currentVersionId,
       )
     return data as T
   }

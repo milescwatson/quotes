@@ -1,5 +1,8 @@
 # Taxonomy MVP API specification
 
+Task 4000 extension: configurations now require a shared principal. Create/save requests include `principalId`, principal-only saves create a version, and the catalog supports a single principal filter. See the [principal specification](../principals/specification.md) and current [OpenAPI](../../AWS/openapi.yaml) for the extended contract. The original organization ownership and all other content rules remain in force. Migration 0003 and deployment are pending.
+
+
 Status: implemented locally, October 10, 2026, using Aurora DSQL and one JSON document per version. See the [implementation record](../../tasks/3000/implementation.md) for verification and outstanding live deployment gates, and the [implementation plan](../../tasks/3000/plan.md) for scope.
 
 Organizations define product families with ordered configuration segments and options. One explicit Save validates the complete taxonomy and, only when content has changed, makes a new immutable version current. Each version records who saved it and when.
@@ -20,7 +23,7 @@ The [product specification](specification.md) defines the matching MVP domain mo
 | History | Retain immutable versions and attribution. History listing, browsing, and restoration are deferred. |
 | Conflicts | Require `expectedVersionId` for updates. Reject stale saves; no automatic merge, mutation receipts, creation request IDs, or replay system. |
 | Auditing | Version records provide content history. No separate taxonomy audit system. |
-| Catalog | List the organization's active taxonomies with basic pagination. No sharing, status, or search filters. |
+| Catalog | List the organization's active taxonomies with basic pagination. One optional principal filter; no sharing, status, or search filters. |
 
 The API scope is list, create, read current, save, configuration preview, and archive. The editor UI and quote-line persistence remain separate tasks. Imports, nested choices, compatibility rules, reusable option libraries, ownership transfer, unarchival, and SKU catalogs are deferred.
 
@@ -68,7 +71,7 @@ Base path: `/organizations/{orgId}`. Requests are JSON; reject unknown fields. R
 
 There are no history-read or subscription endpoints. Saving under `/versions` creates a version but does not make historical versions publicly addressable.
 
-The catalog returns `{items, page, pageSize, totalItems, totalPages}`. Defaults are page 1 and page size 50; require positive safe integers, cap page size at 100, and reject unsafe offsets. Order by taxonomy `created_at DESC, id DESC`. Read count and rows in the same authorized transaction. Empty lists have zero total pages; out-of-range pages return empty items and accurate totals. Later requests may reflect newly added or archived records. No other query filters are accepted.
+The catalog returns `{items, page, pageSize, totalItems, totalPages}`. Defaults are page 1 and page size 50; require positive safe integers, cap page size at 100, and reject unsafe offsets. Order by taxonomy `created_at DESC, id DESC`. Read count and rows in the same authorized transaction. Empty lists have zero total pages; out-of-range pages return empty items and accurate totals. Later requests may reflect newly added or archived records. The optional `principalId` query filters both results and counts within the owner organization. No other query filters are accepted.
 
 Archived taxonomies are omitted from the catalog. Members can still read the current version by its known ID, but cannot save or preview it. Archive is one-way, preserves all versions, and does not create a content version. Store `archived_at` and `archived_by_user_id` on the taxonomy. Require the current expected version even when repeating archive; return the original timestamp if already archived. No separate archival event table is needed.
 

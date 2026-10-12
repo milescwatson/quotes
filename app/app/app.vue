@@ -2,6 +2,7 @@
 const app = useNuxtApp()
 const route = useRoute()
 const pageTitle = computed(() => {
+  if (route.path.includes('/taxonomies/')) return 'Configuration Editor'
   const section = route.path.split('/').filter(Boolean).at(-1) || 'Workspace'
   return (
     (

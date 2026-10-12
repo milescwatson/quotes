@@ -2,8 +2,8 @@ openapi: 3.0.1
 info:
   title: ${api_name}
   version: 0.3.0
-  description: Quotes identity, organization, quote, and taxonomy MVP API.
-    Authorization and validation are enforced in Lambda.
+  description: Quotes identity, organization, quote, and taxonomy MVP API. Authorization and
+    validation are enforced in Lambda.
 paths:
   /health:
     get:
@@ -411,8 +411,7 @@ paths:
           schema:
             type: string
             pattern: ^[1-9][0-9]{0,18}$
-            description: Positive bigint identifier encoded as a decimal string (maximum
-              9223372036854775807).
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
     patch:
       operationId: updateOrganization
       security:
@@ -473,8 +472,7 @@ paths:
           schema:
             type: string
             pattern: ^[1-9][0-9]{0,18}$
-            description: Positive bigint identifier encoded as a decimal string (maximum
-              9223372036854775807).
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
       requestBody:
         required: true
         content:
@@ -542,8 +540,7 @@ paths:
           schema:
             type: string
             pattern: ^[1-9][0-9]{0,18}$
-            description: Positive bigint identifier encoded as a decimal string (maximum
-              9223372036854775807).
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
         - name: page
           in: query
           schema:
@@ -635,8 +632,7 @@ paths:
           schema:
             type: string
             pattern: ^[1-9][0-9]{0,18}$
-            description: Positive bigint identifier encoded as a decimal string (maximum
-              9223372036854775807).
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
   /organizations/{orgId}/quotes/{quoteId}:
     patch:
       operationId: updateQuoteOwner
@@ -698,16 +694,14 @@ paths:
           schema:
             type: string
             pattern: ^[1-9][0-9]{0,18}$
-            description: Positive bigint identifier encoded as a decimal string (maximum
-              9223372036854775807).
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
         - name: quoteId
           in: path
           required: true
           schema:
             type: string
             pattern: ^[1-9][0-9]{0,18}$
-            description: Positive bigint identifier encoded as a decimal string (maximum
-              9223372036854775807).
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
       requestBody:
         required: true
         content:
@@ -775,8 +769,7 @@ paths:
           schema:
             type: string
             pattern: ^[1-9][0-9]{0,18}$
-            description: Positive bigint identifier encoded as a decimal string (maximum
-              9223372036854775807).
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
         - name: cursor
           in: query
           schema:
@@ -848,8 +841,7 @@ paths:
           schema:
             type: string
             pattern: ^[1-9][0-9]{0,18}$
-            description: Positive bigint identifier encoded as a decimal string (maximum
-              9223372036854775807).
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
       requestBody:
         required: true
         content:
@@ -917,16 +909,14 @@ paths:
           schema:
             type: string
             pattern: ^[1-9][0-9]{0,18}$
-            description: Positive bigint identifier encoded as a decimal string (maximum
-              9223372036854775807).
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
         - name: membershipId
           in: path
           required: true
           schema:
             type: string
             pattern: ^[1-9][0-9]{0,18}$
-            description: Positive bigint identifier encoded as a decimal string (maximum
-              9223372036854775807).
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
       requestBody:
         required: true
         content:
@@ -993,21 +983,18 @@ paths:
           schema:
             type: string
             pattern: ^[1-9][0-9]{0,18}$
-            description: Positive bigint identifier encoded as a decimal string (maximum
-              9223372036854775807).
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
         - name: membershipId
           in: path
           required: true
           schema:
             type: string
             pattern: ^[1-9][0-9]{0,18}$
-            description: Positive bigint identifier encoded as a decimal string (maximum
-              9223372036854775807).
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
   /organizations/{orgId}/taxonomies:
     get:
       operationId: listTaxonomies
-      description: Owner-organization taxonomy MVP. No automatic retries or
-        history/sharing access.
+      description: Owner-organization taxonomy MVP. No automatic retries or history/sharing access.
       security:
         - CognitoJwt:
             - quotes-api/access
@@ -1032,6 +1019,13 @@ paths:
             minimum: 1
             maximum: 100
             default: 50
+        - in: query
+          name: principalId
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+          description: Limit to this principal within the current organization.
       responses:
         "200":
           description: Successful operation
@@ -1088,8 +1082,7 @@ paths:
         uri: ${lambda_invoke_arn}
     post:
       operationId: createTaxonomy
-      description: Owner-organization taxonomy MVP. No automatic retries or
-        history/sharing access.
+      description: Owner-organization taxonomy MVP. No automatic retries or history/sharing access.
       security:
         - CognitoJwt:
             - quotes-api/access
@@ -1164,8 +1157,7 @@ paths:
   /organizations/{orgId}/taxonomies/{taxonomyId}:
     get:
       operationId: getTaxonomy
-      description: Owner-organization taxonomy MVP. No automatic retries or
-        history/sharing access.
+      description: Owner-organization taxonomy MVP. No automatic retries or history/sharing access.
       security:
         - CognitoJwt:
             - quotes-api/access
@@ -1241,8 +1233,7 @@ paths:
   /organizations/{orgId}/taxonomies/{taxonomyId}/versions:
     post:
       operationId: saveTaxonomyVersion
-      description: Owner-organization taxonomy MVP. No automatic retries or
-        history/sharing access.
+      description: Owner-organization taxonomy MVP. No automatic retries or history/sharing access.
       security:
         - CognitoJwt:
             - quotes-api/access
@@ -1330,8 +1321,7 @@ paths:
   /organizations/{orgId}/taxonomies/{taxonomyId}/preview:
     post:
       operationId: previewTaxonomy
-      description: Owner-organization taxonomy MVP. No automatic retries or
-        history/sharing access.
+      description: Owner-organization taxonomy MVP. No automatic retries or history/sharing access.
       security:
         - CognitoJwt:
             - quotes-api/access
@@ -1413,8 +1403,7 @@ paths:
   /organizations/{orgId}/taxonomies/{taxonomyId}/archive:
     post:
       operationId: archiveTaxonomy
-      description: Owner-organization taxonomy MVP. No automatic retries or
-        history/sharing access.
+      description: Owner-organization taxonomy MVP. No automatic retries or history/sharing access.
       security:
         - CognitoJwt:
             - quotes-api/access
@@ -1493,6 +1482,163 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/TaxonomyArchiveInput"
+  /organizations/{orgId}/principals:
+    get:
+      operationId: listPrincipals
+      description: Shared principal directory; active organization membership required.
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      parameters:
+        - in: path
+          name: orgId
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - in: query
+          name: page
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - in: query
+          name: pageSize
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrincipalListResponse"
+        "401":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+    post:
+      operationId: createPrincipal
+      description: Organization admins add a global principal. Name and registrable website domain are
+        independently unique.
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      parameters:
+        - in: path
+          name: orgId
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+      responses:
+        "201":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrincipalResponse"
+        "401":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PrincipalInput"
 components:
   schemas:
     Health:
@@ -1552,13 +1698,11 @@ components:
         id:
           type: string
           pattern: ^[1-9][0-9]{0,18}$
-          description: Positive bigint identifier encoded as a decimal string (maximum
-            9223372036854775807).
+          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
         organizationId:
           type: string
           pattern: ^[1-9][0-9]{0,18}$
-          description: Positive bigint identifier encoded as a decimal string (maximum
-            9223372036854775807).
+          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
         customerId:
           type: integer
           format: int32
@@ -1576,8 +1720,7 @@ components:
         modifiedBy:
           type: string
           pattern: ^[1-9][0-9]{0,18}$
-          description: Positive bigint identifier encoded as a decimal string (maximum
-            9223372036854775807).
+          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
         modifiedByName:
           type: string
         modifiedWhen:
@@ -1586,8 +1729,7 @@ components:
         ownerId:
           type: string
           pattern: ^[1-9][0-9]{0,18}$
-          description: Positive bigint identifier encoded as a decimal string (maximum
-            9223372036854775807).
+          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
           nullable: true
         ownerName:
           type: string
@@ -1611,8 +1753,7 @@ components:
         id:
           type: string
           pattern: ^[1-9][0-9]{0,18}$
-          description: Positive bigint identifier encoded as a decimal string (maximum
-            9223372036854775807).
+          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
         name:
           type: string
       required:
@@ -1635,8 +1776,7 @@ components:
         ownerId:
           type: string
           pattern: ^[1-9][0-9]{0,18}$
-          description: Positive bigint identifier encoded as a decimal string (maximum
-            9223372036854775807).
+          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
           nullable: true
       required:
         - ownerId
@@ -1674,8 +1814,7 @@ components:
         id:
           type: string
           pattern: ^[1-9][0-9]{0,18}$
-          description: Positive bigint identifier encoded as a decimal string (maximum
-            9223372036854775807).
+          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
         email:
           type: string
           format: email
@@ -1693,8 +1832,7 @@ components:
         id:
           type: string
           pattern: ^[1-9][0-9]{0,18}$
-          description: Positive bigint identifier encoded as a decimal string (maximum
-            9223372036854775807).
+          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
         name:
           type: string
         role:
@@ -1714,13 +1852,11 @@ components:
         id:
           type: string
           pattern: ^[1-9][0-9]{0,18}$
-          description: Positive bigint identifier encoded as a decimal string (maximum
-            9223372036854775807).
+          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
         userId:
           type: string
           pattern: ^[1-9][0-9]{0,18}$
-          description: Positive bigint identifier encoded as a decimal string (maximum
-            9223372036854775807).
+          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
         email:
           type: string
           format: email
@@ -2056,6 +2192,11 @@ components:
           nullable: true
         content:
           $ref: "#/components/schemas/TaxonomyContent"
+        principalId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+          nullable: true
       required:
         - id
         - versionNumber
@@ -2063,6 +2204,7 @@ components:
         - modifiedBy
         - changeSummary
         - content
+        - principalId
     Taxonomy:
       type: object
       additionalProperties: false
@@ -2102,6 +2244,12 @@ components:
             - canPreview
         version:
           $ref: "#/components/schemas/TaxonomyVersion"
+        principalId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+        principalName:
+          type: string
       required:
         - id
         - ownerOrganizationId
@@ -2110,6 +2258,8 @@ components:
         - currentVersionId
         - permissions
         - version
+        - principalId
+        - principalName
     TaxonomyResponse:
       type: object
       additionalProperties: false
@@ -2139,8 +2289,13 @@ components:
           type: string
           maxLength: 500
           nullable: true
+        principalId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
       required:
         - content
+        - principalId
     TaxonomySaveInput:
       type: object
       additionalProperties: false
@@ -2155,9 +2310,14 @@ components:
           type: string
           maxLength: 500
           nullable: true
+        principalId:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
       required:
         - expectedVersionId
         - content
+        - principalId
     TaxonomyArchiveInput:
       type: object
       additionalProperties: false
@@ -2336,6 +2496,12 @@ components:
                 required:
                   - id
                   - name
+              principalId:
+                type: string
+                maxLength: 19
+                pattern: ^[1-9][0-9]{0,18}$
+              principalName:
+                type: string
             required:
               - id
               - productFamilyName
@@ -2343,7 +2509,78 @@ components:
               - versionNumber
               - modifiedAt
               - modifiedBy
+              - principalId
+              - principalName
           minItems: 0
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalItems:
+          type: integer
+          minimum: 0
+        totalPages:
+          type: integer
+          minimum: 0
+      required:
+        - items
+        - page
+        - pageSize
+        - totalItems
+        - totalPages
+    Principal:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          maxLength: 19
+          pattern: ^[1-9][0-9]{0,18}$
+        name:
+          type: string
+          maxLength: 120
+        websiteUrl:
+          type: string
+          format: uri
+          maxLength: 2048
+      required:
+        - id
+        - name
+        - websiteUrl
+    PrincipalInput:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        websiteUrl:
+          type: string
+          minLength: 1
+          maxLength: 2048
+      required:
+        - name
+        - websiteUrl
+    PrincipalResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        principal:
+          $ref: "#/components/schemas/Principal"
+      required:
+        - principal
+    PrincipalListResponse:
+      type: object
+      additionalProperties: false
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Principal"
         page:
           type: integer
           minimum: 1

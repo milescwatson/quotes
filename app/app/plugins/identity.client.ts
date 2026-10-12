@@ -126,6 +126,7 @@ export default defineNuxtPlugin(async () => {
     } else await auth.signIn(destination)
   }
   async function signOut() {
+    if (!window.dispatchEvent(new Event('quotes:before-sign-out', { cancelable: true }))) return
     clear()
     state.error = ''
     state.ready = true

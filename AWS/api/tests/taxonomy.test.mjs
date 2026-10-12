@@ -38,13 +38,16 @@ test('schema, service, organization access, rollback and runtime grants',async t
  const db=new PGlite();const q=(sql,args=[])=>db.query(sql,args);
  const tx=async work=>{await db.exec('BEGIN');try{const r=await work(db);await db.exec('COMMIT');return r;}catch(e){await db.exec('ROLLBACK');throw e;}};
  const service=createTaxonomyService(tx);
- const call=(method,suffix='',body={},sub='admin',org='10',query={})=>service({method,path:`/organizations/${org}/taxonomies${suffix}`,body,query,identity:{issuer,sub}});
+ const call=(method,suffix='',body={},sub='admin',org='10',query={})=>service({method,path:`/organizations/${org}/taxonomies${suffix}`,body: method === 'POST' && (!suffix || suffix.endsWith('/versions')) ? {principalId:'1',...body}:body,query,identity:{issuer,sub}});
  let saved;
  try{
   await db.exec((await read('../../../database/versions/0001/identity/schema.sql')).replaceAll('INDEX ASYNC','INDEX'));
   await db.exec((await read('../../../database/versions/0002/taxonomy/schema.sql')).replaceAll('INDEX ASYNC','INDEX').replaceAll('ALTER TABLE ASYNC','ALTER TABLE'));
   await q(`INSERT INTO users(id,cognito_issuer,cognito_subject,email,normalized_email) VALUES (1,$1,'admin','a@example.com','a@example.com'),(2,$1,'editor','e@example.com','e@example.com'),(3,$1,'member','m@example.com','m@example.com'),(4,$1,'stranger','s@example.com','s@example.com')`,[issuer]);
   await db.exec(`INSERT INTO organizations(id,name,status) VALUES (10,'First','active'),(11,'Other','active'),(12,'Pending','pending'); INSERT INTO organization_memberships(organization_id,user_id,role) VALUES (10,1,'admin'),(10,2,'editor'),(10,3,'member'),(11,4,'admin'),(12,1,'admin');`);
+  await db.exec((await read('../../../database/versions/0003/principals/schema.sql')).replaceAll('INDEX ASYNC','INDEX').replaceAll('ALTER TABLE ASYNC','ALTER TABLE'));
+  await db.exec((await read('../../../database/versions/0003/principals/enforce.sql')).replaceAll('ALTER TABLE ASYNC','ALTER TABLE'));
+  await db.exec("INSERT INTO principals(id,name,normalized_name,website_url,website_key,created_by_user_id) VALUES(1,'Example','example','https://example.com','example.com',1)");
   await t.test('invalid creation rolls back; valid creation and preview',async()=>{
    await rejects(()=>call('POST','',{content:{...content(),segments:[]}}),'TAXONOMY_LIMIT_EXCEEDED');assert.equal(Number((await q('SELECT count(*) FROM taxonomies')).rows[0].count),0);
    const r=await call('POST','',{content:content(),changeSummary:'Initial'});assert.equal(r.statusCode,201);saved=r.body.taxonomy;assert.equal(saved.version.versionNumber,1);
@@ -74,13 +77,14 @@ test('schema, service, organization access, rollback and runtime grants',async t
   await t.test('failed pointer update rolls back inserted version',async()=>{
    const failing=createTaxonomyService(work=>tx(client=>work({query:async(sql,args)=>sql.includes('SET current_version_id=$1')?{rows:[]}:client.query(sql,args)})));
    const c=editable(saved.version.content);c.basePrice='111';
-   await rejects(()=>failing({method:'POST',path:`/organizations/10/taxonomies/${saved.id}/versions`,body:{expectedVersionId:saved.currentVersionId,content:c},identity:{issuer,sub:'admin'}}),'CONCURRENT_CHANGE');
+   await rejects(()=>failing({method:'POST',path:`/organizations/10/taxonomies/${saved.id}/versions`,body:{principalId:'1',expectedVersionId:saved.currentVersionId,content:c},identity:{issuer,sub:'admin'}}),'CONCURRENT_CHANGE');
    assert.equal(Number((await q('SELECT count(*) FROM taxonomy_versions')).rows[0].count),2);
    assert.equal((await call('GET',`/${saved.id}`)).body.taxonomy.currentVersionId,saved.currentVersionId);
   });
   await t.test('runtime can create/save but cannot rewrite history or ownership',async()=>{
    await db.exec('CREATE ROLE taxonomy_api; CREATE ROLE taxonomy_operator;');const grants=s=>s.replaceAll(':"api_role"','taxonomy_api').replaceAll(':"operator_role"','taxonomy_operator');
    await db.exec(grants(await read('../../../database/versions/0001/identity/permissions.sql')));await db.exec(grants(await read('../../../database/versions/0002/taxonomy/permissions.sql')));
+   await db.exec(grants(await read('../../../database/versions/0003/principals/permissions.sql')));
    await db.exec('SET ROLE taxonomy_api');try{
     assert.equal((await call('POST','',{content:content()})).statusCode,201);
     const c=editable(saved.version.content);c.basePrice='112';saved=(await call('POST',`/${saved.id}/versions`,{expectedVersionId:saved.currentVersionId,content:c})).body.taxonomy;

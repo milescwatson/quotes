@@ -59,3 +59,7 @@ rejects the PostgreSQL `statement_timeout` startup parameter. Both API and
 operator inventory connections retain verified TLS and short-lived IAM tokens.
 
 Development database schemas and grants are now installed and tested through the actual Lambda IAM role. See [database deployment status](../../database/DEPLOYMENTS.md). This does not imply the locally implemented API has been deployed.
+
+## Configuration Editor and principals
+
+Task 4000 adds authenticated principal GET/POST routes and requires `principalId` on taxonomy creation/version saves. Taxonomy lists accept the single optional `principalId` filter. Principals are shared globally, but creating one requires admin membership in the selected active organization. See [principal semantics](../../design/principals/specification.md) and [0003 migration instructions](../../database/versions/0003/principals/README.md). Deploy schema/backfill/enforcement/grants before this API. The smoke handler now also requires the principal schema. No migration or public API deployment is performed by building/testing locally.

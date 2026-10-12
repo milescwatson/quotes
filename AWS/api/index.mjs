@@ -1,6 +1,7 @@
 import { getPool, transactions } from './database.mjs';
 import { createIdentityService, HttpError } from './identity.mjs';
 import { createTaxonomyService } from './taxonomy.mjs';
+import { createPrincipalService } from './principals.mjs';
 import { MAX_BYTES } from './taxonomy-content.mjs';
 export const taxonomyRoutes = [
   'GET /organizations/{orgId}/taxonomies',
@@ -10,7 +11,9 @@ export const taxonomyRoutes = [
   'POST /organizations/{orgId}/taxonomies/{taxonomyId}/preview',
   'POST /organizations/{orgId}/taxonomies/{taxonomyId}/archive',
 ];
+export const principalRoutes = ['GET /organizations/{orgId}/principals', 'POST /organizations/{orgId}/principals'];
 const routes = new Set([
+  ...principalRoutes,
   ...taxonomyRoutes,
   'POST /me/bootstrap',
   'GET /me',
@@ -29,6 +32,7 @@ const routes = new Set([
 export function createHandler({
   service,
   taxonomyService,
+  principalService,
   fetchUser = fetch,
   env = process.env,
 } = {}) {
@@ -112,7 +116,8 @@ export function createHandler({
           'EMAIL_UNVERIFIED',
           'Verify your email address before continuing.',
         );
-      const isTaxonomy = taxonomyRoutes.includes(event.routeKey);
+      const isPrincipal = principalRoutes.includes(event.routeKey);
+      const isTaxonomy = taxonomyRoutes.includes(event.routeKey) || isPrincipal;
       const decodedBody = event.isBase64Encoded
         ? Buffer.from(event.body || '', 'base64').toString('utf8') : (event.body || '');
       if (isTaxonomy && Buffer.byteLength(decodedBody, 'utf8') > MAX_BYTES)
@@ -128,7 +133,9 @@ export function createHandler({
           'The request is not valid JSON.',
         );
       }
-      const execute = isTaxonomy
+      const execute = isPrincipal
+        ? (principalService || createPrincipalService(transactions(getPool(), { attempts: 1 })))
+        : isTaxonomy
         ? (taxonomyService || createTaxonomyService(transactions(getPool(), { attempts: 1 })))
         : (service || createIdentityService(transactions(getPool())));
       const result = await execute({

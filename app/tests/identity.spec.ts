@@ -210,7 +210,7 @@ test('short organization links survive reloads and legacy links redirect', async
   await expect(page.getByLabel('Organization name')).toBeVisible()
   await page.getByLabel('Organization name').fill('Renamed organization')
   await page.getByRole('button', { name: 'Save changes' }).click()
-  await expect(page.getByRole('main').getByRole('status')).toContainText('Organization updated.')
+  await expect(page.getByRole('main').getByRole('status').filter({ hasText: 'Organization updated.' })).toContainText('Organization updated.')
   await page.reload()
   await expect(page.getByRole('button', { name: 'Switch organization' })).toContainText('Renamed organization')
   await expect(page).toHaveURL(new RegExp(`/organizations/${shortId(org)}/settings`))

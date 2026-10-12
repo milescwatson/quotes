@@ -1,5 +1,8 @@
 # Product taxonomy MVP specification
 
+Task 4000 extension: configurations now require a shared principal. Create/save requests include `principalId`, principal-only saves create a version, and the catalog supports a single principal filter. See the [principal specification](../principals/specification.md) and current [OpenAPI](../../AWS/openapi.yaml) for the extended contract. The original organization ownership and all other content rules remain in force. Migration 0003 and deployment are pending.
+
+
 Status: revised October 10, 2026 to reflect the selected MVP decisions. This is the current product and data-model specification. The [API specification](api-specification.md) defines exact payloads, validation, limits, and errors; the [implementation plan](../../tasks/3000/plan.md) defines delivery steps. The API and first-install SQL are implemented locally; see the [implementation record](../../tasks/3000/implementation.md). Live deployment remains pending.
 
 ## Purpose and scope

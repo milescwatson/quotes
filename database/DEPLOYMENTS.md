@@ -7,6 +7,7 @@ This is the environment ledger for database schema and grants. Update it after e
 | 0001 identity | Applied — 2026-10-10 | Not applied | Not applied |
 | 0001 quotes | Applied — 2026-10-10 | Not applied | Not applied |
 | 0002 JSON taxonomy | Applied — 2026-10-10 | Not applied | Not applied |
+| 0003 shared principals | Not applied | Not applied | Not applied |
 | 0001 legacy relational taxonomy | Excluded — never install on DSQL | Excluded | Excluded |
 
 “Applied” means every schema statement and associated permission grant completed, asynchronous jobs succeeded, and catalog verification passed. “Partial” means some changes exist but the module is not ready. “Not applied” means no deployment has been performed by this project; it is not a claim that an independently managed database was inspected.
@@ -55,3 +56,7 @@ DSQL does not support `SET ROLE`, so verification used actual runtime IAM authen
 - Local regression checks: 34 API tests and 12 database tests (including 36 legacy schema assertions).
 
 The application Lambda and public API routes were not released by this database deployment. Smoke tests used one rolled-back taxonomy transaction, so committed taxonomy concurrency races and end-to-end Cognito/API tests remain required before releasing taxonomy traffic. A dedicated operator IAM mapping also remains to be configured when an operator principal is selected. Staging and production remain untouched.
+
+## Pending shared principals migration
+
+Task 4000 adds [0003 principals](versions/0003/principals/README.md). Its local schema/API checks do not deploy it. Re-inventory existing configurations and provide explicit principal mappings before enforcement and API release. Existing historical snapshots retain their content and any absent pre-migration attribution.

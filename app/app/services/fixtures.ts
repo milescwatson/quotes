@@ -1,3 +1,4 @@
+import { createConfigurationFixtures } from './configuration-fixtures'
 import {
   ApiError,
   type ApiOptions,
@@ -9,6 +10,7 @@ import type { Quote } from '~/types/quotes'
 export function createFixtures() {
   if (!import.meta.dev)
     throw new Error('Fixtures are unavailable in production')
+  const configurations = createConfigurationFixtures()
   const id = (n: number) => String(n)
   let nextMemberId = 100
   const me = id(1),
@@ -120,6 +122,7 @@ export function createFixtures() {
     },
     scenario(name: string) {
       state = seed(name)
+      configurations.reset()
       save()
     },
     async request<T>(path: string, options: ApiOptions = {}): Promise<T> {
@@ -169,6 +172,7 @@ export function createFixtures() {
             'NOT_FOUND',
             'You no longer have access to this organization.',
           )
+        if (['taxonomies', 'principals'].includes(parts[2] || '')) return structuredClone(configurations.request(path, method, body, org!, state.user)) as T
         const listingQuotes = parts.length === 3 && parts[2] === 'quotes' && method === 'GET'
         const listingOwners = parts.length === 3 && parts[2] === 'quote-owners' && method === 'GET'
         const editingOwner = parts.length === 4 && parts[2] === 'quotes' && method === 'PATCH'

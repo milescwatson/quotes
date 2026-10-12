@@ -58,7 +58,8 @@ async function save() {
         </div>
       </form>
     </section>
-    <section v-else class="panel empty-state">
+    <ConfigurationAdmin v-if="data?.organization.role === 'admin' && identity.state.organizations.find(o => o.id === identity.organizationId(route.params.orgId))?.role === 'admin'" :key="String(route.params.orgId)" :organization="String(route.params.orgId)" />
+    <section v-if="data?.organization.role !== 'admin'" class="panel empty-state">
       <h2>Administrator access required</h2>
       <p>Only your organization’s administrators can change these settings.</p>
     </section></ResourceState
