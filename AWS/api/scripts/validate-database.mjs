@@ -42,8 +42,8 @@ try{
   if(orgId)await q('DELETE FROM organizations WHERE id=$1',[orgId]);
   if(userId)await q('DELETE FROM users WHERE id=$1',[userId]);
   await q('COMMIT');result.identityFixtureDeleted=true;
-  result.rowCounts={};for(const table of ['users','organizations','organization_memberships','identity_audit_events','quotes','taxonomies','taxonomy_versions'])result.rowCounts[table]=Number((await q(`SELECT count(*) AS n FROM public.${table}`))[0].n);
+  result.rowCounts={};for(const table of ['users','organizations','organization_memberships','identity_audit_events','quotes','taxonomies','taxonomy_versions','principals'])result.rowCounts[table]=Number((await q(`SELECT count(*) AS n FROM public.${table}`))[0].n);
  }catch(e){await db.query('ROLLBACK').catch(()=>{});result.cleanupError=e.message;process.exitCode=1;}
  await db.end();await rm(dir,{recursive:true,force:true});result.completedAt=new Date().toISOString();
- await writeFile(new URL('../../../database/deployments/development-validation.json',import.meta.url),JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result,null,2));
+ await writeFile(new URL('../../../database/deployments/development-0003-validation.json',import.meta.url),JSON.stringify(result,null,2)+'\n');console.log(JSON.stringify(result,null,2));
 }

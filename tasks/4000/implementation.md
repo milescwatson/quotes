@@ -1,6 +1,6 @@
 # Configuration Editor implementation
 
-Implemented locally on October 12, 2026. No database migration or cloud deployment was performed.
+Implemented locally on October 12, 2026. Database migration 0003 was subsequently applied to development only on October 12, 2026. The API is deployed to development as Lambda version 4. Signed-in browser verification remains outstanding. See the [database ledger](../../database/DEPLOYMENTS.md).
 
 ## Delivered
 
@@ -32,6 +32,6 @@ Coverage includes independent duplicate constraints, root-domain variants, autho
 - [Editor mobile](screenshots/editor-mobile.png)
 - [Admin mobile](screenshots/admin-mobile.png)
 
-## Release gate
+## Remaining release gate
 
-Follow the [migration runbook](../../database/versions/0003/principals/README.md). Apply migration 0003 with writes paused, await asynchronous DSQL validation/index jobs, and verify runtime grants. If existing configurations are present, obtain their explicit mapping to real principals, append current snapshots with those assignments, and retain historical snapshots unchanged. Do not invent a default principal. Validate all current assignments before releasing the matching API and UI. Live DSQL validation and deployment remain outstanding.
+Follow the [migration runbook](../../database/versions/0003/principals/README.md). Apply migration 0003 with writes paused, await asynchronous DSQL validation/index jobs, and verify runtime grants. If existing configurations are present, obtain their explicit mapping to real principals, append current snapshots with those assignments, and retain historical snapshots unchanged. Do not invent a default principal. Validate all current assignments before releasing the matching API and UI. Development schema, DSQL catalog validation, and runtime IAM/service verification are complete; no mapping was required because the configuration tables were empty. The development API release also passed health and route-authentication checks. Staging/production remain undeployed; signed-in browser end-to-end verification remains outstanding.

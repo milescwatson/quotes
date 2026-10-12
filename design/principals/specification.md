@@ -1,6 +1,6 @@
 # Shared principals
 
-Implemented locally with task 4000; migration and API/UI deployment are pending. A principal is a business directory entry shared across organizations, not an authentication principal.
+Implemented with task 4000. Migration 0003 is applied and verified on development only; The API is also deployed to development; signed-in browser verification remains outstanding. See the [database ledger](../../database/DEPLOYMENTS.md). A principal is a business directory entry shared across organizations, not an authentication principal.
 
 Each entry has a required name and website. Organization admins create entries in Admin settings. All active organization members can read the directory to select a principal. Principal creation does not grant access to any other organization's configurations.
 

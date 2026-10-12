@@ -70,4 +70,4 @@ Run `npm test` from `AWS/api` for API integration and legacy upgrade coverage.
 
 ## Shared principals (0003)
 
-Apply the additive [principal migration](versions/0003/principals/README.md) after the JSON taxonomy schema and before releasing the Configuration Editor API. It adds global name/domain uniqueness and versioned principal assignments; it requires explicit mapping when configurations already exist. The original first-install deployment script does not apply 0003.
+Apply the additive [principal migration](versions/0003/principals/README.md) after the JSON taxonomy schema and before releasing the Configuration Editor API. It adds global name/domain uniqueness and versioned principal assignments; it requires explicit mapping when configurations already exist. The deployment script uses the explicit development-only `apply-principals` mode for 0003; its original `apply` mode remains the baseline installer.

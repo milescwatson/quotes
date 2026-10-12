@@ -1,0 +1,50 @@
+{
+  "environment": "development",
+  "startedAt": "2026-10-12T22:09:02.194Z",
+  "fixture": {
+    "userId": "4",
+    "orgId": "3",
+    "runId": "3f044086-21a2-4079-a1f2-92334802f81f"
+  },
+  "functionArn": "arn:aws:lambda:us-west-2:415221799122:function:quotes-development-db-check-3f044086",
+  "invocation": {
+    "StatusCode": 200,
+    "ExecutedVersion": "$LATEST"
+  },
+  "smoke": {
+    "status": "passed",
+    "checks": [
+      "IAM-authenticated quotes_api connection",
+      "Runtime identity insert with generated ID",
+      "Shared principal created with root-domain uniqueness",
+      "Create with generated IDs and deferred current-version foreign key",
+      "Catalog and detail",
+      "Exact-price configuration preview",
+      "No-op save retains version",
+      "Principal-only save preserves historical assignment and principal filter",
+      "Changed save increments version",
+      "Stale save rejected",
+      "2000-option JSON document stored and read",
+      "Archive blocks preview",
+      "All deferred constraints validated",
+      "Smoke taxonomy fixture rolled back",
+      "Independent name and root-domain duplicates rejected and rolled back",
+      "Runtime forbidden historical/ownership/deletion writes rejected"
+    ],
+    "largeDocumentBytes": 404104
+  },
+  "status": "passed",
+  "temporaryFunctionDeleted": true,
+  "identityFixtureDeleted": true,
+  "rowCounts": {
+    "users": 1,
+    "organizations": 1,
+    "organization_memberships": 1,
+    "identity_audit_events": 3,
+    "quotes": 0,
+    "taxonomies": 0,
+    "taxonomy_versions": 0,
+    "principals": 0
+  },
+  "completedAt": "2026-10-12T22:09:14.308Z"
+}

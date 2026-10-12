@@ -1,6 +1,6 @@
 # Shared principals and configuration ownership
 
-Implemented locally as migration 0003 and the principal API. The existing schema and organization authorization model are retained, with an additive principal directory and a required principal relationship for each taxonomy (product configuration). No migration has been applied. Follow the [migration runbook](../../database/versions/0003/principals/README.md) before deployment.
+Implemented locally as migration 0003 and the principal API. The existing schema and organization authorization model are retained, with an additive principal directory and a required principal relationship for each taxonomy (product configuration). Migration 0003 is applied to development only; see the [deployment ledger](../../database/DEPLOYMENTS.md). Follow the [migration runbook](../../database/versions/0003/principals/README.md) before deployment.
 
 ## Confirmed requirements
 

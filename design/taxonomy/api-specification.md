@@ -1,6 +1,6 @@
 # Taxonomy MVP API specification
 
-Task 4000 extension: configurations now require a shared principal. Create/save requests include `principalId`, principal-only saves create a version, and the catalog supports a single principal filter. See the [principal specification](../principals/specification.md) and current [OpenAPI](../../AWS/openapi.yaml) for the extended contract. The original organization ownership and all other content rules remain in force. Migration 0003 and deployment are pending.
+Task 4000 extension: configurations now require a shared principal. Create/save requests include `principalId`, principal-only saves create a version, and the catalog supports a single principal filter. See the [principal specification](../principals/specification.md) and current [OpenAPI](../../AWS/openapi.yaml) for the extended contract. The original organization ownership and all other content rules remain in force. Migration 0003 is applied to development only; the API is also deployed to development; signed-in browser verification remains outstanding. See the [database ledger](../../database/DEPLOYMENTS.md).
 
 
 Status: implemented locally, October 10, 2026, using Aurora DSQL and one JSON document per version. See the [implementation record](../../tasks/3000/implementation.md) for verification and outstanding live deployment gates, and the [implementation plan](../../tasks/3000/plan.md) for scope.

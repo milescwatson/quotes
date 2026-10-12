@@ -52,3 +52,11 @@ The first configuration-only rebuild still served empty public runtime settings:
 ## Non-versioned API release — October 12, 2026
 
 The frontend's removal of `/v1` initially reached Amplify while API Gateway and Lambda still used versioned routes, causing `POST /me/bootstrap` to return 404. Built and deployed the current API through Terraform: API Gateway, Lambda, and the development alias were updated in place, with no resources added or destroyed. The alias now points to Lambda version 3. All 34 local API tests passed. Live unauthenticated `POST /me/bootstrap` now returns the expected 401, and `GET /health` returns 200. An authenticated account bootstrap still requires user verification.
+
+## Configuration Editor API release — October 12, 2026
+
+Deployed the current API after development database migration 0003. Terraform updated API Gateway, the Lambda bundle, and its development alias in place: zero resources added, three changed, zero destroyed. The development alias now points to Lambda version 4.
+
+All 44 local API tests passed and the API bundle built successfully. Live checks returned HTTP 200 for health and HTTP 401 for unauthenticated principal list/create and taxonomy list requests. Both principal routes use the JWT authorizer. The preceding database verification passed through the actual runtime IAM role, including principal uniqueness, reassignment/history, filtering, and restricted grants; see the database ledger. A real signed-in browser end-to-end check remains outstanding.
+
+This release targets development only. Git pushes to development trigger Amplify for the frontend; Terraform remains the API deployment mechanism. Staging and production were not modified.

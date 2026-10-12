@@ -7,7 +7,7 @@ This is the environment ledger for database schema and grants. Update it after e
 | 0001 identity | Applied — 2026-10-10 | Not applied | Not applied |
 | 0001 quotes | Applied — 2026-10-10 | Not applied | Not applied |
 | 0002 JSON taxonomy | Applied — 2026-10-10 | Not applied | Not applied |
-| 0003 shared principals | Not applied | Not applied | Not applied |
+| 0003 shared principals | Applied — 2026-10-12 | Not applied | Not applied |
 | 0001 legacy relational taxonomy | Excluded — never install on DSQL | Excluded | Excluded |
 
 “Applied” means every schema statement and associated permission grant completed, asynchronous jobs succeeded, and catalog verification passed. “Partial” means some changes exist but the module is not ready. “Not applied” means no deployment has been performed by this project; it is not a claim that an independently managed database was inspected.
@@ -18,8 +18,8 @@ This is the environment ledger for database schema and grants. Update it after e
 - Region: `us-west-2`
 - DSQL cluster: `3zuetvjhixkp3qeuzxxosvlssq`
 - Database/schema: `postgres.public`
-- Applied: October 10, 2026 at 21:35:24 UTC
-- Schema verification: seven tables; all foreign keys/checks validated; all indexes valid.
+- Baseline applied: October 10, 2026 at 21:35:24 UTC
+- Baseline schema verification: seven tables; all foreign keys/checks validated; all indexes valid.
 - Restricted database roles: `quotes_api` and `quotes_operator`.
 - Runtime IAM mapping: `arn:aws:iam::415221799122:role/quotes-development-api` → `quotes_api`. The operator role has SQL grants but no IAM principal mapping yet.
 - Preflight: no public application tables, application database roles, or IAM/database role mappings.
@@ -57,6 +57,14 @@ DSQL does not support `SET ROLE`, so verification used actual runtime IAM authen
 
 The application Lambda and public API routes were not released by this database deployment. Smoke tests used one rolled-back taxonomy transaction, so committed taxonomy concurrency races and end-to-end Cognito/API tests remain required before releasing taxonomy traffic. A dedicated operator IAM mapping also remains to be configured when an operator principal is selected. Staging and production remain untouched.
 
-## Pending shared principals migration
+## Shared principals development deployment
 
-Task 4000 adds [0003 principals](versions/0003/principals/README.md). Its local schema/API checks do not deploy it. Re-inventory existing configurations and provide explicit principal mappings before enforcement and API release. Existing historical snapshots retain their content and any absent pre-migration attribution.
+Migration [0003 principals](versions/0003/principals/README.md) was applied to the same development target on October 12, 2026 at 22:08:29 UTC. Staging and production remain not applied.
+
+- Command: `node AWS/api/scripts/deploy-database.mjs apply-principals`.
+- Preflight confirmed zero taxonomies and zero historical versions; no mapping or backfill was required.
+- All schema statements and runtime/operator grants completed. All asynchronous jobs succeeded; catalog verification confirmed eight tables, valid indexes, and validated constraints, including the historical principal-required check on the empty development tables.
+- Statement-level evidence: [development-0003.json](deployments/development-0003.json). The original baseline journal and validation records are retained unchanged.
+- Runtime IAM/service verification passed at 22:09:14 UTC: [development-0003-validation.json](deployments/development-0003-validation.json). Checks covered principal creation, independent name/root-domain duplicates, principal-only versioning with historical preservation, principal filtering, ordinary taxonomy flows, deferred constraints, and forbidden runtime writes.
+- Test configuration/principal writes were rolled back, and the isolated identity fixture and temporary Lambda were deleted. Taxonomy, version, and principal tables remain empty; pre-existing identity data remains.
+- Application/API deployment is separate. The API was subsequently released to development as version 4; see [API release record](../AWS/DEPLOYMENT.md).
