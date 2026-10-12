@@ -68,3 +68,5 @@ Migration [0003 principals](versions/0003/principals/README.md) was applied to t
 - Runtime IAM/service verification passed at 22:09:14 UTC: [development-0003-validation.json](deployments/development-0003-validation.json). Checks covered principal creation, independent name/root-domain duplicates, principal-only versioning with historical preservation, principal filtering, ordinary taxonomy flows, deferred constraints, and forbidden runtime writes.
 - Test configuration/principal writes were rolled back, and the isolated identity fixture and temporary Lambda were deleted. Taxonomy, version, and principal tables remain empty; pre-existing identity data remains.
 - Application/API deployment is separate. The API was subsequently released to development as version 4; see [API release record](../AWS/DEPLOYMENT.md).
+
+The API package and deployment scripts moved from `AWS/api/` to `server/` in October 2026. Historical commands retain their original paths; current equivalents use `node server/scripts/deploy-database.mjs`.

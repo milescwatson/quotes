@@ -38,3 +38,5 @@ Follow the [installation and recovery procedure](../../database/versions/0002/ta
 4. Deploy the Lambda and explicit OpenAPI routes only after schema readiness; smoke-test Cognito authentication and organization boundaries.
 
 If release verification fails, disable/revert the new routes while preserving all saved data. This record confirms local code completion, not production readiness or deployment.
+
+API package relocation (October 2026): historical paths above used `AWS/api/`; current source, tests, scripts, and build commands use [server/](../../server/README.md).

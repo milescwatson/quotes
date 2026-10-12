@@ -49,7 +49,7 @@ This command needs the full workspace with `../AWS/openapi.yaml`; ordinary front
 
 ## Development release
 
-Pushes to `development` rebuild only the Amplify frontend. The API and Terraform live in the sibling `AWS/` folder in this repository. The root `amplify.yml` sets the frontend application root to `app/`. Coordinate the backend/schema/Cognito deployment before pushing a UI that depends on it. See `../tasks/1000/implementation.md` and `../AWS/api/README.md` in the full workspace.
+Pushes to `development` rebuild only the Amplify frontend. The API lives in `server/` and Terraform in `AWS/` in this repository. The root `amplify.yml` sets the frontend application root to `app/`. Coordinate the backend/schema/Cognito deployment before pushing a UI that depends on it. See `../tasks/1000/implementation.md` and `../server/README.md` in the full workspace.
 
 Admins add an existing account by email and role from Members. Users must sign in once to initialize their account. Membership is immediately available through the API; the organization chooser refreshes on focus and every 30 seconds while visible. No acceptance or email delivery is required.
 

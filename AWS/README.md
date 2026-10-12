@@ -2,11 +2,11 @@
 
 Terraform is run locally. Only Amplify rebuilds automatically when `development` is pushed to `https://github.com/milescwatson/quotes`.
 
-The Git repository begins at the parent workspace. It tracks `app/`, `AWS/`, `database/`, `design/`, and `tasks/` together. Local credentials, Terraform state, and build artifacts are excluded.
+The Git repository begins at the parent workspace. It tracks `app/`, `server/`, `AWS/`, `database/`, `design/`, and `tasks/` together. Local credentials, Terraform state, and build artifacts are excluded.
 
 ## Scope
 
-This first deployment provisions Amplify Hosting, Aurora DSQL, Cognito, an OpenAPI HTTP API with Lambda, daily seven-day backups, and basic CloudWatch alarms. It hosts the existing Nuxt starter. Only `GET /health` and authenticated `GET /session` are implemented; product endpoints, database schema/role bootstrap, user sign-in UI, and recovery drills remain application/operations work.
+The infrastructure provisions Amplify Hosting, Aurora DSQL, Cognito, an OpenAPI HTTP API with Lambda, daily seven-day backups, and basic CloudWatch alarms. The API implementation lives in `server/` and includes health/session, profiles, organizations/members, quotes, taxonomies, and principals. `AWS/openapi.yaml` defines the public contract and Gateway integration. Development deployment and database evidence are recorded in [DEPLOYMENT.md](DEPLOYMENT.md) and the [database ledger](../database/DEPLOYMENTS.md).
 
 Development account: `415221799122`, name `quotes-development`, region `us-west-2`. Staging and production are not deployed.
 
@@ -23,6 +23,8 @@ AWS_LOGIN_CACHE_DIRECTORY="$HOME/.cache/quotes-aws-login" aws login --profile qu
 ```
 
 ## Terraform
+
+Build the Lambda package first with `npm --prefix server ci` and `npm --prefix server run build`. Its archive source is `server/dist/`; AWS contains infrastructure, provisioning scripts, and configuration.
 
 Run from the parent project directory. Review the plan before applying. Account allowlisting prevents applying this root to a different account.
 

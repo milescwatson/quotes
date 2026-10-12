@@ -47,3 +47,5 @@ From `AWS/api/`, run `npm ci`, `npm test`, and `npm run build`. Terraform packag
 5. Complete [live identity validation](../../design/identity/validation.md), particularly Cognito signup/verification/recovery, DSQL foreign keys and role grants, concurrent bootstrap/acceptance/final-admin mutations, transaction rollback, and SES retry/delivery.
 
 The existing Git repository covers `app/` only. The API, infrastructure, and design/task documents are outside that repository and need their own release/version-control handling. Taxonomy storage and taxonomy/quote UI were not changed.
+
+API package relocation (October 2026): historical paths above used `AWS/api/`; current source, tests, scripts, and build commands use [server/](../../server/README.md).

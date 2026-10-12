@@ -65,8 +65,8 @@ Alternatively, set `PGLITE_MODULE` to an installed PGlite `dist/index.js` and ru
 triggers and reapply the functions to verify replacement preserves behavior.
 The original taxonomy suite tests the legacy relational model. The new
 `tests/taxonomy-json.test.mjs` tests JSONB constraints and immutable grants;
-`AWS/api/tests/taxonomy.test.mjs` covers the MVP API using the new schema.
-Run `npm test` from `AWS/api` for API integration and legacy upgrade coverage.
+`server/tests/taxonomy.test.mjs` covers the MVP API using the new schema.
+Run `npm test` from `server` for API integration and legacy upgrade coverage.
 
 ## Shared principals (0003)
 

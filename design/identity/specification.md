@@ -1,6 +1,6 @@
 # Identity and organization specification
 
-Status: schema and application contract only. The API and UI live in the sibling AWS/api and app packages. This schema package does not deploy cloud migrations. See [schema.sql](../../database/versions/0001/identity/schema.sql), [permissions.sql](../../database/versions/0001/identity/permissions.sql), and [validation.md](validation.md).
+Status: schema and application contract only. The API and UI live in the sibling server and app packages. This schema package does not deploy cloud migrations. See [schema.sql](../../database/versions/0001/identity/schema.sql), [permissions.sql](../../database/versions/0001/identity/permissions.sql), and [validation.md](validation.md).
 
 ## Decisions
 
@@ -85,7 +85,7 @@ Role changes and membership periods are captured in audit event details, with be
 
 ## HTTP contracts
 
-These routes are now implemented in `AWS/api/` and declared in `AWS/openapi.yaml` as part of [task 1000](../../tasks/1000/implementation.md); live deployment has not been performed by that task. All require validated Cognito access tokens and return private/no-store responses. Organization IDs are explicit path parameters. Lists use opaque cursor pagination, default 50 and maximum 100 items, ordered by creation/join time plus ID. Responses never expose Cognito subjects, AWS actor principals, or internal errors to ordinary members.
+These routes are now implemented in `server/` and declared in `AWS/openapi.yaml` as part of [task 1000](../../tasks/1000/implementation.md); live deployment has not been performed by that task. All require validated Cognito access tokens and return private/no-store responses. Organization IDs are explicit path parameters. Lists use opaque cursor pagination, default 50 and maximum 100 items, ordered by creation/join time plus ID. Responses never expose Cognito subjects, AWS actor principals, or internal errors to ordinary members.
 
 | Operation | Contract |
 | --- | --- |

@@ -20,7 +20,7 @@ The frontend uses Previous/Next controls, retains the last successful page on a 
 
 ## Local checks and preview
 
-From `AWS/api`, run `npm test` and `npm run build`. The quote tests run the real schema and service against PGlite, including constraints, privileges, numeric ID precision, attribution, pagination, and authorization. The only DDL translation is `INDEX ASYNC` to `INDEX`; this is not a DSQL emulator.
+From `server`, run `npm test` and `npm run build`. The quote tests run the real schema and service against PGlite, including constraints, privileges, numeric ID precision, attribution, pagination, and authorization. The only DDL translation is `INDEX ASYNC` to `INDEX`; this is not a DSQL emulator.
 
 From `app`, run `npm run generate:api`, `npm run typecheck`, `npm run test:e2e`, `npm run test:auth`, and `npm run build`. To run fixture browser tests alongside an existing dev server, set `PLAYWRIGHT_PORT=3200 NUXT_BUILD_DIR=node_modules/.cache/nuxt/quotes-e2e` for `npm run test:e2e`.
 

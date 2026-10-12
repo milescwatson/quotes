@@ -16,7 +16,7 @@ The subsequent development installation completed on October 10, 2026. See the
 [deployment ledger](../../../DEPLOYMENTS.md) for applied modules and live checks.
 Repeat inventory before any future installation.
 
-The read-only inventory script is `AWS/api/scripts/inventory-taxonomy.mjs`.
+The read-only inventory script is `server/scripts/inventory-taxonomy.mjs`.
 It requires `DSQL_ENDPOINT`, `AWS_PROFILE`, and `AWS_REGION`. It uses an operator
 IAM token in memory, only queries table/column metadata, and prints no credentials.
 The API always uses its restricted non-admin runtime role.

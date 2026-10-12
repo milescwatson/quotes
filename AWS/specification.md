@@ -9,7 +9,7 @@ Host the Quotes application in the `quotes-development` AWS account. The applica
 
 The [product goals](../design/taxonomy/goal.md) and [taxonomy MVP specification](../design/taxonomy/specification.md) establish organization-owned taxonomies with ordered JSONB version snapshots, role-restricted editing, valid-only explicit saves, and attribution on every changed version. Sharing and history browsing are deferred. Future quote snapshots must survive taxonomy changes. The [API contract](../design/taxonomy/api-specification.md) and [plan](../tasks/3000/plan.md) describe this selected design; the taxonomy runtime and first-install SQL are implemented locally. See the [implementation record](../tasks/3000/implementation.md); live installation and deployment validation remain pending.
 
-The code in `app/` now includes the identity and organization UI, with Cognito/HTTP adapters and local browser tests. `AWS/api/` implements the corresponding identity operations. See [task 1000](../tasks/1000/implementation.md) for validation and outstanding deployment, database-bootstrap, and email-worker dependencies; local implementation does not establish a working deployed product.
+The code in `app/` now includes the identity and organization UI, with Cognito/HTTP adapters and local browser tests. `server/` implements the corresponding identity operations. See [task 1000](../tasks/1000/implementation.md) for validation and outstanding deployment, database-bootstrap, and email-worker dependencies; local implementation does not establish a working deployed product.
 
 ## Environment and proposed decisions
 

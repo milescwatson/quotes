@@ -108,7 +108,7 @@ resource "aws_iam_role_policy" "api" {
 }
 data "archive_file" "api" {
   type        = "zip"
-  source_dir  = "${path.module}/../../api/dist"
+  source_dir  = "${path.module}/../../../server/dist"
   output_path = "${path.root}/.terraform/quotes-api.zip"
 }
 resource "aws_lambda_function" "api" {
