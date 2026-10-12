@@ -1,0 +1,309 @@
+{
+  "environment": "development",
+  "account": "415221799122",
+  "region": "us-west-2",
+  "commit": "529c201934f331a8743dc310fdd54cfa6cb344d1",
+  "runId": "14ebf6a6-5a35-4c7f-9f49-9c17149a686b",
+  "startedAt": "2026-10-12T22:56:29.746Z",
+  "checks": [
+    "public health, JWT rejection, and removed versioned route",
+    "real Cognito hosted login, PKCE exchange, access scope, and verified userInfo",
+    "authenticated session, idempotent bootstrap, profile read/update through deployed Lambda and DSQL",
+    "organization/profile lists, member permissions, quote pagination, owner lookup and reassignment",
+    "principal create/list/uniqueness, taxonomy create/read/filter/preview/save/no-op/conflict/archive through Gateway, Cognito, and runtime DSQL",
+    "real unverified Cognito account rejected by business identity hook"
+  ],
+  "http": [
+    {
+      "method": "GET",
+      "path": "/health",
+      "status": 200,
+      "requestId": "FJzQ6hvLvHcEMjA="
+    },
+    {
+      "method": "GET",
+      "path": "/session",
+      "status": 401,
+      "requestId": "FJzQ8jZlvHcEMtA="
+    },
+    {
+      "method": "POST",
+      "path": "/me/bootstrap",
+      "status": 401,
+      "requestId": "FJzQ8jq9vHcEMGg="
+    },
+    {
+      "method": "GET",
+      "path": "/organizations/1/principals",
+      "status": 401,
+      "requestId": "FJzQ9gxgvHcEMVg="
+    },
+    {
+      "method": "GET",
+      "path": "/v1/me",
+      "status": 404,
+      "requestId": "FJzQ9gX7vHcEM9w="
+    },
+    {
+      "method": "GET",
+      "path": "/session",
+      "status": 200,
+      "requestId": "FJzRqivoPHcEMdw="
+    },
+    {
+      "method": "POST",
+      "path": "/me/bootstrap",
+      "status": 200,
+      "requestId": "FJzRsjqqvHcEMaA="
+    },
+    {
+      "method": "POST",
+      "path": "/me/bootstrap",
+      "status": 200,
+      "requestId": "FJzR3iy2vHcEMdw="
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "status": 200,
+      "requestId": "FJzR5ix7vHcEMzA="
+    },
+    {
+      "method": "PATCH",
+      "path": "/me",
+      "status": 200,
+      "requestId": "FJzR8jbvPHcEMxw="
+    },
+    {
+      "method": "GET",
+      "path": "/me/organizations",
+      "status": 200,
+      "requestId": "FJzSEjWaPHcEM0w="
+    },
+    {
+      "method": "GET",
+      "path": "/organizations/4",
+      "status": 200,
+      "requestId": "FJzSIgwdPHcEMMQ="
+    },
+    {
+      "method": "PATCH",
+      "path": "/organizations/4",
+      "status": 200,
+      "requestId": "FJzSMjMSvHcEMBQ="
+    },
+    {
+      "method": "GET",
+      "path": "/organizations/4/members",
+      "status": 200,
+      "requestId": "FJzSPjOevHcEMiw="
+    },
+    {
+      "method": "DELETE",
+      "path": "/organizations/4/members/4",
+      "status": 409,
+      "requestId": "FJzSSgFMvHcEMGg="
+    },
+    {
+      "method": "GET",
+      "path": "/organizations/4/quotes?page=1&pageSize=1",
+      "status": 200,
+      "requestId": "FJzSVjQcPHcEMiw="
+    },
+    {
+      "method": "GET",
+      "path": "/organizations/4/quote-owners",
+      "status": 200,
+      "requestId": "FJzSYh7dvHcEMng="
+    },
+    {
+      "method": "PATCH",
+      "path": "/organizations/4/quotes/1",
+      "status": 200,
+      "requestId": "FJzSbixDvHcEMEg="
+    },
+    {
+      "method": "GET",
+      "path": "/organizations/4/quotes?ownerId=6",
+      "status": 200,
+      "requestId": "FJzSfjTSPHcEMiw="
+    },
+    {
+      "method": "PATCH",
+      "path": "/organizations/4/quotes/1",
+      "status": 200,
+      "requestId": "FJzShjkJvHcEMYQ="
+    },
+    {
+      "method": "POST",
+      "path": "/organizations/4/principals",
+      "status": 201,
+      "requestId": "FJzSlioavHcEMmg="
+    },
+    {
+      "method": "GET",
+      "path": "/organizations/4/principals",
+      "status": 200,
+      "requestId": "FJzSpizNvHcENYg="
+    },
+    {
+      "method": "POST",
+      "path": "/organizations/4/principals",
+      "status": 409,
+      "requestId": "FJzSsgMkvHcEMGg="
+    },
+    {
+      "method": "POST",
+      "path": "/organizations/4/taxonomies",
+      "status": 201,
+      "requestId": "FJzSvi3mvHcEM6g="
+    },
+    {
+      "method": "GET",
+      "path": "/organizations/4/taxonomies?principalId=7",
+      "status": 200,
+      "requestId": "FJzSzjpUvHcEMYQ="
+    },
+    {
+      "method": "GET",
+      "path": "/organizations/4/taxonomies/5",
+      "status": 200,
+      "requestId": "FJzS1jqBvHcEMYQ="
+    },
+    {
+      "method": "POST",
+      "path": "/organizations/4/taxonomies/5/preview",
+      "status": 200,
+      "requestId": "FJzS4g_5PHcEMNg="
+    },
+    {
+      "method": "POST",
+      "path": "/organizations/4/taxonomies/5/versions",
+      "status": 200,
+      "requestId": "FJzS6jgVPHcEMEQ="
+    },
+    {
+      "method": "POST",
+      "path": "/organizations/4/taxonomies/5/versions",
+      "status": 201,
+      "requestId": "FJzS9ivaPHcEMmg="
+    },
+    {
+      "method": "POST",
+      "path": "/organizations/4/taxonomies/5/versions",
+      "status": 409,
+      "requestId": "FJzS_hBBvHcEMNA="
+    },
+    {
+      "method": "POST",
+      "path": "/organizations/4/taxonomies/5/archive",
+      "status": 200,
+      "requestId": "FJzTCgXrvHcEM3w="
+    },
+    {
+      "method": "GET",
+      "path": "/organizations/4/taxonomies",
+      "status": 200,
+      "requestId": "FJzTFjCfvHcEM9g="
+    },
+    {
+      "method": "POST",
+      "path": "/organizations/4/taxonomies/5/preview",
+      "status": 409,
+      "requestId": "FJzTIgAoPHcEMug="
+    },
+    {
+      "method": "GET",
+      "path": "/me",
+      "status": 403,
+      "requestId": "FJzThh45vHcEMlg="
+    }
+  ],
+  "status": "passed",
+  "databaseFixtureCleanup": "verified",
+  "cognitoFixtureCleanup": "verified",
+  "fixtures": {
+    "userId": "6",
+    "orgId": "4",
+    "principalId": "7",
+    "taxonomyId": "5"
+  },
+  "completedAt": "2026-10-12T22:56:50.571Z",
+  "terraform": {
+    "added": 0,
+    "changed": 3,
+    "destroyed": 0,
+    "replacements": 0,
+    "postApplyPlan": "no changes",
+    "changes": [
+      "Lambda code",
+      "development alias version",
+      "existing Gateway description/default-tag drift"
+    ],
+    "schemaMigrations": false
+  },
+  "lambda": {
+    "version": "5",
+    "state": "Active",
+    "update": "Successful",
+    "hash": "HfXz7ju/nGarOxjQauKPyYBwZ0buTZoYF8OoiwTu14I=",
+    "runtime": "nodejs22.x",
+    "handler": "index.handler"
+  },
+  "gateway": {
+    "routeCount": 23,
+    "openapiParity": "passed",
+    "publicRoutes": [
+      "GET /health"
+    ],
+    "businessAuthentication": "JWT",
+    "openapiChanged": false
+  },
+  "amplify": {
+    "summary": {
+      "jobArn": "arn:aws:amplify:us-west-2:415221799122:apps/d8i1ve5prnr7w/branches/development/jobs/0000000009",
+      "jobId": "9",
+      "commitId": "529c201934f331a8743dc310fdd54cfa6cb344d1",
+      "commitMessage": "Refactor Lambda API into named Fastify server operations",
+      "commitTime": "2026-10-12T15:37:27-07:00",
+      "startTime": "2026-10-12T15:52:15.483000-07:00",
+      "status": "SUCCEED",
+      "endTime": "2026-10-12T15:53:37.683000-07:00"
+    },
+    "steps": [
+      {
+        "name": "BUILD",
+        "status": "SUCCEED"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "SUCCEED"
+      },
+      {
+        "name": "VERIFY",
+        "status": "SUCCEED"
+      }
+    ]
+  },
+  "publicChecks": {
+    "verifiedAt": "2026-10-12T22:56:57.253Z",
+    "checks": [
+      {
+        "url": "https://development.d8i1ve5prnr7w.amplifyapp.com/",
+        "status": 200
+      },
+      {
+        "url": "https://development.d8i1ve5prnr7w.amplifyapp.com/login",
+        "status": 200
+      },
+      {
+        "check": "configured-origin CORS preflight",
+        "status": 204
+      },
+      {
+        "check": "unconfigured-origin receives no CORS permission",
+        "status": 204
+      }
+    ]
+  }
+}
