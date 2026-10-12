@@ -74,3 +74,29 @@ Live verification used a dedicated Cognito account with email delivery suppresse
 All dedicated database records (including audit, quote, taxonomy/version, principal, organization/membership, and user records) and the Cognito account were deleted; absence was verified. Existing user data was preserved. No database migrations were run. Structured evidence is [2026-10-12-fastify-verification.json](deployments/2026-10-12-fastify-verification.json), with timestamps and Gateway request IDs but no credentials or tokens. The 53 API, 12 database, 22 browser regressions and type checks from the implementation record remain passed. Staging and production were not modified.
 
 The previous published Lambda version **4** remains available for rollback; a rollback would require deliberate alias/state reconciliation. No rollback was needed.
+
+## Admin settings and read authorization release — October 12, 2026
+
+Waited for the settings subpage and taxonomy editor layout tasks to finish, then
+committed and pushed their combined changes with the read authorization fix as
+`3ad2d2a94fb8d95bcc38e6f77f157577fc5f91e2` on development. Settings now have
+separate General Information, Product Configurations, and Principals pages.
+The editor uses the available width, visible field borders, and US currency
+display. Page reads check access once within their transaction snapshot without
+updating user/organization authorization guards. Mutations retain guard writes
+and taxonomy version checks; the interim read retry workaround was removed.
+
+Validation passed: **69 server tests**, **31 frontend tests**, frontend type
+checking, server build, and bundled Lambda verification. The reviewed Terraform
+plan updated only the API Lambda and its development alias: **0 added, 2 changed,
+0 destroyed**. The alias now targets version **6**, `Active` / `Successful`, with
+code SHA-256 `mm0m1363WEyCszwXGsQ6CyLNXr9975SM4wT3yc3jrX4=` matching the archive.
+The post-apply Terraform plan reported **no changes**.
+
+Amplify development job **10**, for the same source commit, completed BUILD,
+DEPLOY, and VERIFY successfully at **16:17:51 PDT**. The frontend root and login
+page returned HTTP 200. Live API health returned 200; unauthenticated taxonomy
+and principal lists returned 401. This release
+did not perform a new authenticated live browser check. No database migrations
+were required. Staging and production were not modified. Published Lambda
+version **5** remains available for a deliberate alias/state rollback.
