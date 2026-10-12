@@ -4,6 +4,8 @@ import {
   identifier,
   rows,
   one,
+  readUser,
+  readOrganization,
   guardUser,
   guardOrganization,
   authorize,
@@ -84,10 +86,16 @@ export async function requirePrincipal(db, id) {
   return p;
 }
 export function createPrincipalService(withTransaction) {
-  async function transaction(identity, orgId, admin, work) {
+  async function transaction(identity, orgId, admin, work, read = false) {
     identifier(orgId);
     try {
       return await withTransaction(async (db) => {
+        if (read) {
+          const user = await readUser(db, identity);
+          const org = await readOrganization(db, orgId);
+          await authorize(db, user, org, admin);
+          return work(db, user);
+        }
         const account = await one(
           db,
           'SELECT id FROM public.users WHERE cognito_issuer=$1 AND cognito_subject=$2',
@@ -155,7 +163,7 @@ export function createPrincipalService(withTransaction) {
             totalPages: Math.ceil(totalItems / pageSize),
           },
         };
-      });
+      }, true);
     },
     async createPrincipal({ orgId, body = {}, query = {}, identity }) {
       bounded(body);

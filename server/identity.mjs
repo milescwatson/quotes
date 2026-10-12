@@ -4,6 +4,8 @@ import {
   fields,
   rows,
   one,
+  readUser,
+  readOrganization,
   guardUser,
   guardOrganization,
   authorize,
@@ -180,8 +182,8 @@ async function quotePage(db, organizationId, query) {
   };
 }
 export function createIdentityService(withTransaction) {
-  // Every operation owns a transaction. Lock participants in numeric order before
-  // the organization, preserving authorization serialization and retry behavior.
+  // Reads validate current access without writes. Mutations guard participants
+  // in numeric order before the organization to serialize authorization changes.
   async function account(db, identity) {
     const u = await one(
       db,
@@ -254,8 +256,8 @@ export function createIdentityService(withTransaction) {
     }
     return { u, addedUser };
   }
-  async function organizationAccess(db, u, orgId, admin = false) {
-    const org = await guardOrganization(db, identifier(orgId));
+  async function organizationAccess(db, u, orgId, admin = false, read = false) {
+    const org = await (read ? readOrganization : guardOrganization)(db, identifier(orgId));
     const access = await authorize(db, u, org, admin);
     return { org, access };
   }
@@ -351,7 +353,7 @@ export function createIdentityService(withTransaction) {
     },
     async readProfile({ identity }) {
       return withTransaction(async (db) => {
-        const { u } = await participants(db, identity);
+        const u = await readUser(db, identity);
         return { user: profile(u) };
       });
     },
@@ -371,7 +373,7 @@ export function createIdentityService(withTransaction) {
     },
     async listProfileOrganizations({ query = {}, identity }) {
       return withTransaction(async (db) => {
-        const { u } = await participants(db, identity);
+        const u = await readUser(db, identity);
         return page(
           db,
           `SELECT o.*,m.role,o.created_at::text AS cursor_time,o.id AS cursor_id
@@ -387,8 +389,8 @@ export function createIdentityService(withTransaction) {
     },
     async readOrganization({ orgId, identity }) {
       return withTransaction(async (db) => {
-        const { u } = await participants(db, identity);
-        const { org, access } = await organizationAccess(db, u, orgId);
+        const u = await readUser(db, identity);
+        const { org, access } = await organizationAccess(db, u, orgId, false, true);
         return { organization: organization({ ...org, role: access.role }) };
       });
     },
@@ -418,15 +420,15 @@ export function createIdentityService(withTransaction) {
     },
     async listQuotes({ orgId, query = {}, identity }) {
       return withTransaction(async (db) => {
-        const { u } = await participants(db, identity);
-        const { org } = await organizationAccess(db, u, orgId);
+        const u = await readUser(db, identity);
+        const { org } = await organizationAccess(db, u, orgId, false, true);
         return quotePage(db, org.id, query);
       });
     },
     async listEligibleOwners({ orgId, identity }) {
       return withTransaction(async (db) => {
-        const { u } = await participants(db, identity);
-        const { org } = await organizationAccess(db, u, orgId);
+        const u = await readUser(db, identity);
+        const { org } = await organizationAccess(db, u, orgId, false, true);
         const owners = await rows(
           db,
           `SELECT u.id, COALESCE(u.display_name,u.email) AS name
@@ -483,8 +485,8 @@ export function createIdentityService(withTransaction) {
     },
     async listMembers({ orgId, query = {}, identity }) {
       return withTransaction(async (db) => {
-        const { u } = await participants(db, identity);
-        const { org } = await organizationAccess(db, u, orgId, true);
+        const u = await readUser(db, identity);
+        const { org } = await organizationAccess(db, u, orgId, true, true);
         return page(
           db,
           `SELECT m.*,u.email,u.display_name,m.joined_at::text AS cursor_time,m.id AS cursor_id FROM public.organization_memberships m JOIN public.users u ON u.id=m.user_id

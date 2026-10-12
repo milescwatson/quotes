@@ -25,12 +25,7 @@ function fields(body, names) {
 }
 const rows = async (db, sql, args = []) => (await db.query(sql, args)).rows;
 const one = async (db, sql, args = []) => (await rows(db, sql, args))[0];
-async function guardUser(db, id) {
-  const u = await one(
-    db,
-    'UPDATE public.users SET auth_revision = auth_revision + 1 WHERE id = $1 RETURNING *',
-    [id],
-  );
+function activeUser(u) {
   if (!u || u.disabled_at)
     fail(
       403,
@@ -39,15 +34,35 @@ async function guardUser(db, id) {
     );
   return u;
 }
-async function guardOrganization(db, id) {
-  const o = await one(
-    db,
-    'UPDATE public.organizations SET auth_revision = auth_revision + 1 WHERE id = $1 RETURNING *',
-    [id],
+async function readUser(db, identity) {
+  const u = await one(db,
+    'SELECT * FROM public.users WHERE cognito_issuer=$1 AND cognito_subject=$2',
+    [identity.issuer, identity.sub],
   );
+  if (!u) fail(401, 'BOOTSTRAP_REQUIRED', 'Please sign in to initialize your account.');
+  return activeUser(u);
+}
+async function guardUser(db, id) {
+  return activeUser(await one(db,
+    'UPDATE public.users SET auth_revision = auth_revision + 1 WHERE id = $1 RETURNING *',
+    [id],
+  ));
+}
+function activeOrganization(o) {
   if (!o || o.status === 'archived')
     fail(404, 'NOT_FOUND', 'You no longer have access to this organization.');
   return o;
+}
+async function readOrganization(db, id) {
+  return activeOrganization(await one(db,
+    'SELECT * FROM public.organizations WHERE id = $1', [id],
+  ));
+}
+async function guardOrganization(db, id) {
+  return activeOrganization(await one(db,
+    'UPDATE public.organizations SET auth_revision = auth_revision + 1 WHERE id = $1 RETURNING *',
+    [id],
+  ));
 }
 async function authorize(db, user, org, admin = false) {
   const m = await one(
@@ -66,4 +81,4 @@ async function authorize(db, user, org, admin = false) {
   return m;
 }
 
-export { fail, identifier, fields, rows, one, guardUser, guardOrganization, authorize };
+export { fail, identifier, fields, rows, one, readUser, readOrganization, guardUser, guardOrganization, authorize };

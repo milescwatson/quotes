@@ -102,7 +102,7 @@ onBeforeUnmount(() => {
           </button>
         </div>
       </header>
-      <main id="main-content" class="content"><slot /></main>
+      <main id="main-content" class="content" :class="{ 'content-editor': route.path.includes('/taxonomies/') }"><slot /></main>
     </div>
   </div>
 </template>

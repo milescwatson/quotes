@@ -1,9 +1,13 @@
 import { test, expect } from '@playwright/test'
-import { blankConfiguration, blankSegment, blankOption, configurationInput, formatPrice } from '../app/utils/configuration'
+import { blankConfiguration, blankSegment, blankOption, configurationInput, formatPrice, displayPrice } from '../app/utils/configuration'
 test('price input normalizes common formats with exact cents and rejects invalid input', () => {
   for (const [raw, value] of [['.50','0.50'],['1.','1.00'],['$1,234.567','1234.57'],['USD 000.005','0.01'],['9.999','10.00'],['999999999999.99','999999999999.99']]) expect(formatPrice(raw!)).toBe(value)
   for (const raw of ['','abc','1,23','$-1','1e2','Infinity','999999999999.999','1 23']) expect(formatPrice(raw)).toBeNull()
   expect(formatPrice('', true)).toBe('0.00')
+  expect(displayPrice('1234.567')).toBe('$1,234.57')
+  expect(displayPrice('999999999999.99')).toBe('$999,999,999,999.99')
+  expect(displayPrice('')).toBe('')
+  expect(displayPrice('invalid')).toBe('invalid')
 })
 test('default follows its option and all possible prices are validated', () => {
   const draft = blankConfiguration(); draft.productFamilyName = 'F'; draft.principalId = '1'

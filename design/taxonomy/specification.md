@@ -35,7 +35,7 @@ A valid taxonomy has a name, at least one segment, at least one option per segme
 
 Every version records its number, author, timestamp, and optional change summary. Changing only the summary does not create a version. Retain historical snapshots unchanged, including removed options and prior prices, but provide no history-read or restoration interface in the MVP. A separate audit system is deferred.
 
-There are no automatic taxonomy retries, request-deduplication keys, receipts, or automatic merging. After a stale save or an uncertain response, reload and reconcile. An uncertain create may have succeeded; inspect the catalog before creating again. The MVP does not guarantee duplicate prevention for repeated create requests.
+There are no automatic taxonomy retries, request-deduplication keys, receipts, or automatic merging. Lists, reads, and previews validate enabled users, active organizations, and memberships within their transaction snapshot using SELECTs, without writing authorization guards. Mutations retain authorization guard writes. After a stale save or an uncertain response, reload and reconcile. An uncertain create may have succeeded; inspect the catalog before creating again. The MVP does not guarantee duplicate prevention for repeated create requests.
 
 ## JSON snapshot model
 

@@ -13,6 +13,8 @@ const pageTitle = computed(() => {
         quotes: 'Quotes',
         new: 'New Quote',
         settings: 'Organization settings',
+        configurations: 'Product Configurations',
+        principals: 'Principals',
         profile: 'Your profile',
         organizations: 'Your organizations',
       } as Record<string, string>

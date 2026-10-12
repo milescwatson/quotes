@@ -21,6 +21,12 @@ export function formatPrice(raw: string, emptyZero = false): string | null {
   if (cents > 99999999999999n) return null
   return `${cents / 100n}.${String(cents % 100n).padStart(2, '0')}`
 }
+export function displayPrice(raw: string): string {
+  const value = formatPrice(raw)
+  if (value === null) return raw
+  const [whole, fraction] = value.split('.')
+  return `$${whole!.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}.${fraction}`
+}
 const cents = (value: string) => BigInt(value.replace('.', ''))
 export function configurationInput(draft: ConfigurationDraft): { content: TaxonomyInput; errors: FieldError[] } {
   const errors: FieldError[] = []

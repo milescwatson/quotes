@@ -15,7 +15,7 @@ The API connects with short-lived IAM tokens, verified TLS, and the non-admin `q
 
 Only explicitly declared Gateway routes are handled. Every identity request checks trusted JWT authorizer claims and fetches current verified email from Cognito userInfo. Never expose this handler through an unauthenticated Function URL or use a caller-supplied claims object as authorization.
 
-The service uses repeatable-read transactions, user/organization guard writes, bounded whole-transaction retries, and audit events. Signup bootstrap is keyed by Cognito issuer/subject. Admins add existing accounts by email with immediate access. Duplicate additions cannot change an active member's role; missing, disabled, and ambiguous accounts are rejected. Accounts must have signed in once before being added.
+The service uses repeatable-read transactions, user/organization guard writes for mutations, bounded whole-transaction retries, and audit events. Page reads check enabled users, active organizations, and current memberships without writing authorization guards. Signup bootstrap is keyed by Cognito issuer/subject. Admins add existing accounts by email with immediate access. Duplicate additions cannot change an active member's role; missing, disabled, and ambiguous accounts are rejected. Accounts must have signed in once before being added.
 
 ## Local validation
 
@@ -45,10 +45,13 @@ rows. Creation and changed saves return 201; normalized no-ops return 200. Inval
 or incomplete taxonomies never save. Ordered arrays preserve segments/options,
 new nested IDs are server-generated UUIDs, and money uses exact integer cents.
 
-Saves and archive require `expectedVersionId`. Taxonomy transactions make one
+Saves and archive require `expectedVersionId`. Taxonomy mutations make one
 attempt; stale or database concurrency conflicts require reload, with no automatic
-retry, receipt table, sharing, or history-read route. A lost create response is
-not deduplicated. Identity/quote retry behavior is preserved.
+mutation retry, receipt table, sharing, or history-read route. Taxonomy lists,
+reads, previews, and principal lists validate access within their transaction
+snapshot using SELECTs, without authorization guard writes or automatic retries.
+Parallel page reads therefore do not compete to update authorization rows.
+A lost create response is not deduplicated. Identity/quote retry behavior is preserved.
 
 Apply the [JSONB installation procedure](../database/versions/0002/taxonomy/README.md)
 before releasing these routes. Do not install the legacy 0001 taxonomy schema.

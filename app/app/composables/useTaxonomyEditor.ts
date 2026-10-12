@@ -12,7 +12,7 @@ export function useTaxonomyEditor() {
   const isNew = computed(() => !route.params.taxonomyId)
   const canEdit = computed(() => ready.value && !!org.value && ['admin', 'editor'].includes(org.value.role) && (isNew.value || !!saved.value?.permissions.canEdit))
   const dirty = computed(() => draftFingerprint(draft.value) !== baseline.value)
-  const back = computed(() => `${identity.organizationPath(organization.value)}/settings?section=configurations`)
+  const back = computed(() => `${identity.organizationPath(organization.value)}/settings/configurations`)
   let controller: AbortController | undefined, generation = 0
   function adopt(value: Taxonomy) {
     saved.value = value; draft.value = fromTaxonomy(value); baseline.value = draftFingerprint(draft.value)

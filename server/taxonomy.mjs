@@ -5,6 +5,8 @@ import {
   identifier,
   rows,
   one,
+  readUser,
+  readOrganization,
   guardUser,
   guardOrganization,
   authorize,
@@ -114,11 +116,18 @@ async function insertVersion(
   );
 }
 export function createTaxonomyService(withTransaction) {
-  // Taxonomy transactions run once: concurrent changes are surfaced to the caller.
-  async function transaction(identity, orgId, work) {
+  // Reads authorize against the transaction snapshot without writing guard rows.
+  // Mutations retain guards and run once, surfacing concurrent changes.
+  async function transaction(identity, orgId, work, read = false) {
     identifier(orgId);
     try {
       return await withTransaction(async (db) => {
+        if (read) {
+          const user = await readUser(db, identity);
+          const org = await readOrganization(db, orgId);
+          const access = await authorize(db, user, org);
+          return work(db, { user, org, access });
+        }
         const account = await one(
           db,
           'SELECT id FROM public.users WHERE cognito_issuer=$1 AND cognito_subject=$2',
@@ -205,7 +214,7 @@ export function createTaxonomyService(withTransaction) {
           totalItems,
           totalPages: Math.ceil(totalItems / pageSize),
         });
-      });
+      }, true);
     },
     async createTaxonomy({ body = {}, query = {}, orgId, identity }) {
       bounded(body);
@@ -259,7 +268,7 @@ export function createTaxonomyService(withTransaction) {
       return transaction(identity, orgId, async (db, { user, access }) => {
         const t = await one(
           db,
-          'SELECT * FROM public.taxonomies WHERE id=$1 AND owner_organization_id=$2 FOR UPDATE',
+          'SELECT * FROM public.taxonomies WHERE id=$1 AND owner_organization_id=$2',
           [taxonomyId, orgId],
         );
         if (!t) missing();
@@ -273,7 +282,7 @@ export function createTaxonomyService(withTransaction) {
             access.role,
           ),
         });
-      });
+      }, true);
     },
     async archiveTaxonomy({
       body = {},
@@ -331,7 +340,7 @@ export function createTaxonomyService(withTransaction) {
       return transaction(identity, orgId, async (db, { user, access }) => {
         const t = await one(
           db,
-          'SELECT * FROM public.taxonomies WHERE id=$1 AND owner_organization_id=$2 FOR UPDATE',
+          'SELECT * FROM public.taxonomies WHERE id=$1 AND owner_organization_id=$2',
           [taxonomyId, orgId],
         );
         if (!t) missing();
@@ -349,7 +358,7 @@ export function createTaxonomyService(withTransaction) {
             ...configure(previous.content, body.selections),
           },
         });
-      });
+      }, true);
     },
     async saveTaxonomyVersion({
       body = {},
