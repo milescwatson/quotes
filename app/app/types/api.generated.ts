@@ -109,7 +109,7 @@ export interface paths {
         };
         get: operations["listQuotes"];
         put?: never;
-        post?: never;
+        post: operations["createQuote"];
         delete?: never;
         options?: never;
         head?: never;
@@ -139,8 +139,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
-        put?: never;
+        get: operations["readQuote"];
+        put: operations["updateQuote"];
         post?: never;
         delete?: never;
         options?: never;
@@ -304,6 +304,71 @@ export interface components {
                 message: string;
             }[];
             currentVersionId?: string;
+        };
+        QuoteLineInput: {
+            id: string | null;
+            taxonomyId: string;
+            versionId: string;
+            selections: (string | null)[];
+            quantity: number;
+        };
+        QuoteConfigurationSnapshot: {
+            content: components["schemas"]["TaxonomyContent"];
+            principalId: string | null;
+            principalName: string | null;
+        };
+        QuoteLine: {
+            id: string;
+            taxonomyId: string;
+            versionId: string;
+            selections: (string | null)[];
+            quantity: number;
+            snapshot: components["schemas"]["QuoteConfigurationSnapshot"];
+            partNumber: string;
+            complete: boolean;
+            unitPrice: string;
+            lineTotal: string;
+        };
+        QuoteCreate: {
+            customerName: string;
+            projectName: string;
+            ownerId: string | null;
+            lines: components["schemas"]["QuoteLineInput"][];
+        };
+        QuoteUpdate: {
+            customerName: string;
+            projectName: string;
+            ownerId: string | null;
+            lines: components["schemas"]["QuoteLineInput"][];
+            expectedToken: string;
+        };
+        QuoteDetail: {
+            /** @description Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807). */
+            id: string;
+            /** @description Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807). */
+            organizationId: string;
+            /** Format: int32 */
+            customerId: number | null;
+            customerName: string;
+            projectName: string;
+            title: string;
+            /** @description Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807). */
+            modifiedBy: string;
+            modifiedByName: string;
+            /** Format: date-time */
+            modifiedWhen: string;
+            /** @description Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807). */
+            ownerId: string | null;
+            ownerName: string | null;
+            token: string;
+            lines: components["schemas"]["QuoteLine"][];
+            /** @enum {string} */
+            currency: "USD";
+            total: string;
+        };
+        QuoteDetailResponse: {
+            quote: components["schemas"]["QuoteDetail"];
+            unchanged?: boolean;
         };
         Quote: {
             /** @description Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807). */
@@ -542,6 +607,7 @@ export interface components {
         TaxonomyListResponse: {
             items: {
                 id: string;
+                modelCode?: string;
                 productFamilyName: string;
                 currentVersionId: string;
                 versionNumber: number;
@@ -1282,6 +1348,95 @@ export interface operations {
             };
         };
     };
+    createQuote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orgId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuoteCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful operation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuoteDetailResponse"];
+                };
+            };
+            /** @description Request failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     listQuoteOwners: {
         parameters: {
             query?: never;
@@ -1348,6 +1503,182 @@ export interface operations {
                 };
             };
             /** @description Temporarily unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    readQuote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orgId: string;
+                quoteId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful operation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuoteDetailResponse"];
+                };
+            };
+            /** @description Request failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    updateQuote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orgId: string;
+                quoteId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuoteUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful operation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuoteDetailResponse"];
+                };
+            };
+            /** @description Request failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed */
             503: {
                 headers: {
                     [name: string]: unknown;

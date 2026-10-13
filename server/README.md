@@ -27,14 +27,14 @@ These tests are not DSQL concurrency validation. Follow `../design/identity/vali
 
 1. Apply and verify the identity schema and dedicated database grants from `../database/versions/0001/identity/`. Map the Lambda IAM role to the non-owner `quotes_api` role. Do not substitute admin credentials.
 2. Provision the initial active organization and admin membership through the separate operator workflow. There is no public organization-create route.
-3. Build this Lambda and apply the changed Terraform/OpenAPI, including Cognito public signup, the frontend Cognito-domain variable, and POST/PATCH/DELETE CORS support.
+3. Build this Lambda and apply the changed Terraform/OpenAPI, including Cognito public signup, the frontend Cognito-domain variable, and POST/PUT/PATCH/DELETE CORS support.
 4. Publish the frontend with the matching public configuration, then verify real Cognito callbacks, DSQL permissions/conflicts, immediate membership access and member management.
 
 Database migrations, an operator interface are not automatically executed or provisioned by this package. There are no new Nuxt business endpoints or direct browser database connections.
 
 ## Quotes list
 
-`GET /organizations/{orgId}/quotes?page=1&pageSize=50` is available to all active organization members. It returns rows and page totals, ordered by most recently modified. Customer IDs are nullable integers; bigint quote/organization/user IDs are decimal strings. Apply the [quote schema and grants](../design/quotes/specification.md) before releasing this route. The API supports quote owner reassignment via PATCH; other quote writes remain out of scope. See the quote specification for filter and owner-choice contracts.
+`GET /organizations/{orgId}/quotes?page=1&pageSize=50` is available to all active organization members. It returns rows and page totals, ordered by most recently modified. Customer IDs are nullable integers; bigint quote/organization/user IDs are decimal strings. Apply the [quote schema and grants](../design/quotes/specification.md) before releasing this route. The API supports quote owner reassignment via PATCH and full quote creation/editing via POST/PUT. See the quote specification for filter and owner-choice contracts.
 
 ## Taxonomy MVP
 
@@ -72,7 +72,7 @@ Task 4000 adds authenticated principal GET/POST routes and requires `principalId
 
 Run `npm ci`, `npm test`, and `npm run build` from `server/` with Node.js 22. The bundle is `server/dist/index.mjs`; Terraform keeps the `index.handler` entry point. `createApp` in `app.mjs` takes named services, configuration, and an identity lookup dependency, and opens no socket. Route registrations are grouped in `routes/`. The Lambda adapter is created once and awaits application initialization.
 
-`AWS/openapi.yaml` remains the public contract and Gateway configuration. The parity test compares every registered method/path with that file; no handlers, schemas, or Swagger output are generated from it. Trusted authorizer claims come only from `request.awsLambda.event`, and business routes verify email through Cognito userInfo. JSON parsing, no-store responses, errors, and sanitized logging are shared in the application factory. Taxonomy/principal requests retain their 512 KiB limit; other routes have no added Fastify body limit.
+`AWS/openapi.yaml` remains the public contract and Gateway configuration. The parity test compares every registered method/path with that file; no handlers, schemas, or Swagger output are generated from it. Trusted authorizer claims come only from `request.awsLambda.event`, and business routes verify email through Cognito userInfo. JSON parsing, no-store responses, errors, and sanitized logging are shared in the application factory. Taxonomy/principal requests and quote POST/PUT writes have a 512 KiB body limit; other routes have no added Fastify body limit.
 
 ## Refactor verification — October 12, 2026
 
@@ -83,3 +83,7 @@ On Node `22.23.2`: 53 API tests and 12 database tests passed, including exact pa
 The development Terraform plan (`AWS/environments/development/fastify-server.tfplan`, ignored by Git) proposes 0 additions, 3 in-place changes, and 0 deletions or replacements: the Lambda code, its alias version, and an existing Gateway description/default-tag difference. Terraform's only source change is the archive source directory. No infrastructure was applied and no live database migrations or smoke writes were run. Live Cognito/DSQL verification and rollback remain a separate release step.
 
 The subsequent authorized development release and live Cognito/DSQL verification are recorded in [AWS deployment evidence](../AWS/DEPLOYMENT.md#fastify-api-release--october-12-2026).
+
+## Quote editor (0004)
+
+GET quote detail returns saved product snapshots and an exact concurrency token. POST creates a quote; PUT replaces metadata and ordered lines using `expectedToken`. All active organization members can write; owner/source organization authorization and exact USD calculations run atomically. Existing lines remain editable using their saved version after catalog change/archive. Empty quotes and blank selections are allowed; invalid choices/quantities and stale saves are rejected. Apply [0004](../database/versions/0004/quotes/README.md) before this release. See [task 5000](../tasks/5000/implementation.md) for scope and verification.

@@ -1,3 +1,4 @@
+import { createQuoteService } from './quotes.mjs';
 import {
   fail,
   identifier,
@@ -318,6 +319,7 @@ export function createIdentityService(withTransaction) {
     });
   }
   return {
+    ...createQuoteService(withTransaction),
     async bootstrapProfile({ body = {}, identity, requestId }) {
       return withTransaction(async (db) => {
         let u = await one(

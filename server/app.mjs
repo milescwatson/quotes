@@ -16,7 +16,7 @@ export function createApp({
   onRoute = () => {},
   logError = (entry) => console.error(JSON.stringify(entry)),
 } = {}) {
-  // Gateway already bounds Lambda payloads. Only taxonomy/principal operations
+  // Gateway already bounds Lambda payloads. Taxonomy/principal and quote writes
   // have the existing 512 KiB application limit; other routes have no new limit.
   const app = Fastify({
     logger: false,
@@ -54,7 +54,7 @@ export function createApp({
         Buffer.byteLength(body, 'utf8') > MAX_BYTES
       )
         return done(
-          new HttpError(413, 'PAYLOAD_TOO_LARGE', 'Taxonomy exceeds 512 KiB.'),
+          new HttpError(413, 'PAYLOAD_TOO_LARGE', 'Request exceeds 512 KiB.'),
         );
       try {
         done(null, body ? JSON.parse(body) : {});
@@ -85,7 +85,7 @@ export function createApp({
       throw new HttpError(
         413,
         'PAYLOAD_TOO_LARGE',
-        'Taxonomy exceeds 512 KiB.',
+        'Request exceeds 512 KiB.',
       );
     try {
       request.body = body ? JSON.parse(body) : {};

@@ -480,6 +480,80 @@ paths:
             schema:
               $ref: "#/components/schemas/OrganizationUpdate"
   /organizations/{orgId}/quotes:
+    post:
+      operationId: createQuote
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+            description: Positive bigint identifier encoded as a decimal string (maximum
+              9223372036854775807).
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuoteDetailResponse"
+        "401":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuoteCreate"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
     get:
       operationId: listQuotes
       security:
@@ -634,6 +708,164 @@ paths:
             pattern: ^[1-9][0-9]{0,18}$
             description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
   /organizations/{orgId}/quotes/{quoteId}:
+    get:
+      operationId: readQuote
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+            description: Positive bigint identifier encoded as a decimal string (maximum
+              9223372036854775807).
+        - name: quoteId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+            description: Positive bigint identifier encoded as a decimal string (maximum
+              9223372036854775807).
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuoteDetailResponse"
+        "401":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+    put:
+      operationId: updateQuote
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+            description: Positive bigint identifier encoded as a decimal string (maximum
+              9223372036854775807).
+        - name: quoteId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+            description: Positive bigint identifier encoded as a decimal string (maximum
+              9223372036854775807).
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuoteDetailResponse"
+        "401":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuoteUpdate"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
     patch:
       operationId: updateQuoteOwner
       security:
@@ -1692,6 +1924,228 @@ components:
         - message
         - requestId
       additionalProperties: false
+    QuoteLineInput:
+      type: object
+      properties:
+        id:
+          type: string
+          nullable: true
+        taxonomyId:
+          type: string
+        versionId:
+          type: string
+        selections:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+            nullable: true
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+      required:
+        - id
+        - taxonomyId
+        - versionId
+        - selections
+        - quantity
+      additionalProperties: false
+    QuoteConfigurationSnapshot:
+      type: object
+      properties:
+        content:
+          $ref: "#/components/schemas/TaxonomyContent"
+        principalId:
+          type: string
+          nullable: true
+        principalName:
+          type: string
+          nullable: true
+      required:
+        - content
+        - principalId
+        - principalName
+      additionalProperties: false
+    QuoteLine:
+      type: object
+      properties:
+        id:
+          type: string
+        taxonomyId:
+          type: string
+        versionId:
+          type: string
+        selections:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+            nullable: true
+        quantity:
+          type: integer
+          minimum: 1
+          maximum: 1000000
+        snapshot:
+          $ref: "#/components/schemas/QuoteConfigurationSnapshot"
+        partNumber:
+          type: string
+        complete:
+          type: boolean
+        unitPrice:
+          type: string
+        lineTotal:
+          type: string
+      required:
+        - id
+        - taxonomyId
+        - versionId
+        - selections
+        - quantity
+        - snapshot
+        - partNumber
+        - complete
+        - unitPrice
+        - lineTotal
+      additionalProperties: false
+    QuoteCreate:
+      type: object
+      properties:
+        customerName:
+          type: string
+          minLength: 1
+          maxLength: 120
+        projectName:
+          type: string
+          minLength: 1
+          maxLength: 120
+        ownerId:
+          type: string
+          nullable: true
+        lines:
+          type: array
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/QuoteLineInput"
+      required:
+        - customerName
+        - projectName
+        - ownerId
+        - lines
+      additionalProperties: false
+    QuoteUpdate:
+      type: object
+      properties:
+        customerName:
+          type: string
+          minLength: 1
+          maxLength: 120
+        projectName:
+          type: string
+          minLength: 1
+          maxLength: 120
+        ownerId:
+          type: string
+          nullable: true
+        lines:
+          type: array
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/QuoteLineInput"
+        expectedToken:
+          type: string
+      required:
+        - customerName
+        - projectName
+        - ownerId
+        - lines
+        - expectedToken
+      additionalProperties: false
+    QuoteDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: Positive bigint identifier encoded as a decimal string (maximum
+            9223372036854775807).
+        organizationId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: Positive bigint identifier encoded as a decimal string (maximum
+            9223372036854775807).
+        customerId:
+          type: integer
+          format: int32
+          nullable: true
+        customerName:
+          type: string
+          minLength: 1
+          maxLength: 120
+        projectName:
+          type: string
+          minLength: 1
+          maxLength: 120
+        title:
+          type: string
+        modifiedBy:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: Positive bigint identifier encoded as a decimal string (maximum
+            9223372036854775807).
+        modifiedByName:
+          type: string
+        modifiedWhen:
+          type: string
+          format: date-time
+        ownerId:
+          type: string
+          pattern: ^[1-9][0-9]{0,18}$
+          description: Positive bigint identifier encoded as a decimal string (maximum
+            9223372036854775807).
+          nullable: true
+        ownerName:
+          type: string
+          nullable: true
+        token:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuoteLine"
+        currency:
+          type: string
+          enum:
+            - USD
+        total:
+          type: string
+      required:
+        - id
+        - organizationId
+        - customerId
+        - customerName
+        - projectName
+        - title
+        - modifiedBy
+        - modifiedByName
+        - modifiedWhen
+        - ownerId
+        - ownerName
+        - token
+        - lines
+        - currency
+        - total
+      additionalProperties: false
+    QuoteDetailResponse:
+      type: object
+      properties:
+        quote:
+          $ref: "#/components/schemas/QuoteDetail"
+        unchanged:
+          type: boolean
+      required:
+        - quote
+      additionalProperties: false
     Quote:
       type: object
       properties:
@@ -2500,6 +2954,8 @@ components:
                 type: string
                 maxLength: 19
                 pattern: ^[1-9][0-9]{0,18}$
+              modelCode:
+                type: string
               productFamilyName:
                 type: string
                 maxLength: 120
@@ -2653,6 +3109,7 @@ x-amazon-apigateway-cors:
   allowMethods:
     - GET
     - POST
+    - PUT
     - PATCH
     - DELETE
     - OPTIONS

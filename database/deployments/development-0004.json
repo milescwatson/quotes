@@ -1,0 +1,130 @@
+{
+  "target": {
+    "environment": "development",
+    "account": "415221799122",
+    "region": "us-west-2",
+    "cluster": "3zuetvjhixkp3qeuzxxosvlssq",
+    "profile": "quotes-development"
+  },
+  "startedAt": "2026-10-13T01:40:11.646Z",
+  "events": [
+    {
+      "key": "database/versions/0004/quotes/schema.sql:1",
+      "sql": "ALTER TABLE public.quotes ADD COLUMN lines jsonb",
+      "sha256": "6c8e2142f7492818d113e9fbae24067b7cd0e2f5cac13f706346de1e69c6333f",
+      "status": "completed",
+      "startedAt": "2026-10-13T01:40:57.019Z",
+      "rowsAffected": null,
+      "result": [],
+      "completedAt": "2026-10-13T01:40:57.127Z"
+    },
+    {
+      "key": "database/versions/0004/quotes/schema.sql:2",
+      "sql": "ALTER TABLE public.quotes ALTER COLUMN lines SET DEFAULT '[]'::jsonb",
+      "sha256": "39c37c7fb85910aa0641017323190bd23cb2aae7b4dc763029d90fc991de1722",
+      "status": "completed",
+      "startedAt": "2026-10-13T01:40:57.128Z",
+      "rowsAffected": null,
+      "result": [],
+      "completedAt": "2026-10-13T01:40:57.207Z"
+    },
+    {
+      "key": "database/versions/0004/quotes/enforce.sql:1",
+      "sql": "ALTER TABLE public.quotes ADD CONSTRAINT quotes_lines_valid\n    CHECK (lines IS NOT NULL AND jsonb_typeof(lines) = 'array' AND jsonb_array_length(lines) <= 100) NOT VALID",
+      "sha256": "6115f40f94632e020e8526f8a3baea0b8bb9e42866167cab9998e244f6dbeb8f",
+      "status": "completed",
+      "startedAt": "2026-10-13T01:40:57.276Z",
+      "rowsAffected": null,
+      "result": [],
+      "completedAt": "2026-10-13T01:40:57.351Z"
+    },
+    {
+      "key": "database/versions/0004/quotes/enforce.sql:2",
+      "sql": "ALTER TABLE ASYNC public.quotes VALIDATE CONSTRAINT quotes_lines_valid",
+      "sha256": "c73659ffc0f0259561a9a0ef67a38b9c6d0a45666c4a7e03708d0ed476951ed2",
+      "status": "completed",
+      "startedAt": "2026-10-13T01:40:57.352Z",
+      "rowsAffected": null,
+      "result": [
+        {
+          "job_id": "ypmubsfhfzfrzctssstlcqjlzm"
+        }
+      ],
+      "job": {
+        "job_id": "ypmubsfhfzfrzctssstlcqjlzm",
+        "status": "completed",
+        "details": null
+      },
+      "completedAt": "2026-10-13T01:41:28.669Z"
+    },
+    {
+      "key": "database/versions/0004/quotes/permissions.sql:1",
+      "sql": "GRANT INSERT ON public.quotes TO \"quotes_api\"",
+      "sha256": "7644c8f225d14f320d18b69c53782f54cb463101876869ecaff338f03b93cf5c",
+      "status": "completed",
+      "startedAt": "2026-10-13T01:41:28.671Z",
+      "rowsAffected": null,
+      "result": [],
+      "completedAt": "2026-10-13T01:41:28.716Z"
+    },
+    {
+      "key": "database/versions/0004/quotes/permissions.sql:2",
+      "sql": "GRANT UPDATE (customer_name, project_name, owner_user_id, lines, modified_by, modified_when) ON public.quotes TO \"quotes_api\"",
+      "sha256": "69284480adacc75563f9f5b3b3f4beb250c73a73426469c37711e4efa47a637c",
+      "status": "completed",
+      "startedAt": "2026-10-13T01:41:28.717Z",
+      "rowsAffected": null,
+      "result": [],
+      "completedAt": "2026-10-13T01:41:28.788Z"
+    },
+    {
+      "key": "database/versions/0004/quotes/permissions.sql:3",
+      "sql": "GRANT USAGE ON SEQUENCE public.quotes_id_seq TO \"quotes_api\"",
+      "sha256": "62228a21475ea6679a9dc480e5b583c754abf5de30e2f1adc4b8b8b4f502a274",
+      "status": "completed",
+      "startedAt": "2026-10-13T01:41:28.789Z",
+      "rowsAffected": null,
+      "result": [],
+      "completedAt": "2026-10-13T01:41:28.840Z"
+    }
+  ],
+  "status": "applied",
+  "apiPause": {
+    "previousConcurrency": -1,
+    "startedAt": "2026-10-13T01:40:38.661Z",
+    "restoredAt": "2026-10-13T01:41:29.999Z"
+  },
+  "before": {
+    "quoteCount": 0,
+    "originalFieldsSha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+  },
+  "verification": {
+    "counts": {
+      "total": "0",
+      "null_lines": "0"
+    },
+    "constraint": {
+      "convalidated": true
+    },
+    "grants": {
+      "insert": true,
+      "update_lines": true,
+      "update_customer": true,
+      "delete": false,
+      "sequence_usage": true
+    },
+    "originalFieldsSha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+  },
+  "appliedAt": "2026-10-13T01:41:29.034Z",
+  "preflightAttempts": [
+    {
+      "startedAt": "2026-10-13T01:40:11.646Z",
+      "error": {
+        "message": "Unexpected end of JSON input"
+      },
+      "statementsExecuted": 0,
+      "apiPaused": false,
+      "resolution": "Handled absent Lambda reservation as an unreserved concurrency configuration."
+    }
+  ]
+}

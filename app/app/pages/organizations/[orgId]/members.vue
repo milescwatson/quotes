@@ -78,7 +78,7 @@ async function confirm() {
 <template>
   <PageHeading
     eyebrow="WORKSPACE / TEAM"
-    title="Good people. Great work."
+    title="Members"
     description="Manage the people who make this workspace yours."
   />
   <section v-if="isAdmin" class="panel member-form">

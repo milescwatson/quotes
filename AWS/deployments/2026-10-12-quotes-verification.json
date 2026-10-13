@@ -1,0 +1,166 @@
+{
+  "environment": "development",
+  "verifiedAt": "2026-10-13T01:44:20.999Z",
+  "status": "backend_verified",
+  "lambda": {
+    "version": "8",
+    "codeSha256": "U1uyPcNomdnoFhjtHB2XzNgN7Y6GvfCNNkfQhsx4jrc=",
+    "state": "Active",
+    "lastUpdateStatus": "Successful"
+  },
+  "gateway": {
+    "routes": [
+      {
+        "route": "DELETE /organizations/{orgId}/members/{membershipId}",
+        "authorization": "JWT"
+      },
+      {
+        "route": "GET /health",
+        "authorization": "NONE"
+      },
+      {
+        "route": "GET /me",
+        "authorization": "JWT"
+      },
+      {
+        "route": "GET /me/organizations",
+        "authorization": "JWT"
+      },
+      {
+        "route": "GET /organizations/{orgId}",
+        "authorization": "JWT"
+      },
+      {
+        "route": "GET /organizations/{orgId}/members",
+        "authorization": "JWT"
+      },
+      {
+        "route": "GET /organizations/{orgId}/principals",
+        "authorization": "JWT"
+      },
+      {
+        "route": "GET /organizations/{orgId}/quote-owners",
+        "authorization": "JWT"
+      },
+      {
+        "route": "GET /organizations/{orgId}/quotes",
+        "authorization": "JWT"
+      },
+      {
+        "route": "GET /organizations/{orgId}/quotes/{quoteId}",
+        "authorization": "JWT"
+      },
+      {
+        "route": "GET /organizations/{orgId}/taxonomies",
+        "authorization": "JWT"
+      },
+      {
+        "route": "GET /organizations/{orgId}/taxonomies/{taxonomyId}",
+        "authorization": "JWT"
+      },
+      {
+        "route": "GET /session",
+        "authorization": "JWT"
+      },
+      {
+        "route": "PATCH /me",
+        "authorization": "JWT"
+      },
+      {
+        "route": "PATCH /organizations/{orgId}",
+        "authorization": "JWT"
+      },
+      {
+        "route": "PATCH /organizations/{orgId}/members/{membershipId}",
+        "authorization": "JWT"
+      },
+      {
+        "route": "PATCH /organizations/{orgId}/quotes/{quoteId}",
+        "authorization": "JWT"
+      },
+      {
+        "route": "POST /me/bootstrap",
+        "authorization": "JWT"
+      },
+      {
+        "route": "POST /organizations/{orgId}/members",
+        "authorization": "JWT"
+      },
+      {
+        "route": "POST /organizations/{orgId}/principals",
+        "authorization": "JWT"
+      },
+      {
+        "route": "POST /organizations/{orgId}/quotes",
+        "authorization": "JWT"
+      },
+      {
+        "route": "POST /organizations/{orgId}/taxonomies",
+        "authorization": "JWT"
+      },
+      {
+        "route": "POST /organizations/{orgId}/taxonomies/{taxonomyId}/archive",
+        "authorization": "JWT"
+      },
+      {
+        "route": "POST /organizations/{orgId}/taxonomies/{taxonomyId}/preview",
+        "authorization": "JWT"
+      },
+      {
+        "route": "POST /organizations/{orgId}/taxonomies/{taxonomyId}/versions",
+        "authorization": "JWT"
+      },
+      {
+        "route": "PUT /organizations/{orgId}/quotes/{quoteId}",
+        "authorization": "JWT"
+      }
+    ]
+  },
+  "checks": [
+    {
+      "method": "GET",
+      "path": "/health",
+      "status": 200,
+      "requestId": "FKL2YiNGvHcEMdw="
+    },
+    {
+      "method": "GET",
+      "path": "/organizations/1/quotes/1",
+      "status": 401,
+      "requestId": "FKL2ZgtnvHcEMVg="
+    },
+    {
+      "method": "POST",
+      "path": "/organizations/1/quotes",
+      "status": 401,
+      "requestId": "FKL2ahemPHcEM5Q="
+    },
+    {
+      "method": "PUT",
+      "path": "/organizations/1/quotes/1",
+      "status": 401,
+      "requestId": "FKL2aiJ4PHcEMrg="
+    },
+    {
+      "method": "OPTIONS",
+      "status": 204,
+      "allowedOrigin": "https://development.d8i1ve5prnr7w.amplifyapp.com",
+      "allowMethods": "DELETE,GET,OPTIONS,PATCH,POST,PUT"
+    }
+  ],
+  "databaseEvidence": "database/deployments/development-0004-validation.json",
+  "deploymentRecovery": {
+    "initialGatewayImport": "rejected YAML aliases; expanded contract then applied Gateway-only plan",
+    "failedRequestId": "63bdbcc3-4e2a-41d9-a4df-2e182407c937",
+    "initialPlan": {
+      "added": 0,
+      "changed": 3,
+      "destroyed": 0
+    },
+    "recoveryPlan": {
+      "added": 0,
+      "changed": 1,
+      "destroyed": 0
+    }
+  }
+}

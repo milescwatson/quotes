@@ -8,6 +8,7 @@ This is the environment ledger for database schema and grants. Update it after e
 | 0001 quotes | Applied — 2026-10-10 | Not applied | Not applied |
 | 0002 JSON taxonomy | Applied — 2026-10-10 | Not applied | Not applied |
 | 0003 shared principals | Applied — 2026-10-12 | Not applied | Not applied |
+| 0004 quote editor | Applied — 2026-10-12 | Not applied | Not applied |
 | 0001 legacy relational taxonomy | Excluded — never install on DSQL | Excluded | Excluded |
 
 “Applied” means every schema statement and associated permission grant completed, asynchronous jobs succeeded, and catalog verification passed. “Partial” means some changes exist but the module is not ready. “Not applied” means no deployment has been performed by this project; it is not a claim that an independently managed database was inspected.
@@ -70,3 +71,9 @@ Migration [0003 principals](versions/0003/principals/README.md) was applied to t
 - Application/API deployment is separate. The API was subsequently released to development as version 4; see [API release record](../AWS/DEPLOYMENT.md).
 
 The API package and deployment scripts moved from `AWS/api/` to `server/` in October 2026. Historical commands retain their original paths; current equivalents use `node server/scripts/deploy-database.mjs`.
+
+## Quote editor (0004) — October 12, 2026
+
+Migration 0004 was applied to development with API writes paused and in-flight requests drained, then concurrency restored. The lines column/default, validated array/100-line constraint, and insert/update/sequence grants are installed. Runtime DELETE remains denied. The database had zero quote rows; no data backfill was required, and the original metadata digest was preserved. Statement and async-job evidence is [development-0004.json](deployments/development-0004.json). Staging and production remain unchanged.
+
+Live runtime-role quote verification passed all eleven checks (member writes, persistence, no-op token, partial options, owner conflict, stale catalog, archived snapshots, rollback, empty quotes, isolation and denied deletion). Dedicated fixtures and the temporary Lambda were removed. Evidence: [development-0004-validation.json](deployments/development-0004-validation.json).

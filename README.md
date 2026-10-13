@@ -2,12 +2,12 @@
 
 The repository contains the complete Quotes workspace:
 
-- [app](app/README.md): Nuxt frontend, identity UI, and quote catalog.
+- [app](app/README.md): Nuxt frontend, identity UI, quote catalog, and quote editor.
 - [server](server/README.md): Fastify Lambda API, named services, and database deployment scripts.
 - [AWS](AWS/README.md): Terraform, provisioning scripts, and the OpenAPI contract.
 - [database](database/README.md): versioned schemas, grants, and database tests.
 - [design](design/taxonomy/specification.md): product and API specifications.
-- [tasks](tasks/3000/implementation.md): implementation records and validation.
+- [tasks](tasks/5000/implementation.md): implementation records and validation.
 
 See [database deployment status](database/DEPLOYMENTS.md) for the versions applied to development, staging, and production.
 

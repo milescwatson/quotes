@@ -58,7 +58,7 @@ const dateLabel = (value: string) => dateFormat.format(new Date(value))
             </thead>
             <tbody>
               <tr v-for="quote in data.items" :key="quote.id" class="align-top">
-                <td class="break-words font-medium">{{ quote.title }}</td>
+                <td class="break-words font-medium"><NuxtLink :to="`${identity.organizationPath(identity.organizationId(route.params.orgId))}/quotes/${quote.id}`" class="text-blue-700 hover:underline">{{ quote.title }}</NuxtLink></td>
                 <td class="break-words">{{ quote.customerName }}</td>
                 <td class="break-words">{{ quote.projectName }}</td>
                 <td><QuoteOwnerSelect :quote="quote" :owners="owners.data.value?.items || []" :organization-id="String(route.params.orgId)" :disabled="loading || owners.loading.value || !!owners.error.value" @saved="ownerSaved" @access-lost="accessLost" /></td>

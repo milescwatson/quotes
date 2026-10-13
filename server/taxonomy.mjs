@@ -190,7 +190,7 @@ export function createTaxonomyService(withTransaction) {
         );
         const items = await rows(
           db,
-          `SELECT t.id,t.principal_id,p.name AS principal_name,t.current_version_id,v.version_number,v.content->>'productFamilyName' AS family_name,
+          `SELECT t.id,t.principal_id,p.name AS principal_name,t.current_version_id,v.version_number,v.content->>'productFamilyName' AS family_name,v.content->'segments' AS segments,v.content->'separators' AS separators,
             v.created_at,v.created_by_user_id,COALESCE(u.display_name,u.email) AS modifier_name
             FROM public.taxonomies t JOIN public.taxonomy_versions v ON v.id=t.current_version_id AND v.taxonomy_id=t.id
             JOIN public.users u ON u.id=v.created_by_user_id JOIN public.principals p ON p.id=t.principal_id
@@ -202,6 +202,7 @@ export function createTaxonomyService(withTransaction) {
           items: items.map((v) => ({
             id: String(v.id),
             productFamilyName: v.family_name,
+            modelCode: v.segments.map(s => s.options.length === 1 ? s.options[0].code : s.placeholder).map((code,i) => (i ? (v.separators?.[i-1] ?? '-') : '') + code).join(''),
             principalId: String(v.principal_id),
             principalName: v.principal_name,
             currentVersionId: String(v.current_version_id),

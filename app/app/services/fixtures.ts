@@ -6,7 +6,9 @@ import {
   type Organization,
   type Profile,
 } from '~/types/identity'
-import type { Quote } from '~/types/quotes'
+import { quoteAmount, quoteNumber } from '~/utils/quote'
+import type { Taxonomy } from '~/types/taxonomy'
+import type { Quote, QuoteDetail, LocalQuoteLine } from '~/types/quotes'
 export function createFixtures() {
   if (!import.meta.dev)
     throw new Error('Fixtures are unavailable in production')
@@ -88,7 +90,7 @@ export function createFixtures() {
         modifiedWhen: new Date(Date.UTC(2026, 9, 10, 12) - index * 3600000).toISOString(),
       }
     }
-    const quotes: Record<string, Quote[]> = {
+    const quotes: Record<string, (Quote & Partial<QuoteDetail>)[]> = {
       [north]: Array.from({ length: 55 }, (_, index) => makeQuote(north, index)),
       [studio]: [{ ...makeQuote(studio, 0), customerName: 'Forma', title: 'Forma - Office Renovation' }],
       [id(12)]: [],
@@ -173,6 +175,35 @@ export function createFixtures() {
             'You no longer have access to this organization.',
           )
         if (['taxonomies', 'principals'].includes(parts[2] || '')) return structuredClone(configurations.request(path, method, body, org!, state.user)) as T
+        const quoteDetail = (quote: Quote & Partial<QuoteDetail>): QuoteDetail => ({ ...quote, token: quote.modifiedWhen, lines: quote.lines ?? [], currency: 'USD', total: (() => { const n = (quote.lines ?? []).reduce((sum,l) => sum + BigInt(l.lineTotal.replace('.','')),0n); return `${n / 100n}.${String(n % 100n).padStart(2,'0')}` })() })
+        if (parts[2] === 'quotes' && ((parts.length === 4 && ['GET','PUT'].includes(method)) || (parts.length === 3 && method === 'POST'))) {
+          const previous = state.quotes[orgId]?.find(q => q.id === parts[3])
+          if (parts[3] && !previous) fail(404,'NOT_FOUND','Quote not found.')
+          if (method === 'GET') return structuredClone({ quote: quoteDetail(previous!) }) as T
+          if (previous && (body.expectedToken !== previous.modifiedWhen || sessionStorage.getItem('quotes:fixture:quote-conflict'))) { sessionStorage.removeItem('quotes:fixture:quote-conflict'); fail(409,'QUOTE_CONFLICT','This quote changed. Reload before saving; your changes have been retained.') }
+          if (!body.customerName?.trim() || !body.projectName?.trim()) fail(422,'INVALID_INPUT','Customer and Project are required.')
+          const owner = (state.members[orgId] || []).find(m => m.userId === body.ownerId)
+          if (body.ownerId !== null && !owner) fail(422,'OWNER_UNAVAILABLE','Choose an active team member.')
+          if (!Array.isArray(body.lines) || body.lines.length > 100) fail(422,'INVALID_INPUT','Use at most 100 lines.')
+          const lines = body.lines.map((input: any) => {
+            const old = previous?.lines?.find(l => l.id === input.id)
+            if (!Number.isInteger(input.quantity) || input.quantity < 1 || input.quantity > 1000000) fail(422,'INVALID_INPUT','Use a positive whole quantity.')
+            let snapshot = old && old.taxonomyId === input.taxonomyId && old.versionId === input.versionId ? old.snapshot : null
+            if (!snapshot) {
+              const { taxonomy: t } = configurations.request(`/organizations/${orgId}/taxonomies/${input.taxonomyId}`, 'GET', {}, org!, state.user) as { taxonomy: Taxonomy }
+              if (t.archivedAt || t.version.id !== input.versionId) fail(409,'CONFIGURATION_CHANGED','The configuration changed or was archived. Select the current product again and review its options.')
+              snapshot = { content: t.version.content, principalId: t.version.principalId, principalName: t.principalName }
+            }
+            if (input.selections.length !== snapshot.content.segments.length || input.selections.some((id: string | null,i: number) => id !== null && !snapshot!.content.segments[i]?.options.some(o => o.id === id))) fail(422,'INVALID_INPUT','Choose valid options.')
+            const line: LocalQuoteLine = { ...input, id: old?.id ?? crypto.randomUUID(), key: '', snapshot, complete: input.selections.every((id: string | null) => id !== null) }
+            return { ...line, key: undefined, ...quoteAmount(line), partNumber: quoteNumber(line) }
+          })
+          const quote: Quote & Partial<QuoteDetail> = { id: previous?.id ?? String(Math.max(10000,...Object.values(state.quotes).flat().map(q => Number(q.id))) + 1), organizationId: orgId, customerId: previous?.customerId ?? null, customerName: body.customerName.trim(), projectName: body.projectName.trim(), title: `${body.customerName.trim()} - ${body.projectName.trim()}`, ownerId: body.ownerId, ownerName: owner ? owner.displayName || owner.email : null, modifiedBy: state.user.id, modifiedByName: state.user.displayName || state.user.email, modifiedWhen: new Date().toISOString(), lines }
+          const unchanged = previous && previous.customerName === quote.customerName && previous.projectName === quote.projectName && previous.ownerId === quote.ownerId && JSON.stringify(previous.lines ?? []) === JSON.stringify(lines)
+          if (unchanged) return structuredClone({ quote: quoteDetail(previous), unchanged: true }) as T
+          if (previous) state.quotes[orgId]!.splice(state.quotes[orgId]!.indexOf(previous),1,quote); else (state.quotes[orgId] ??= []).push(quote)
+          save(); return structuredClone({ quote: quoteDetail(quote), unchanged: false }) as T
+        }
         const listingQuotes = parts.length === 3 && parts[2] === 'quotes' && method === 'GET'
         const listingOwners = parts.length === 3 && parts[2] === 'quote-owners' && method === 'GET'
         const editingOwner = parts.length === 4 && parts[2] === 'quotes' && method === 'PATCH'

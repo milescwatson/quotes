@@ -60,3 +60,7 @@ This change does not deploy resources, run database migrations, or create organi
 Admin settings has a left navigation with separate General Information, Product Configurations (with one Principal filter), and shared Principals pages. Admins can add a principal with a unique name and root-domain website. New/open links lead to the Configuration Editor, which saves complete snapshots and preserves defaults/hidden names. A new configuration starts blank. The editor includes principal assignment, base price, inline segment/options, drag handles, keyboard arrows, explicit Save, and unsaved-navigation guards.
 
 Local development fixtures include these flows. Run `npm run test:e2e` for browser coverage and `npm run typecheck`/`npm run build` for validation. Live use requires the 0003 database migration and matching API release.
+
+## Quote editor
+
+New Quote and linked list titles open the shared quote editor. All members can save customer/project details, choose products through a searchable picker, enter option codes, and change quantities. Blank selections and empty quotes can be saved; estimated totals are labeled. Saved configurations and prices remain fixed to their original versions. Save errors preserve input and stale saves require reload. See [task 5000](../tasks/5000/implementation.md) and apply database migration 0004 with the matching API/Gateway release before enabling this frontend.

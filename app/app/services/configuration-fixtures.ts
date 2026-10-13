@@ -21,6 +21,7 @@ export function createConfigurationFixtures() {
   let state = seed()
   try { const value = sessionStorage.getItem(storage); if (value) state = JSON.parse(value) } catch { /* Reset malformed development data. */ }
   const persist = () => sessionStorage.setItem(storage, JSON.stringify(state))
+  persist()
   const fail = (status: number, code: string, message: string, path?: string): never => { throw new ApiError(status, code, message, undefined, path ? [{ path, code, message }] : undefined) }
   const page = <T>(items: T[], query: URLSearchParams) => {
     const page = Number(query.get('page') || 1), pageSize = Number(query.get('pageSize') || 50)
@@ -54,7 +55,7 @@ export function createConfigurationFixtures() {
       const visible = state.taxonomies.filter(t => t.ownerOrganizationId === org.id && !t.archivedAt)
       if (method === 'GET' && !id) {
         const filter = url.searchParams.get('principalId')
-        return page(visible.filter(t => !filter || t.principalId === filter).map(t => ({ id: t.id, principalId: t.principalId, principalName: state.principals.find(p => p.id === t.principalId)!.name, productFamilyName: t.version.content.productFamilyName, currentVersionId: t.currentVersionId, versionNumber: t.version.versionNumber, modifiedAt: t.version.createdAt, modifiedBy: t.version.modifiedBy })), url.searchParams)
+        return page(visible.filter(t => !filter || t.principalId === filter).map(t => ({ id: t.id, principalId: t.principalId, principalName: state.principals.find(p => p.id === t.principalId)!.name, productFamilyName: t.version.content.productFamilyName, modelCode: t.version.content.segments.map((s,i) => (i ? (t.version.content.separators?.[i-1] ?? '-') : '') + (s.options.length === 1 ? s.options[0]!.code : s.placeholder)).join(''), currentVersionId: t.currentVersionId, versionNumber: t.version.versionNumber, modifiedAt: t.version.createdAt, modifiedBy: t.version.modifiedBy })), url.searchParams)
       }
       const current = id ? state.taxonomies.find(t => t.id === id && t.ownerOrganizationId === org.id) : null
       if (id && !current) fail(404, 'NOT_FOUND', 'Configuration not found.')

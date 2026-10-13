@@ -71,3 +71,7 @@ Run `npm test` from `server` for API integration and legacy upgrade coverage.
 ## Shared principals (0003)
 
 Apply the additive [principal migration](versions/0003/principals/README.md) after the JSON taxonomy schema and before releasing the Configuration Editor API. It adds global name/domain uniqueness and versioned principal assignments; it requires explicit mapping when configurations already exist. The deployment script uses the explicit development-only `apply-principals` mode for 0003; its original `apply` mode remains the baseline installer.
+
+## Quote editor (0004)
+
+Follow the additive [quote migration](versions/0004/quotes/README.md) after 0003. It adds snapshot documents and runtime quote-write grants, with a bounded backfill of empty documents for existing quotes. The migration is applied to development; see the deployment ledger for live evidence. Quote service/migration coverage is in `server/tests/quote-editor.test.mjs`.

@@ -100,3 +100,9 @@ and principal lists returned 401. This release
 did not perform a new authenticated live browser check. No database migrations
 were required. Staging and production were not modified. Published Lambda
 version **5** remains available for a deliberate alias/state rollback.
+
+## Quotes editor release — October 12, 2026
+
+Database migration 0004 is applied and verified in development. Quote writes were paused by temporarily reserving zero Lambda concurrency and draining existing invocations, then the original unreserved setting was restored. No existing quote rows needed backfill. Live quote verification through a dedicated temporary Lambda using the runtime IAM/SQL role passed eleven checks, and all fixtures/the temporary function were removed. See the database ledger.
+
+The reviewed release plan changed only the API bundle, development alias and Gateway (0 added, 3 changed, 0 destroyed). The first Gateway import rejected YAML aliases; Lambda/alias reached version 8, then an expanded contract and fresh Gateway-only plan completed the route/CORS release. All 26 live routes match OpenAPI and use JWT except health. Health returned 200, anonymous quote detail/create/update returned 401, and the configured-origin PUT preflight returned 204 with PUT allowed. Version 8 is Active/Successful with SHA-256 `U1uyPcNomdnoFhjtHB2XzNgN7Y6GvfCNNkfQhsx4jrc=`. Source/frontend release status will be recorded after Amplify completes. Staging and production are unchanged.

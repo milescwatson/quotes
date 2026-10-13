@@ -1,0 +1,40 @@
+{
+  "environment": "development",
+  "startedAt": "2026-10-13T01:41:58.023Z",
+  "runId": "4c9efc60-1eeb-4071-aeff-ea95e4fd46cb",
+  "fixture": {
+    "adminId": "7",
+    "memberId": "8",
+    "orgId": "5",
+    "otherOrgId": "6"
+  },
+  "functionArn": "arn:aws:lambda:us-west-2:415221799122:function:quotes-development-quote-check-4c9efc60",
+  "invocation": {
+    "StatusCode": 200,
+    "ExecutedVersion": "$LATEST"
+  },
+  "smoke": {
+    "status": "passed",
+    "checks": [
+      "Member creation, repeated lines, exact cents, leading zeroes and blank separator",
+      "Persisted quote detail and snapshot read",
+      "No-op preserves modification token",
+      "Blank selections persist with partial estimates",
+      "List owner changes invalidate full-save token",
+      "Stale catalog previews rejected",
+      "Historical version choices and prices survive changes and archive",
+      "Invalid selections roll back atomically",
+      "Empty quote persistence",
+      "Organization isolation",
+      "Runtime quote deletion denied"
+    ],
+    "quoteId": "2",
+    "emptyQuoteId": "3",
+    "productId": "7",
+    "principalId": "13"
+  },
+  "status": "passed",
+  "temporaryFunctionDeleted": true,
+  "fixtureDeleted": true,
+  "completedAt": "2026-10-13T01:42:08.515Z"
+}

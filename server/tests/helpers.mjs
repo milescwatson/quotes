@@ -24,6 +24,9 @@ export const mappings = [
     'removeMember',
   ],
   ['GET', '/organizations/:orgId/quotes', 'identity', 'listQuotes'],
+  ['GET', '/organizations/:orgId/quotes/:quoteId', 'identity', 'readQuote'],
+  ['POST', '/organizations/:orgId/quotes', 'identity', 'createQuote'],
+  ['PUT', '/organizations/:orgId/quotes/:quoteId', 'identity', 'updateQuote'],
   [
     'GET',
     '/organizations/:orgId/quote-owners',

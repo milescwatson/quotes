@@ -25,8 +25,8 @@ test('quotes list shows fields and page boundaries with keyboard-accessible cont
   await expect(rows(page)).toHaveCount(50)
   await page.getByRole('link', { name: 'New Quote', exact: true }).click()
   await expect(page).toHaveURL(new RegExp(`${orgPath('10')}/quotes/new$`))
-  await expect(page.getByRole('heading', { name: 'Quote creation is coming soon' })).toBeVisible()
-  await page.getByRole('link', { name: 'Back to quotes' }).click()
+  await expect(page.getByRole('heading', { name: 'New quote', exact: true })).toBeVisible()
+  await page.getByRole('link', { name: 'Quotes', exact: true }).last().click()
   await expect(rows(page)).toHaveCount(50)
 })
 
