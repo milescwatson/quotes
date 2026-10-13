@@ -36,11 +36,20 @@ async function removeLine(i: number) { remove(i); await nextTick(); addButton.va
         </ol>
       </nav>
       <PageHeading :title="saved ? 'Edit quote' : 'New quote'" :description="saved ? `Last modified by ${saved.modifiedByName} · ${new Date(saved.modifiedWhen).toLocaleString()}` : 'Choose products and options for your customer project.'">
-        <button type="button" class="button secondary" disabled title="Coming soon">
+        <button type="button" class="button secondary" title="Coming soon">
           <svg aria-hidden="true" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
           Copy View Only Quote Link
         </button>
-        <span class="text-xs text-gray-500" role="status">{{ dirty ? 'Unsaved changes' : saved ? 'Saved' : 'New quote' }}</span>
+        <span
+          class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium"
+          :class="busy ? 'bg-gray-100 text-gray-600' : dirty ? 'bg-amber-50 text-amber-800' : saved ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'"
+          role="status"
+        >
+          <svg v-if="busy" aria-hidden="true" class="size-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle class="opacity-25" cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 9 9"/></svg>
+          <svg v-else-if="saved && !dirty" aria-hidden="true" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>
+          <span v-else aria-hidden="true" class="size-1.5 rounded-full bg-current" />
+          {{ busy ? 'Saving…' : dirty ? 'Unsaved changes' : saved ? 'Saved' : 'New quote' }}
+        </span>
         <button class="button primary" :disabled="busy || submitting || conflicted" @click="submit">{{ busy ? 'Saving…' : 'Save' }}</button>
       </PageHeading>
       <p v-if="notice" class="success" role="status">{{ notice }}</p>
