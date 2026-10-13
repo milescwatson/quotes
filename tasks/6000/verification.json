@@ -1,0 +1,46 @@
+{
+  "verifiedOn": "2026-10-13",
+  "local": {
+    "serverTests": {
+      "passed": 92,
+      "failed": 0
+    },
+    "databaseTests": {
+      "passed": 12,
+      "failed": 0
+    },
+    "browserTests": {
+      "passed": 52,
+      "failed": 0
+    },
+    "typecheck": "passed",
+    "serverBuild": "passed",
+    "bundledLambda": "passed",
+    "frontendBuild": "passed",
+    "terraformValidate": "passed",
+    "deploymentSmokeHandlerUnderLocalRuntimeRole": "passed",
+    "visualReview": [
+      "sharing-desktop.png",
+      "company-mobile.png"
+    ]
+  },
+  "development": {
+    "migration": "pending",
+    "release": "pending",
+    "authenticatedVerification": "pending",
+    "reason": "AWS login expired; renew with aws login --profile quotes-development.",
+    "domainMappings": {}
+  },
+  "superAdministratorPolicy": {
+    "source": "shared/super-administrators.json",
+    "emails": [
+      "mc.watson415@gmail.com",
+      "miles@baysideio.com",
+      "miles@milescwatson.com"
+    ],
+    "matching": "Exact trimmed case-insensitive verified sign-in email",
+    "storedFlag": false,
+    "grantRevokeEndpoint": false,
+    "seedRequired": false
+  }
+}

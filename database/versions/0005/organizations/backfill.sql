@@ -1,0 +1,1 @@
+UPDATE public.organization_memberships SET role=CASE WHEN role='admin' THEN 'administrator' ELSE 'sales' END WHERE id IN (SELECT id FROM public.organization_memberships WHERE role IN ('admin','editor','member') ORDER BY id LIMIT 1000);
