@@ -67,8 +67,8 @@ test('quotes schema, list service, and organization access', async (t) => {
     await db.exec(schema.replaceAll('INDEX ASYNC', 'INDEX'));
     await q(
       `INSERT INTO users(id,cognito_issuer,cognito_subject,email,normalized_email,display_name)
-      VALUES(1,$1,'admin','admin@example.com','admin@example.com','Alex'),
-      (2,$1,'editor','editor@example.com','editor@example.com','Editor'),
+      VALUES(1,$1,'admin','admin@example.com','admin@example.com','Alex Morgan'),
+      (2,$1,'editor','editor@example.com','editor@example.com','Jamie Chen'),
       (3,$1,'member','member@example.com','member@example.com',NULL),
       (4,$1,'stranger','stranger@example.com','stranger@example.com',NULL)`,
       [issuer],
@@ -250,7 +250,11 @@ test('quotes schema, list service, and organization access', async (t) => {
             orgId: '10',
             identity: { issuer, sub },
           });
-        assert.equal((await owners('member')).items.length, 3);
+        assert.deepEqual((await owners('member')).items, [
+          { id: '1', name: 'Alex Morgan' },
+          { id: '2', name: 'Jamie Chen' },
+          { id: '3', name: 'Unnamed team member' },
+        ]);
         await denied(() => owners('stranger'), 404);
         await update({ ownerId: '2' });
         const owned = await call('10', {
@@ -259,9 +263,9 @@ test('quotes schema, list service, and organization access', async (t) => {
           project: 'office',
         });
         assert.equal(owned.totalItems, 1);
-        assert.equal(owned.items[0].ownerName, 'Editor');
+        assert.equal(owned.items[0].ownerName, 'Jamie Chen');
         assert.equal(owned.items[0].modifiedBy, '3');
-        assert.equal(owned.items[0].modifiedByName, 'member@example.com');
+        assert.equal(owned.items[0].modifiedByName, 'Unnamed team member');
         await denied(() => update({ ownerId: '4' }), 422);
         await denied(() => update({ ownerId: '99999' }), 422);
         await denied(() => update({ ownerId: '2' }, 'stranger'), 404);
@@ -273,7 +277,7 @@ test('quotes schema, list service, and organization access', async (t) => {
         assert.equal((await owners('admin')).items.length, 2);
         assert.equal(
           (await call('10', { ownerId: '2' })).items[0].ownerName,
-          'Editor',
+          'Jamie Chen',
         );
         await db.exec('UPDATE users SET disabled_at=NULL WHERE id=2');
         await db.exec(

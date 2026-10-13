@@ -86,7 +86,7 @@ export function createFixtures() {
         ownerName: index % 3 === 2 ? null : index % 3 === 0 ? user.displayName! : 'Jamie Chen',
         customerName, projectName, title: `${customerName} - ${projectName}`,
         modifiedBy: index % 2 === 0 ? me : id(5),
-        modifiedByName: index % 2 === 0 ? user.displayName! : 'former@example.com',
+        modifiedByName: index % 2 === 0 ? user.displayName! : 'Unnamed team member',
         modifiedWhen: new Date(Date.UTC(2026, 9, 10, 12) - index * 3600000).toISOString(),
       }
     }
@@ -198,7 +198,7 @@ export function createFixtures() {
             const line: LocalQuoteLine = { ...input, id: old?.id ?? crypto.randomUUID(), key: '', snapshot, complete: input.selections.every((id: string | null) => id !== null) }
             return { ...line, key: undefined, ...quoteAmount(line), partNumber: quoteNumber(line) }
           })
-          const quote: Quote & Partial<QuoteDetail> = { id: previous?.id ?? String(Math.max(10000,...Object.values(state.quotes).flat().map(q => Number(q.id))) + 1), organizationId: orgId, customerId: previous?.customerId ?? null, customerName: body.customerName.trim(), projectName: body.projectName.trim(), title: `${body.customerName.trim()} - ${body.projectName.trim()}`, ownerId: body.ownerId, ownerName: owner ? owner.displayName || owner.email : null, modifiedBy: state.user.id, modifiedByName: state.user.displayName || state.user.email, modifiedWhen: new Date().toISOString(), lines }
+          const quote: Quote & Partial<QuoteDetail> = { id: previous?.id ?? String(Math.max(10000,...Object.values(state.quotes).flat().map(q => Number(q.id))) + 1), organizationId: orgId, customerId: previous?.customerId ?? null, customerName: body.customerName.trim(), projectName: body.projectName.trim(), title: `${body.customerName.trim()} - ${body.projectName.trim()}`, ownerId: body.ownerId, ownerName: owner ? owner.displayName?.trim() || 'Unnamed team member' : null, modifiedBy: state.user.id, modifiedByName: state.user.displayName?.trim() || 'Unnamed team member', modifiedWhen: new Date().toISOString(), lines }
           const unchanged = previous && previous.customerName === quote.customerName && previous.projectName === quote.projectName && previous.ownerId === quote.ownerId && JSON.stringify(previous.lines ?? []) === JSON.stringify(lines)
           if (unchanged) return structuredClone({ quote: quoteDetail(previous), unchanged: true }) as T
           if (previous) state.quotes[orgId]!.splice(state.quotes[orgId]!.indexOf(previous),1,quote); else (state.quotes[orgId] ??= []).push(quote)
@@ -216,16 +216,16 @@ export function createFixtures() {
             )
         }
         if (listingOwners) {
-          result = { items: (state.members[orgId] || []).map(member => ({ id: member.userId, name: member.displayName || member.email })) }
+          result = { items: (state.members[orgId] || []).map(member => ({ id: member.userId, name: member.displayName?.trim() || 'Unnamed team member' })) }
         } else if (editingOwner) {
           const quote = state.quotes[orgId]?.find(quote => quote.id === parts[3])
           if (!quote) fail(404, 'NOT_FOUND', 'Quote not found.')
           const owner = (state.members[orgId] || []).find(member => member.userId === body.ownerId)
           if (body.ownerId !== null && !owner) fail(422, 'OWNER_UNAVAILABLE', 'Choose an active team member from this organization.')
           quote!.ownerId = owner?.userId ?? null
-          quote!.ownerName = owner ? owner.displayName || owner.email : null
+          quote!.ownerName = owner ? owner.displayName?.trim() || 'Unnamed team member' : null
           quote!.modifiedBy = state.user.id
-          quote!.modifiedByName = state.user.displayName || state.user.email
+          quote!.modifiedByName = state.user.displayName?.trim() || 'Unnamed team member'
           quote!.modifiedWhen = new Date().toISOString()
           result = { success: true }
         } else if (listingQuotes) {

@@ -154,8 +154,8 @@ async function quotePage(db, organizationId, query) {
   );
   const quotes = await rows(
     db,
-    `SELECT q.*, COALESCE(u.display_name, u.email) AS modifier_name,
-       COALESCE(owner.display_name, owner.email) AS owner_name
+    `SELECT q.*, COALESCE(NULLIF(trim(u.display_name), ''), 'Unnamed team member') AS modifier_name,
+       CASE WHEN owner.id IS NOT NULL THEN COALESCE(NULLIF(trim(owner.display_name), ''), 'Unnamed team member') END AS owner_name
      FROM public.quotes q JOIN public.users u ON u.id=q.modified_by
      LEFT JOIN public.users owner ON owner.id=q.owner_user_id
      WHERE ${where}
@@ -433,10 +433,10 @@ export function createIdentityService(withTransaction) {
         const { org } = await organizationAccess(db, u, orgId, false, true);
         const owners = await rows(
           db,
-          `SELECT u.id, COALESCE(u.display_name,u.email) AS name
+          `SELECT u.id, COALESCE(NULLIF(trim(u.display_name), ''), 'Unnamed team member') AS name
           FROM public.organization_memberships m JOIN public.users u ON u.id=m.user_id
           WHERE m.organization_id=$1 AND m.removed_at IS NULL AND u.disabled_at IS NULL
-          ORDER BY lower(COALESCE(u.display_name,u.email)),u.id`,
+          ORDER BY lower(COALESCE(NULLIF(trim(u.display_name), ''), 'Unnamed team member')),u.id`,
           [org.id],
         );
         return {

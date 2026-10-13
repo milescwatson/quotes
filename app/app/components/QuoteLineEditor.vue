@@ -58,7 +58,16 @@ defineExpose({ validate, done })
   <article ref="root" class="panel min-w-0 p-4 sm:p-5" :aria-label="`Line ${index + 1}`" :aria-busy="loading">
     <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
       <h2 class="mb-0 text-base">Line {{ index + 1 }} <span v-if="draft" class="ml-2 font-normal text-gray-500">{{ draft.snapshot.content.productFamilyName }} · {{ draft.snapshot.principalName }}</span></h2>
-      <div class="flex gap-2"><button v-if="!editor" ref="editButton" class="button secondary" :disabled="disabled" :aria-label="`Edit line ${index + 1}`" @click="start">Edit line</button><button class="text-button danger-text" :disabled="disabled" :aria-label="`Remove line ${index + 1}`" @click="remove">Remove</button></div>
+      <div class="flex shrink-0 items-center gap-1">
+        <button v-if="!editor" ref="editButton" type="button" class="inline-flex min-h-10 items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 hover:text-gray-900" :disabled="disabled" :aria-label="`Edit line ${index + 1}`" @click="start">
+          <svg aria-hidden="true" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m16 3 5 5M4 20l4-1L21 6a2.1 2.1 0 0 0-3-3L5 16l-1 4Z" /></svg>
+          Edit
+        </button>
+        <button type="button" class="inline-flex min-h-10 items-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-gray-500 hover:bg-red-50 hover:text-red-700" :disabled="disabled" :aria-label="`Remove line ${index + 1}`" @click="remove">
+          <svg aria-hidden="true" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M5 6l1 14a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1l1-14M10 10v7M14 10v7" /></svg>
+          Remove
+        </button>
+      </div>
     </div>
     <fieldset :disabled="disabled || loading" class="min-w-0">
       <template v-if="editor">
@@ -90,10 +99,32 @@ defineExpose({ validate, done })
         <div class="mt-4 flex justify-end gap-2"><button v-if="modelValue" type="button" class="button secondary" @click="cancel">Cancel</button><button type="button" class="button primary" @click="done">Done</button></div>
       </template>
       <template v-else-if="modelValue">
-        <div class="flex flex-wrap items-center break-all font-mono text-xl font-semibold" aria-label="Saved part number"><template v-for="(s,i) in modelValue.snapshot.content.segments" :key="s.id"><span v-if="i">{{ (modelValue.snapshot.content.separators ?? Array(modelValue.selections.length - 1).fill('-'))[i - 1] }}</span><button v-if="s.options.length > 1" type="button" class="rounded px-1 py-2 text-blue-700 hover:bg-blue-50" :aria-label="`Edit ${s.name || s.placeholder} in line ${index + 1}`" @click="focusSegment(i)">{{ s.options.find(o => o.id === modelValue!.selections[i])?.code || s.placeholder }}</button><span v-else class="px-1">{{ s.options[0]?.code }}</span></template></div>
-        <p v-if="!modelValue.complete" class="mt-2 text-amber-800">Incomplete options — estimated price. Blank choices are saved.</p>
-        <dl class="mt-3 grid gap-2 sm:grid-cols-3"><div><dt class="text-gray-500">Quantity</dt><dd>{{ modelValue.quantity }}</dd></div><div><dt class="text-gray-500">Unit price</dt><dd>{{ displayPrice(modelValue.unitPrice) }}</dd></div><div><dt class="text-gray-500">Line total</dt><dd class="font-semibold">{{ displayPrice(modelValue.lineTotal) }}</dd></div></dl>
-        <details open class="mt-4"><summary class="cursor-pointer text-gray-600">Option and price breakdown</summary><ul class="mt-3 space-y-2"><li class="flex justify-between gap-4"><span>Base price</span><span>{{ displayPrice(modelValue.snapshot.content.basePrice) }}</span></li><li v-for="(s,i) in modelValue.snapshot.content.segments" :key="s.id" class="flex justify-between gap-4"><button v-if="s.options.length > 1" class="text-left text-blue-700" @click="focusSegment(i)">{{ s.name || s.placeholder }}: {{ s.options.find(o => o.id === modelValue!.selections[i])?.code || 'Not selected' }} — {{ s.options.find(o => o.id === modelValue!.selections[i])?.description }}</button><span v-else>{{ s.name || s.placeholder }}: {{ s.options[0]?.code }}</span><span class="shrink-0">+{{ displayPrice(s.options.find(o => o.id === modelValue!.selections[i])?.price || '0.00') }}</span></li></ul></details>
+        <div class="grid items-center gap-4 border-t border-gray-200 pt-4 lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-6">
+          <div class="min-w-0">
+            <p class="mb-1 text-xs font-medium text-gray-500">Part number</p>
+            <div class="flex flex-wrap items-center break-all font-mono text-xl font-semibold" aria-label="Saved part number"><template v-for="(s,i) in modelValue.snapshot.content.segments" :key="s.id"><span v-if="i">{{ (modelValue.snapshot.content.separators ?? Array(modelValue.selections.length - 1).fill('-'))[i - 1] }}</span><button v-if="s.options.length > 1" type="button" class="rounded px-1 py-2 text-blue-700 hover:bg-blue-50" :aria-label="`Edit ${s.name || s.placeholder} in line ${index + 1}`" @click="focusSegment(i)">{{ s.options.find(o => o.id === modelValue!.selections[i])?.code || s.placeholder }}</button><span v-else class="px-1">{{ s.options[0]?.code }}</span></template></div>
+            <p v-if="!modelValue.complete" class="mt-1 text-xs text-amber-800">Incomplete options — estimated price. Blank choices are saved.</p>
+          </div>
+          <dl class="grid grid-cols-[minmax(0,0.65fr)_minmax(0,1fr)_minmax(0,1.15fr)] items-start gap-3 border-t border-gray-200 pt-4 text-right tabular-nums lg:border-t-0 lg:pt-0">
+            <div><dt class="text-xs text-gray-500">Quantity</dt><dd class="mt-2 font-medium">{{ modelValue.quantity }}</dd></div>
+            <div><dt class="text-xs text-gray-500">Unit price</dt><dd class="mt-2 font-medium">{{ displayPrice(modelValue.unitPrice) }}</dd></div>
+            <div class="border-l border-gray-200 pl-3"><dt class="text-xs text-gray-500">Line total</dt><dd class="mt-2 font-semibold">{{ displayPrice(modelValue.lineTotal) }}</dd></div>
+          </dl>
+        </div>
+        <details class="group mt-4 rounded-md border border-gray-200 bg-gray-50">
+          <summary class="flex min-h-10 cursor-pointer list-none items-center gap-2 rounded-md px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-100 [&::-webkit-details-marker]:hidden">
+            <svg aria-hidden="true" class="size-4 shrink-0 transition-transform group-open:rotate-90 motion-reduce:transition-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6" /></svg>
+            Option and price breakdown
+          </summary>
+          <ul class="space-y-2 border-t border-gray-200 px-3 py-3 text-xs text-gray-600">
+            <li class="flex justify-between gap-4"><span>Base price</span><span class="shrink-0 tabular-nums">{{ displayPrice(modelValue.snapshot.content.basePrice) }}</span></li>
+            <li v-for="(s,i) in modelValue.snapshot.content.segments" :key="s.id" class="flex justify-between gap-4">
+              <button v-if="s.options.length > 1" type="button" class="min-w-0 rounded text-left hover:text-blue-700 hover:underline" @click="focusSegment(i)">{{ s.name || s.placeholder }}: {{ s.options.find(o => o.id === modelValue!.selections[i])?.code || 'Not selected' }} — {{ s.options.find(o => o.id === modelValue!.selections[i])?.description }}</button>
+              <span v-else>{{ s.name || s.placeholder }}: {{ s.options[0]?.code }}</span>
+              <span class="shrink-0 tabular-nums">+{{ displayPrice(s.options.find(o => o.id === modelValue!.selections[i])?.price || '0.00') }}</span>
+            </li>
+          </ul>
+        </details>
       </template>
     </fieldset>
   </article>

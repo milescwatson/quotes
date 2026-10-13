@@ -6,7 +6,8 @@ import { object, invalid, checkedSnapshot, cents, dollars } from './taxonomy-con
 const conflict = () => fail(409, 'QUOTE_CONFLICT', 'This quote changed. Reload before saving; your changes have been retained.');
 async function detail(db, orgId, id) {
   const q = await one(db, `SELECT q.*, q.modified_when::text AS token,
-    COALESCE(u.display_name,u.email) AS modifier_name, COALESCE(o.display_name,o.email) AS owner_name
+    COALESCE(NULLIF(trim(u.display_name), ''), 'Unnamed team member') AS modifier_name,
+    CASE WHEN o.id IS NOT NULL THEN COALESCE(NULLIF(trim(o.display_name), ''), 'Unnamed team member') END AS owner_name
     FROM public.quotes q JOIN public.users u ON u.id=q.modified_by
     LEFT JOIN public.users o ON o.id=q.owner_user_id WHERE q.organization_id=$1 AND q.id=$2`, [orgId,id]);
   if (!q) fail(404, 'NOT_FOUND', 'Quote not found.');

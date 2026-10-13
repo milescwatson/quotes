@@ -27,6 +27,7 @@ async function removeLine(i: number) { remove(i); await nextTick(); addButton.va
     <template v-if="ready">
       <PageHeading :title="saved ? 'Edit quote' : 'New quote'" :description="saved ? `Last modified by ${saved.modifiedByName} · ${new Date(saved.modifiedWhen).toLocaleString()}` : 'Choose products and options for your customer project.'">
         <NuxtLink :to="back" class="button secondary">Quotes</NuxtLink>
+        <button type="button" class="button secondary" disabled title="Coming soon">Copy View Only Quote Link</button>
         <span class="text-xs text-gray-500" role="status">{{ dirty ? 'Unsaved changes' : saved ? 'Saved' : 'New quote' }}</span>
         <button class="button primary" :disabled="busy || submitting || conflicted" @click="submit">{{ busy ? 'Saving…' : 'Save' }}</button>
       </PageHeading>
