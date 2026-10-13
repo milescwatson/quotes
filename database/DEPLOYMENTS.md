@@ -25,7 +25,7 @@ This is the environment ledger for database schema and grants. Update it after e
 - Runtime IAM mapping: `arn:aws:iam::415221799122:role/quotes-development-api` → `quotes_api`. The operator role has SQL grants but no IAM principal mapping yet.
 - Preflight: no public application tables, application database roles, or IAM/database role mappings.
 - Statement-level evidence: [development.json](deployments/development.json), including SQL SHA-256 hashes, timestamps, job IDs, outcomes, and verification metadata. Contains no authentication tokens.
-- Deployment command: `node AWS/api/scripts/deploy-database.mjs apply` from the repository workspace. This script deliberately accepts only the fixed development target, checks the AWS account, and stops on an unresolved or changed statement.
+- Deployment command: `node server/scripts/deploy-database.mjs apply` from the repository workspace. This script deliberately accepts only the fixed development target, checks the AWS account, and stops on an unresolved or changed statement.
 
 Do not treat all of directory `0001` as a deployable baseline: its legacy taxonomy module is excluded. The first DSQL baseline consists of `0001/identity`, `0001/quotes`, and `0002/taxonomy` together.
 

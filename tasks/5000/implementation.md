@@ -1,6 +1,6 @@
 # Quotes implementation
 
-Implemented locally on October 12, 2026. The feature, API contract, and database migration are ready for review. Migration 0004 and Lambda version 8 with the matching Gateway routes/CORS are deployed to development. The frontend release is being published with this change; see the release record for its final build status. Staging and production remain unchanged.
+Implemented locally on October 12, 2026. The feature, API contract, and database migration are ready for review. Migration 0004 and Lambda version 8 with the matching Gateway routes/CORS are deployed to development. The frontend release passed Amplify job 12 for commit `9cb92df`, and the live site serves the new Quotes editor asset. Staging and production remain unchanged.
 
 ## Delivered behavior
 
@@ -37,4 +37,4 @@ Browser checks use development fixtures. Live development runtime-role verificat
 
 ## Development release
 
-The database schema/grants, API Lambda version 8, all 26 Gateway routes and PUT CORS are verified in development. Gateway initially rejected YAML aliases in the generated additions; those were expanded and protected by a regression check before the successful Gateway-only retry. Live runtime evidence is in `database/deployments/development-0004-validation.json`; API/Gateway evidence is in `AWS/deployments/2026-10-12-quotes-verification.json`.
+The database schema/grants, API Lambda version 8, all 26 Gateway routes, PUT CORS and Amplify frontend job 12 are verified in development. The final Terraform plan reports no changes. Gateway initially rejected YAML aliases in the generated additions; those were expanded and protected by a regression check before the successful Gateway-only retry. Live runtime evidence is in `database/deployments/development-0004-validation.json`; API/Gateway evidence is in `AWS/deployments/2026-10-12-quotes-verification.json`.

@@ -1,7 +1,7 @@
 {
   "environment": "development",
   "verifiedAt": "2026-10-13T01:44:20.999Z",
-  "status": "backend_verified",
+  "status": "passed",
   "lambda": {
     "version": "8",
     "codeSha256": "U1uyPcNomdnoFhjtHB2XzNgN7Y6GvfCNNkfQhsx4jrc=",
@@ -161,6 +161,59 @@
       "added": 0,
       "changed": 1,
       "destroyed": 0
+    },
+    "metadataReconciliation": {
+      "added": 0,
+      "changed": 1,
+      "destroyed": 0,
+      "fields": [
+        "description",
+        "tags_all"
+      ]
     }
-  }
+  },
+  "frontend": {
+    "jobId": "12",
+    "commitId": "9cb92df3db7c2bfde0b80706a26d3423ffa5be4e",
+    "status": "SUCCEED",
+    "startTime": "2026-10-12T18:45:21.438000-07:00",
+    "endTime": "2026-10-12T18:46:47.884000-07:00",
+    "steps": [
+      {
+        "name": "BUILD",
+        "status": "SUCCEED"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "SUCCEED"
+      },
+      {
+        "name": "VERIFY",
+        "status": "SUCCEED"
+      }
+    ],
+    "checks": [
+      {
+        "path": "/",
+        "status": 200,
+        "finalUrl": "https://development.d8i1ve5prnr7w.amplifyapp.com/"
+      },
+      {
+        "path": "/login",
+        "status": 200,
+        "finalUrl": "https://development.d8i1ve5prnr7w.amplifyapp.com/login"
+      },
+      {
+        "path": "/organizations/6b86b273ff34/quotes/new",
+        "status": 200,
+        "finalUrl": "https://development.d8i1ve5prnr7w.amplifyapp.com/organizations/6b86b273ff34/quotes/new"
+      }
+    ],
+    "featureAsset": {
+      "path": "/_nuxt/Kwkl1rQ1.js",
+      "sha256": "7a9cd6aaed70a1c930a85ba28d048f9104fa4db1ffd7327d5cb519a5395fe9c3"
+    },
+    "verifiedAt": "2026-10-13T01:47:05.444Z"
+  },
+  "terraformPostApply": "no changes"
 }
