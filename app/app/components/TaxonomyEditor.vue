@@ -7,11 +7,11 @@ const disabled = computed(() => busy.value || !canEdit.value || conflicted.value
 const message = (path: string) => errors.value.find(e => e.path === path)?.message
 function clearErrors() { errors.value = []; notice.value = '' }
 function focus(key: string, field: string) { nextTick(() => document.getElementById(`${key}-${field}`)?.focus()) }
-function addSegment() { clearErrors(); const s = blankSegment(); draft.value.segments.push(s); focus(s.key, 'placeholder') }
+function addSegment() { clearErrors(); const s = blankSegment(); if (draft.value.segments.length) draft.value.separators.push('-'); draft.value.segments.push(s); focus(s.key, 'placeholder') }
 function addOption(s: SegmentDraft) { clearErrors(); const o = blankOption(); s.options.push(o); focus(o.key, 'code') }
 function removeSegment(s: SegmentDraft) {
-  if ((s.placeholder.trim() || s.options.length) && !window.confirm('Remove this segment and its options? Changes are saved only when you click Save.')) return
-  clearErrors(); const i = draft.value.segments.indexOf(s); draft.value.segments.splice(i, 1)
+  if ((s.placeholder.trim() || s.name?.trim() || s.description.trim() || s.options.length) && !window.confirm('Remove this segment and its options? Changes are saved only when you click Save.')) return
+  clearErrors(); const i = draft.value.segments.indexOf(s); draft.value.segments.splice(i, 1); draft.value.separators.splice(Math.max(0, draft.value.segments.length - 1))
   const next = draft.value.segments[i] || draft.value.segments[i - 1]
   if (next) focus(next.key, 'placeholder'); else nextTick(() => document.getElementById('add-segment')?.focus())
 }
@@ -68,18 +68,25 @@ function blurBase() { const formatted = formatPrice(draft.value.basePrice, true)
             <div class="w-full sm:w-56"><label for="configuration-principal" class="!mt-0 !text-xs">Principal</label><select id="configuration-principal" v-model="draft.principalId" class="w-full" :aria-invalid="!!message('/principalId')" aria-describedby="principal-error" @change="clearErrors"><option value="">Choose a principal</option><option v-for="p in choices" :key="p.id" :value="p.id">{{ p.name }}</option></select><p id="principal-error" class="text-xs text-red-700">{{ message('/principalId') }}</p><p v-if="!choices.length" class="mt-2 text-xs text-gray-600">An administrator must add a principal in Admin settings before saving.</p></div>
             <div class="w-44"><label for="base-price" class="!mt-0 !text-xs">Base price</label><CurrencyInput id="base-price" v-model="draft.basePrice" inputmode="decimal" placeholder="$0.00" :aria-invalid="!!message('/content/basePrice')" aria-describedby="base-error" @input="clearErrors" @blur="blurBase" /><p id="base-error" class="text-xs text-red-700">{{ message('/content/basePrice') }}</p></div>
           </div>
-          <p class="mb-2 mt-5 text-xs font-medium text-gray-600">Part number pattern</p><div class="flex min-h-8 flex-wrap items-center gap-2" aria-label="Part number pattern"><template v-for="(s, i) in draft.segments" :key="s.key"><span v-if="i" class="text-gray-400">-</span><span class="rounded bg-gray-100 px-2 py-1 text-lg font-semibold">{{ s.placeholder || '…' }}</span></template></div>
+          <div class="mt-3"><label for="product-description" class="!text-xs">Product description</label><textarea id="product-description" v-model="draft.productDescription" rows="2" placeholder="Optional" :aria-invalid="!!message('/content/productDescription')" aria-describedby="product-description-error" @input="clearErrors"/><p id="product-description-error" class="text-xs text-red-700">{{ message('/content/productDescription') }}</p></div>
+          <p class="mb-2 mt-5 text-xs font-medium text-gray-600">Part number pattern</p><div class="flex min-h-8 flex-wrap items-center gap-2" aria-label="Part number pattern"><template v-for="(s, i) in draft.segments" :key="s.key"><span v-if="i && draft.separators[i - 1]" class="text-gray-400">{{ draft.separators[i - 1] }}</span><span class="rounded bg-gray-100 px-2 py-1 text-lg font-semibold">{{ s.placeholder || '…' }}</span></template></div>
         </div>
         <div class="border-x border-b border-gray-200 bg-gray-100 p-4 sm:p-5">
           <div class="flex items-start gap-3 overflow-x-auto pb-5" role="region" aria-label="Configuration segments" tabindex="0">
-            <section v-for="(s, i) in draft.segments" :key="s.key" class="w-[380px] max-w-full shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white" :aria-label="`Segment ${i + 1}`" @dragover.prevent @drop.prevent="dropSegment(i)">
+            <template v-for="(s, i) in draft.segments" :key="s.key">
+            <div v-if="i" class="w-24 shrink-0 pt-3"><label :for="`separator-${i}`" class="!mt-0 !text-xs">Separator</label><select :id="`separator-${i}`" v-model="draft.separators[i - 1]" :aria-label="`Separator between segments ${i} and ${i + 1}`" :aria-invalid="!!message('/content/separators')" @change="clearErrors"><option value="-">-</option><option value="">None</option></select></div>
+            <section class="w-[520px] max-w-full shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white" :aria-label="`Segment ${i + 1}`" @dragover.prevent @drop.prevent="dropSegment(i)">
               <div class="flex items-center gap-2 border-b border-gray-200 px-2 py-3">
                 <button :draggable="!disabled" type="button" class="px-1 text-gray-500" :aria-label="`Move segment ${i + 1}. Use left or right arrow keys.`" title="Drag, or use left/right arrow keys" @dragstart="drag($event, s.key)" @dragend="dragging = null" @keydown.left.prevent="move(draft.segments, i, i - 1, s.key, 'placeholder')" @keydown.right.prevent="move(draft.segments, i, i + 1, s.key, 'placeholder')">⠿</button>
                 <span class="flex size-5 shrink-0 items-center justify-center rounded-full bg-gray-800 text-xs text-white">{{ i + 1 }}</span>
-                <input :id="`${s.key}-placeholder`" v-model="s.placeholder" class="!min-h-9 !w-20 !px-2 !py-1 font-semibold" :aria-label="`Segment ${i + 1} placeholder`" :aria-invalid="!!message(`/content/segments/${i}/placeholder`)" @input="clearErrors">
+                <input :id="`${s.key}-placeholder`" v-model="s.placeholder" class="!min-h-9 min-w-0 flex-1 !px-2 !py-1 font-semibold" placeholder="Part number segment name" :aria-label="`Segment ${i + 1} placeholder`" :aria-invalid="!!message(`/content/segments/${i}/placeholder`)" @input="clearErrors">
                 <span class="ml-auto whitespace-nowrap text-[10px] text-gray-500">{{ s.options.length }} {{ s.options.length === 1 ? 'option' : 'options' }}</span><button type="button" class="px-1 text-xl text-gray-500" :aria-label="`Remove segment ${i + 1}`" @click="removeSegment(s)">×</button>
               </div>
               <p v-if="message(`/content/segments/${i}/placeholder`)" class="px-3 text-xs text-red-700">{{ message(`/content/segments/${i}/placeholder`) }}</p>
+              <div class="px-3 pb-1">
+                <label :for="`${s.key}-title`" class="!text-xs">Title</label><input :id="`${s.key}-title`" v-model="s.name" placeholder="Optional" :aria-label="`Title for segment ${i + 1}`" :aria-invalid="!!message(`/content/segments/${i}/name`)" @input="clearErrors"><p class="text-xs text-red-700">{{ message(`/content/segments/${i}/name`) }}</p>
+                <label :for="`${s.key}-description`" class="!text-xs">Description</label><textarea :id="`${s.key}-description`" v-model="s.description" rows="2" placeholder="Optional" :aria-label="`Description for segment ${i + 1}`" :aria-invalid="!!message(`/content/segments/${i}/description`)" @input="clearErrors"/><p class="text-xs text-red-700">{{ message(`/content/segments/${i}/description`) }}</p>
+              </div>
               <div class="option-grid pt-3 text-xs font-semibold text-gray-600"><span/><span>Code</span><span>Description</span><span class="text-right">Price</span><span/></div>
               <div v-for="(o, j) in s.options" :key="o.key" @dragover.prevent.stop @drop.prevent.stop="dropOption(s, j)">
                 <div class="option-grid py-1">
@@ -94,6 +101,7 @@ function blurBase() { const formatted = formatPrice(draft.value.basePrice, true)
               <p v-if="!s.options.length" class="px-3 py-4 text-xs text-gray-500">No options yet.</p><p v-if="message(`/content/segments/${i}/options`)" class="px-3 text-xs text-red-700">{{ message(`/content/segments/${i}/options`) }}</p>
               <div v-if="canEdit" class="mt-2 border-t border-gray-100 p-3"><button :id="`${s.key}-add`" class="text-blue-600" :aria-label="`Add option to segment ${i + 1}`" @click="addOption(s)">＋ Add option</button></div>
             </section>
+            </template>
             <button v-if="canEdit" id="add-segment" class="min-h-14 w-44 shrink-0 rounded-md border border-dashed border-gray-400 text-gray-600" @click="addSegment">＋ Add segment</button>
           </div>
         </div>
@@ -104,7 +112,8 @@ function blurBase() { const formatted = formatPrice(draft.value.basePrice, true)
 <style scoped>
 .option-grid { display:grid;grid-template-columns:16px 58px minmax(0,1fr) 94px 16px;gap:6px;align-items:center;padding-left:8px;padding-right:8px; }
 .cell { min-width:0;min-height:36px;border-color:#9ca3af;padding:6px;font-size:14px; }
+.configuration-editor textarea { width:100%;min-width:0;border:1px solid #9ca3af;border-radius:4px;padding:8px;font-size:14px;resize:vertical; }
 .configuration-editor input,.configuration-editor select { border-color:#9ca3af; }
-.configuration-editor input:hover,.configuration-editor select:hover { border-color:#6b7280; }
+.configuration-editor input:hover,.configuration-editor select:hover,.configuration-editor textarea:hover { border-color:#6b7280; }
 .configuration-editor [aria-invalid="true"] { border-color:#b91c1c; }
 </style>

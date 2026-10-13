@@ -2,6 +2,7 @@ import { parse } from 'tldts'
 import { ApiError, type Organization, type Profile } from '~/types/identity'
 import type { Principal, Taxonomy, TaxonomyInput, ConfigurationDraft } from '~/types/taxonomy'
 import { configurationInput } from '~/utils/configuration'
+const defaults = (content: Taxonomy['version']['content']) => ({ productDescription: null, separators: Array(Math.max(0, content.segments.length - 1)).fill('-'), ...content, segments: content.segments.map(s => ({ description: null, ...s })) })
 const canonical = (value: unknown): string => JSON.stringify(value, (_key, item) => item && typeof item === 'object' && !Array.isArray(item) ? Object.fromEntries(Object.entries(item).sort(([a], [b]) => a.localeCompare(b))) : item)
 const storage = 'quotes:fixture:configurations:v1'
 const actor = { id: '1', name: 'Alex Morgan' }
@@ -68,9 +69,9 @@ export function createConfigurationFixtures() {
       const principal = state.principals.find(p => p.id === body.principalId)
       if (!principal) fail(422, 'INVALID_INPUT', 'Choose a principal.', '/principalId')
       const input = body.content as TaxonomyInput
-      const draft: ConfigurationDraft = { ...input, currency: 'USD', principalId: body.principalId, segments: input.segments.map(s => {
+      const draft: ConfigurationDraft = { ...input, productDescription: input.productDescription ?? '', separators: input.separators ?? Array(Math.max(0, input.segments.length - 1)).fill('-'), currency: 'USD', principalId: body.principalId, segments: input.segments.map(s => {
         if (s.id && !current?.version.content.segments.some(old => old.id === s.id)) fail(422, 'INVALID_INPUT', 'Invalid segment identity.')
-        return { ...s, key: s.id || crypto.randomUUID(), defaultKey: s.defaultOptionIndex == null ? null : String(s.defaultOptionIndex), options: s.options.map((o, i) => {
+        return { ...s, description: s.description ?? '', key: s.id || crypto.randomUUID(), defaultKey: s.defaultOptionIndex == null ? null : String(s.defaultOptionIndex), options: s.options.map((o, i) => {
           if (o.id && !current?.version.content.segments.find(old => old.id === s.id)?.options.some(old => old.id === o.id)) fail(422, 'INVALID_INPUT', 'Invalid option identity.')
           return { ...o, key: String(i), description: o.description || '' }
         }) }
@@ -79,9 +80,9 @@ export function createConfigurationFixtures() {
       if (checked.errors.length) throw new ApiError(422, 'INVALID_INPUT', 'Correct the configuration fields.', undefined, checked.errors)
       const content: Taxonomy['version']['content'] = { ...checked.content, currency: 'USD', schemaVersion: 1, segments: checked.content.segments.map(s => {
         const options = s.options.map(o => ({ ...o, id: o.id || crypto.randomUUID() }))
-        return { id: s.id || crypto.randomUUID(), placeholder: s.placeholder, name: s.name, defaultOptionId: s.defaultOptionIndex == null ? null : options[s.defaultOptionIndex]!.id, options }
+        return { id: s.id || crypto.randomUUID(), placeholder: s.placeholder, name: s.name, description: s.description, defaultOptionId: s.defaultOptionIndex == null ? null : options[s.defaultOptionIndex]!.id, options }
       }) }
-      if (current && current.principalId === principal!.id && canonical(content) === canonical(current.version.content)) return { taxonomy: resource(current), unchanged: true }
+      if (current && current.principalId === principal!.id && canonical(defaults(content)) === canonical(defaults(current.version.content))) return { taxonomy: resource(current), unchanged: true }
       const versionId = String(state.nextVersion++), now = new Date().toISOString()
       const taxonomy: Taxonomy = { id: current?.id || String(state.nextId++), ownerOrganizationId: org.id, principalId: principal!.id, principalName: principal!.name, createdAt: current?.createdAt || now, archivedAt: null, currentVersionId: versionId, permissions: { canEdit: true, canArchive: org.role === 'admin', canPreview: true },
         version: { id: versionId, principalId: principal!.id, versionNumber: (current?.version.versionNumber || 0) + 1, createdAt: now, modifiedBy: { id: user.id, name: user.displayName || user.email }, changeSummary: null, content } }

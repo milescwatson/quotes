@@ -419,6 +419,7 @@ export interface components {
         TaxonomySegment: {
             id: string;
             placeholder: string;
+            description?: string | null;
             name: string | null;
             defaultOptionId: string | null;
             options: components["schemas"]["TaxonomyOption"][];
@@ -426,12 +427,16 @@ export interface components {
         TaxonomySegmentInput: {
             id: string | null;
             placeholder: string;
+            description?: string | null;
             name: string | null;
             options: components["schemas"]["TaxonomyOptionInput"][];
             defaultOptionIndex: number | null;
         };
         TaxonomyContentInput: {
             productFamilyName: string;
+            productDescription?: string | null;
+            /** @description One separator per gap between segments; omitted values default to dashes. */
+            separators?: ("-" | "")[];
             /** @enum {string} */
             currency: "USD";
             basePrice: string;
@@ -439,6 +444,9 @@ export interface components {
         };
         TaxonomyContent: {
             productFamilyName: string;
+            productDescription?: string | null;
+            /** @description One separator per gap between segments; omitted values default to dashes. */
+            separators?: ("-" | "")[];
             /** @enum {string} */
             currency: "USD";
             basePrice: string;

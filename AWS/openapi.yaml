@@ -2047,6 +2047,10 @@ components:
           type: string
           maxLength: 32
           minLength: 1
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
         name:
           type: string
           maxLength: 120
@@ -2079,6 +2083,10 @@ components:
           type: string
           maxLength: 32
           minLength: 1
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
         name:
           type: string
           maxLength: 120
@@ -2108,6 +2116,17 @@ components:
           type: string
           maxLength: 120
           minLength: 1
+        productDescription:
+          type: string
+          maxLength: 1000
+          nullable: true
+        separators:
+          type: array
+          description: One separator per gap between segments; omitted values default to dashes.
+          maxItems: 49
+          items:
+            type: string
+            enum: ["-", ""]
         currency:
           type: string
           enum:
@@ -2135,6 +2154,17 @@ components:
           type: string
           maxLength: 120
           minLength: 1
+        productDescription:
+          type: string
+          maxLength: 1000
+          nullable: true
+        separators:
+          type: array
+          description: One separator per gap between segments; omitted values default to dashes.
+          maxItems: 49
+          items:
+            type: string
+            enum: ["-", ""]
         currency:
           type: string
           enum:

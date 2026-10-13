@@ -7,6 +7,7 @@ import { createTaxonomyService } from '../taxonomy.mjs';
 import {
   normalizeContent,
   checkedSnapshot,
+  sameContent,
   configure,
   MAX_BYTES,
 } from '../taxonomy-content.mjs';
@@ -691,4 +692,51 @@ test('client-side timeout discards the connection instead of pooling an in-fligh
   );
   assert.equal(discarded, true);
   assert.deepEqual(queries, ['BEGIN ISOLATION LEVEL REPEATABLE READ']);
+});
+
+
+test('descriptions, mixed separators, legacy defaults and snapshot integrity', () => {
+  const input = content();
+  input.productDescription = ' Product\nDetails ';
+  input.segments[1].description = ' Size\nDetails ';
+  input.separators = [''];
+  const saved = normalizeContent(input);
+  assert.equal(saved.productDescription, 'Product\nDetails');
+  assert.equal(saved.segments[1].description, 'Size\nDetails');
+  assert.equal(configure(saved, []).partNumber, 'F01');
+  assert.deepEqual(checkedSnapshot(saved), saved);
+  const mixed = content();
+  mixed.segments.push({ ...mixed.segments[0], placeholder: 'YY', options: [{ id: null, code: 'AA', description: null, price: '0.00' }] });
+  mixed.separators = ['', '-'];
+  assert.equal(configure(normalizeContent(mixed), []).partNumber, 'F01-AA');
+  mixed.separators = ['', ''];
+  assert.equal(configure(normalizeContent(mixed), []).partNumber, 'F01AA');
+  const defaults = normalizeContent(content());
+  const legacy = structuredClone(defaults);
+  delete legacy.productDescription;
+  delete legacy.separators;
+  legacy.segments.forEach(s => delete s.description);
+  assert.deepEqual(checkedSnapshot(legacy), legacy);
+  assert.ok(sameContent(defaults, legacy));
+  assert.equal(configure(legacy, []).partNumber, 'F-01');
+  for (const separators of [null, [], ['-', '-'], [' '], ['none']]) {
+    assert.throws(() => normalizeContent({ ...content(), separators }));
+    assert.throws(() => checkedSnapshot({ ...defaults, separators }));
+  }
+  for (const field of ['productDescription', 'description', 'name']) {
+    const value = content();
+    const target = field === 'productDescription' ? value : value.segments[0];
+    const limit = field === 'name' ? 120 : 1000;
+    target[field] = 'x'.repeat(limit);
+    normalizeContent(value);
+    target[field] += 'x';
+    assert.throws(() => normalizeContent(value));
+    target[field] = '\u0000';
+    assert.throws(() => normalizeContent(value));
+    target[field] = '   ';
+    const cleared = normalizeContent(value);
+    assert.equal(field === 'productDescription' ? cleared[field] : cleared.segments[0][field], null);
+  }
+  assert.throws(() => checkedSnapshot({ ...defaults, productDescription: ' untrimmed ' }));
+  assert.throws(() => checkedSnapshot({ ...defaults, unknown: null }));
 });

@@ -1,10 +1,10 @@
 import type { ConfigurationDraft, SegmentDraft, OptionDraft, Taxonomy, TaxonomyInput, FieldError } from '~/types/taxonomy'
-export const blankConfiguration = (): ConfigurationDraft => ({ productFamilyName: '', principalId: '', basePrice: '', currency: 'USD', segments: [] })
+export const blankConfiguration = (): ConfigurationDraft => ({ productFamilyName: '', productDescription: '', separators: [], principalId: '', basePrice: '', currency: 'USD', segments: [] })
 export const blankOption = (): OptionDraft => ({ key: crypto.randomUUID(), id: null, code: '', description: '', price: '0.00' })
-export const blankSegment = (): SegmentDraft => ({ key: crypto.randomUUID(), id: null, placeholder: '', name: null, defaultKey: null, options: [] })
+export const blankSegment = (): SegmentDraft => ({ key: crypto.randomUUID(), id: null, placeholder: '', name: null, description: '', defaultKey: null, options: [] })
 export function fromTaxonomy(t: Taxonomy): ConfigurationDraft {
-  return { productFamilyName: t.version.content.productFamilyName, principalId: t.principalId, basePrice: t.version.content.basePrice, currency: 'USD',
-    segments: t.version.content.segments.map(s => ({ key: s.id, id: s.id, placeholder: s.placeholder, name: s.name, defaultKey: s.defaultOptionId,
+  return { productFamilyName: t.version.content.productFamilyName, productDescription: t.version.content.productDescription ?? '', separators: [...(t.version.content.separators ?? Array(Math.max(0, t.version.content.segments.length - 1)).fill('-'))], principalId: t.principalId, basePrice: t.version.content.basePrice, currency: 'USD',
+    segments: t.version.content.segments.map(s => ({ key: s.id, id: s.id, placeholder: s.placeholder, name: s.name, description: s.description ?? '', defaultKey: s.defaultOptionId,
       options: s.options.map(o => ({ key: o.id, id: o.id, code: o.code, description: o.description ?? '', price: o.price })) })) }
 }
 export function formatPrice(raw: string, emptyZero = false): string | null {
@@ -31,9 +31,9 @@ const cents = (value: string) => BigInt(value.replace('.', ''))
 export function configurationInput(draft: ConfigurationDraft): { content: TaxonomyInput; errors: FieldError[] } {
   const errors: FieldError[] = []
   const error = (path: string, message: string) => errors.push({ path, message, code: 'INVALID_INPUT' })
-  const text = (raw: string, max: number, path: string, optional = false) => {
+  const text = (raw: string, max: number, path: string, optional = false, multiline = false) => {
     const value = raw.trim()
-    if ((!value && !optional) || [...value].length > max || /[\p{Cc}\p{Cs}]/u.test(raw)) error(path, `Enter ${optional ? 'up to' : '1–'}${max} characters without control characters.`)
+    if ((!value && !optional) || [...value].length > max || /[\p{Cc}\p{Cs}]/u.test(multiline ? raw.replace(/[\r\n]/g, '') : raw)) error(path, `Enter ${optional ? 'up to' : '1–'}${max} characters without control characters.`)
     return value
   }
   const price = (raw: string, path: string, emptyZero = false) => {
@@ -47,17 +47,19 @@ export function configurationInput(draft: ConfigurationDraft): { content: Taxono
   }
   if (!/^[1-9]\d{0,18}$/.test(draft.principalId)) error('/principalId', 'Choose a principal.')
   if (!draft.segments.length || draft.segments.length > 50) error('/content/segments', 'Add 1–50 segments.')
+  if (draft.separators.length !== Math.max(0, draft.segments.length - 1) || draft.separators.some(s => s !== '-' && s !== '')) error('/content/separators', 'Provide one separator (- or blank) per gap.')
   const labels = new Set<string>(), names = new Set<string>()
   let count = 0
-  const content: TaxonomyInput = { productFamilyName: text(draft.productFamilyName, 120, '/content/productFamilyName'), currency: draft.currency,
+  const content: TaxonomyInput = { productFamilyName: text(draft.productFamilyName, 120, '/content/productFamilyName'), productDescription: text(draft.productDescription, 1000, '/content/productDescription', true, true) || null, separators: [...draft.separators], currency: draft.currency,
     basePrice: price(draft.basePrice, '/content/basePrice', true), segments: draft.segments.map((s, i) => {
       const path = `/content/segments/${i}`, codes = new Set<string>()
       const placeholder = text(s.placeholder, 32, `${path}/placeholder`)
       seen(placeholder, labels, `${path}/placeholder`)
-      if (s.name) seen(s.name, names, `${path}/name`)
+      const name = text(s.name ?? '', 120, `${path}/name`, true) || null
+      if (name) seen(name, names, `${path}/name`)
       count += s.options.length
       if (!s.options.length || s.options.length > 500) error(`${path}/options`, 'Add 1–500 options.')
-      return { id: s.id, placeholder, name: s.name, defaultOptionIndex: s.defaultKey === null ? null : s.options.findIndex(o => o.key === s.defaultKey), options: s.options.map((o, j) => {
+      return { id: s.id, placeholder, name, description: text(s.description, 1000, `${path}/description`, true, true) || null, defaultOptionIndex: s.defaultKey === null ? null : s.options.findIndex(o => o.key === s.defaultKey), options: s.options.map((o, j) => {
         const op = `${path}/options/${j}`, code = text(o.code, 64, `${op}/code`)
         if (/[\s-]/u.test(code)) error(`${op}/code`, 'Codes cannot contain whitespace or hyphens.')
         seen(code, codes, `${op}/code`)

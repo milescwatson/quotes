@@ -18,9 +18,9 @@ export function bounded(value) {
   if (Buffer.byteLength(JSON.stringify(value), 'utf8') > MAX_BYTES)
     invalid('', 'Taxonomy exceeds 512 KiB.', 'PAYLOAD_TOO_LARGE', 413);
 }
-function text(value, limit, path, optional = false) {
+function text(value, limit, path, optional = false, multiline = false) {
   if (optional && value === null) return null;
-  if (typeof value !== 'string' || /[\p{Cc}\p{Cs}]/u.test(value))
+  if (typeof value !== 'string' || /[\p{Cc}\p{Cs}]/u.test(multiline ? value.replace(/[\r\n]/g, '') : value))
     invalid(path, 'Enter valid text without control characters.');
   const result = value.trim();
   if (optional && !result) return null;
@@ -51,11 +51,16 @@ function entityId(value, previous, seen, path) {
   return value;
 }
 export function normalizeContent(input, previous = null) {
-  object(input, ['productFamilyName', 'currency', 'basePrice', 'segments'], '/content');
+  object(input, ['productFamilyName', 'productDescription', 'separators', 'currency', 'basePrice', 'segments'], '/content', ['productFamilyName', 'currency', 'basePrice', 'segments']);
   if (input.currency !== 'USD') invalid('/content/currency', 'Currency must be USD.');
   if (!Array.isArray(input.segments) || input.segments.length < 1 || input.segments.length > 50)
     invalid('/content/segments', 'Provide 1–50 segments.', 'TAXONOMY_LIMIT_EXCEEDED');
+  const separators = Object.hasOwn(input, 'separators') ? input.separators : Array(input.segments.length - 1).fill('-');
+  if (!Array.isArray(separators) || separators.length !== input.segments.length - 1 || separators.some(s => s !== '-' && s !== ''))
+    invalid('/content/separators', 'Provide one separator (- or blank) per gap.');
   const result = { schemaVersion: 1,
+    productDescription: text(input.productDescription === undefined ? null : input.productDescription, 1000, '/content/productDescription', true, true),
+    separators: [...separators],
     productFamilyName: text(input.productFamilyName, 120, '/content/productFamilyName'),
     currency: 'USD', basePrice: money(input.basePrice, '/content/basePrice'), segments: [] };
   const oldSegments = new Map((previous?.segments || []).map(s => [s.id, s]));
@@ -63,7 +68,7 @@ export function normalizeContent(input, previous = null) {
   let count = 0, maximum = cents(result.basePrice);
   result.segments = input.segments.map((s, i) => {
     const path = `/content/segments/${i}`;
-    object(s, ['id', 'placeholder', 'name', 'defaultOptionIndex', 'options'], path);
+    object(s, ['id', 'placeholder', 'name', 'description', 'defaultOptionIndex', 'options'], path, ['id', 'placeholder', 'name', 'defaultOptionIndex', 'options']);
     const id = entityId(s.id, oldSegments, segmentIds, `${path}/id`);
     const placeholder = text(s.placeholder, 32, `${path}/placeholder`);
     const name = text(s.name, 120, `${path}/name`, true);
@@ -86,7 +91,7 @@ export function normalizeContent(input, previous = null) {
     const index = s.defaultOptionIndex;
     if (index !== null && (!Number.isInteger(index) || index < 0 || index >= options.length))
       invalid(`${path}/defaultOptionIndex`, 'Choose a default from this segment or null.');
-    return { id, placeholder, name, defaultOptionId: index === null ? null : options[index].id, options };
+    return { id, placeholder, name, description: text(s.description === undefined ? null : s.description, 1000, `${path}/description`, true, true), defaultOptionId: index === null ? null : options[index].id, options };
   });
   if (maximum > MAX_CENTS) invalid('/content', 'The maximum configured price exceeds the USD limit.', 'PRICE_OUT_OF_RANGE');
   bounded(result);
@@ -94,21 +99,25 @@ export function normalizeContent(input, previous = null) {
 }
 export function checkedSnapshot(content) {
   try {
-    object(content, ['schemaVersion', 'productFamilyName', 'currency', 'basePrice', 'segments']);
+    object(content, ['schemaVersion', 'productFamilyName', 'productDescription', 'separators', 'currency', 'basePrice', 'segments'], '', ['schemaVersion', 'productFamilyName', 'currency', 'basePrice', 'segments']);
     if (content.schemaVersion !== 1) throw new Error('Unsupported format');
-    const input = { productFamilyName: content.productFamilyName, currency: content.currency,
+    const input = { productFamilyName: content.productFamilyName, productDescription: content.productDescription, separators: withDefaults(content).separators, currency: content.currency,
       basePrice: content.basePrice, segments: content.segments.map(s => {
-        object(s, ['id', 'placeholder', 'name', 'defaultOptionId', 'options']);
+        object(s, ['id', 'placeholder', 'name', 'description', 'defaultOptionId', 'options'], '', ['id', 'placeholder', 'name', 'defaultOptionId', 'options']);
         if (typeof s.id !== 'string' || !s.id || s.options.some(o => typeof o.id !== 'string' || !o.id)) throw new Error('Invalid ID');
-        return { id: s.id, placeholder: s.placeholder, name: s.name,
+        return { id: s.id, placeholder: s.placeholder, name: s.name, description: s.description,
           defaultOptionIndex: s.defaultOptionId === null ? null : s.options.findIndex(o => o.id === s.defaultOptionId), options: s.options };
       }) };
     const normalized = normalizeContent(input, content);
-    if (!isDeepStrictEqual(normalized, content)) throw new Error('Noncanonical snapshot');
+    if (!isDeepStrictEqual(normalized, withDefaults(content))) throw new Error('Noncanonical snapshot');
     return content;
   } catch { throw new Error('Stored taxonomy integrity failure'); }
 }
-export { isDeepStrictEqual as sameContent };
+function withDefaults(content) {
+  return { productDescription: null, separators: Array(Math.max(0, content.segments.length - 1)).fill('-'), ...content,
+    segments: content.segments.map(s => ({ description: null, ...s })) };
+}
+export const sameContent = (a, b) => isDeepStrictEqual(withDefaults(a), withDefaults(b));
 export function configure(content, selections) {
   if (!Array.isArray(selections) || selections.length > content.segments.length)
     invalid('/selections', 'Provide one choice per segment at most.');
@@ -130,6 +139,6 @@ export function configure(content, selections) {
       code: option.code, description: option.description, price: option.price };
   });
   if (total > MAX_CENTS) invalid('/selections', 'Configured price exceeds the USD limit.', 'PRICE_OUT_OF_RANGE');
-  return { productFamilyName: content.productFamilyName, partNumber: resolved.map(s => s.code).join('-'),
+  return { productFamilyName: content.productFamilyName, partNumber: resolved.map((s, i) => (i ? (content.separators?.[i - 1] ?? '-') : '') + s.code).join(''),
     currency: 'USD', basePrice: content.basePrice, unitPrice: dollars(total), selections: resolved };
 }
