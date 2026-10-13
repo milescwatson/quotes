@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { readTestFile as readFile } from './schema.mjs';
 import { PGlite } from '@electric-sql/pglite';
 import { createIdentityService, HttpError } from '../identity.mjs';
 import { createHandler } from './helpers.mjs';
@@ -10,16 +10,16 @@ const issuer = 'https://cognito-idp.us-west-2.amazonaws.com/test-pool';
 const identity = {
   issuer,
   sub: randomUUID(),
-  email: 'admin@example.com',
+  email: 'admin@gmail.com',
   name: 'Alex',
 };
 const other = {
   issuer,
   sub: randomUUID(),
-  email: 'member@example.com',
+  email: 'member@gmail.com',
   name: 'Jamie',
 };
-const stranger = { issuer, sub: randomUUID(), email: 'outside@example.com' };
+const stranger = { issuer, sub: randomUUID(), email: 'outside@gmail.com' };
 const db = new PGlite({ parsers: { 20: (value) => value } });
 const q = async (sql, args = []) => (await db.query(sql, args)).rows;
 const service = createIdentityService(async (work) => {
@@ -85,7 +85,7 @@ test('identity service transactions and authorization', async (t) => {
         org = String(organizations[0].id);
         org2 = String(organizations[1].id);
         await q(
-          "INSERT INTO organization_memberships(organization_id,user_id,role) VALUES($1,$2,'admin'),($1,$3,'member'),($4,$2,'member')",
+          "INSERT INTO organization_memberships(organization_id,user_id,role) VALUES($1,$2,'administrator'),($1,$3,'sales'),($4,$2,'sales')",
           [org, admin.id, member.id, org2],
         );
       },
@@ -101,7 +101,7 @@ test('identity service transactions and authorization', async (t) => {
         );
         assert.equal(large.id, '9007199254740993');
         await q(
-          "INSERT INTO organization_memberships(organization_id,user_id,role) VALUES($1,$2,'member')",
+          "INSERT INTO organization_memberships(organization_id,user_id,role) VALUES($1,$2,'sales')",
           [large.id, admin.id],
         );
         assert.equal(
@@ -133,16 +133,13 @@ test('identity service transactions and authorization', async (t) => {
       assert.equal(
         (await call(service.readOrganization, { orgId: org })).organization
           .role,
-        'admin',
+        'administrator',
       );
       await rejects(
         () => call(service.listMembers, { orgId: org }, {}, stranger),
         404,
       );
-      await rejects(
-        () => call(service.listMembers, { orgId: org }, {}, other),
-        403,
-      );
+      assert.ok((await call(service.listMembers,{orgId:org},{},other)).items.length);
       await rejects(
         () =>
           call(
@@ -210,7 +207,7 @@ test('identity service transactions and authorization', async (t) => {
               service.updateMember,
               { orgId: org, membershipId: a.id },
               {
-                role: 'member',
+                role: 'sales',
               },
             ),
           409,
@@ -237,7 +234,7 @@ test('identity service transactions and authorization', async (t) => {
     await t.test(
       'admin adds an account with immediate access and one audit event',
       async () => {
-        const body = { email: ' Outside@Example.com ', role: 'editor' };
+        const body = { email: ' Outside@Gmail.com ', role: 'sales' };
         const added = (await call(service.addMember, { orgId: org }, body))
           .member;
         assert.equal(added.email, stranger.email);
@@ -249,7 +246,7 @@ test('identity service transactions and authorization', async (t) => {
         assert.equal(
           (await call(service.readOrganization, { orgId: org }, {}, stranger))
             .organization.role,
-          'editor',
+          'sales',
         );
         await rejects(
           () =>
@@ -258,7 +255,7 @@ test('identity service transactions and authorization', async (t) => {
               { orgId: org },
               {
                 ...body,
-                role: 'admin',
+                role: 'administrator',
               },
             ),
           409,
@@ -267,7 +264,7 @@ test('identity service transactions and authorization', async (t) => {
         assert.equal(
           (await call(service.readOrganization, { orgId: org }, {}, stranger))
             .organization.role,
-          'editor',
+          'sales',
         );
         assert.equal(
           (
@@ -297,7 +294,7 @@ test('identity service transactions and authorization', async (t) => {
             { orgId: org },
             {
               ...body,
-              role: 'member',
+              role: 'sales',
             },
           )
         ).member;
@@ -305,16 +302,16 @@ test('identity service transactions and authorization', async (t) => {
         assert.equal(
           (await call(service.readOrganization, { orgId: org }, {}, stranger))
             .organization.role,
-          'member',
+          'sales',
         );
       },
     );
     await t.test(
       'adding members enforces authorization and valid active accounts',
       async () => {
-        const body = { email: stranger.email, role: 'member' };
+        const body = { email: stranger.email, role: 'sales' };
         await rejects(
-          () => call(service.addMember, { orgId: org }, body, other),
+          () => call(service.addMember, { orgId: org }, {...body,role:'administrator'}, other),
           403,
         );
         await rejects(
@@ -395,7 +392,7 @@ test('identity service transactions and authorization', async (t) => {
               { orgId: org },
               {
                 email: other.email,
-                role: 'member',
+                role: 'sales',
               },
             ),
           422,

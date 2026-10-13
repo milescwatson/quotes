@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readTestFile as readFile } from './schema.mjs';
 import { PGlite } from '@electric-sql/pglite';
 import YAML from 'yaml';
 import { createIdentityService, HttpError } from '../identity.mjs';
@@ -74,7 +74,7 @@ test('quotes schema, list service, and organization access', async (t) => {
       [issuer],
     );
     await db.exec(`INSERT INTO organizations(id,name,status) VALUES(10,'Northstar','active'),(11,'Forma','active'),(12,'Empty','active');
-      INSERT INTO organization_memberships(organization_id,user_id,role) VALUES(10,1,'admin'),(10,2,'editor'),(10,3,'member'),(11,1,'member'),(12,1,'member');`);
+      INSERT INTO organization_memberships(organization_id,user_id,role) VALUES(10,1,'administrator'),(10,2,'sales'),(10,3,'sales'),(11,1,'sales'),(12,1,'sales');`);
 
     await t.test(
       'numeric IDs, constraints, title inputs, and foreign keys',
@@ -153,7 +153,7 @@ test('quotes schema, list service, and organization access', async (t) => {
           projectName: 'Office Renovation',
           title: 'Acme - Office Renovation',
           modifiedBy: '3',
-          modifiedByName: 'member@example.com',
+          modifiedByName: 'Unnamed team member',
           modifiedWhen: '2026-10-10T12:00:00.000Z',
         });
         assert.equal(first.items[1].customerId, null);
@@ -320,7 +320,7 @@ test('quotes schema, list service, and organization access', async (t) => {
         await denied(() => call('10', { page: '2' }, 'member'), 404);
         assert.equal(
           (await call()).items[0].modifiedByName,
-          'member@example.com',
+          'Unnamed team member',
         );
         await db.exec('UPDATE users SET disabled_at=now() WHERE id=3');
         await denied(() => call('10', {}, 'member'), 403);

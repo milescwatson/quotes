@@ -1,3 +1,4 @@
+import { isSuperAdministratorEmail } from './super-administrators.mjs';
 export class HttpError extends Error {
   constructor(status, code, message) {
     super(message);
@@ -25,14 +26,14 @@ function fields(body, names) {
 }
 const rows = async (db, sql, args = []) => (await db.query(sql, args)).rows;
 const one = async (db, sql, args = []) => (await rows(db, sql, args))[0];
-function activeUser(u) {
+function activeUser(u, identity) {
   if (!u || u.disabled_at)
     fail(
       403,
       'ACCOUNT_DISABLED',
       'This account has been disabled. Contact your administrator.',
     );
-  return u;
+  return { ...u, isSuperAdministrator: isSuperAdministratorEmail(identity?.email ?? u.email) };
 }
 async function readUser(db, identity) {
   const u = await one(db,
@@ -40,13 +41,13 @@ async function readUser(db, identity) {
     [identity.issuer, identity.sub],
   );
   if (!u) fail(401, 'BOOTSTRAP_REQUIRED', 'Please sign in to initialize your account.');
-  return activeUser(u);
+  return activeUser(u, identity);
 }
-async function guardUser(db, id) {
+async function guardUser(db, id, identity) {
   return activeUser(await one(db,
     'UPDATE public.users SET auth_revision = auth_revision + 1 WHERE id = $1 RETURNING *',
     [id],
-  ));
+  ), identity);
 }
 function activeOrganization(o) {
   if (!o || o.status === 'archived')
@@ -65,6 +66,7 @@ async function guardOrganization(db, id) {
   ));
 }
 async function authorize(db, user, org, admin = false) {
+  if (user.isSuperAdministrator && org.status === 'active') return { role: 'administrator', isSuperAdministrator: true };
   const m = await one(
     db,
     `SELECT * FROM public.organization_memberships WHERE organization_id = $1 AND user_id = $2 AND removed_at IS NULL`,
@@ -72,7 +74,7 @@ async function authorize(db, user, org, admin = false) {
   );
   if (!m || org.status !== 'active')
     fail(404, 'NOT_FOUND', 'You no longer have access to this organization.');
-  if (admin && m.role !== 'admin')
+  if (admin && m.role !== 'administrator')
     fail(
       403,
       'FORBIDDEN',
@@ -82,3 +84,16 @@ async function authorize(db, user, org, admin = false) {
 }
 
 export { fail, identifier, fields, rows, one, readUser, readOrganization, guardUser, guardOrganization, authorize };
+
+export async function auditEvent(db, user, org, action, type, id, requestId, details = {}) {
+  await db.query(`INSERT INTO public.identity_audit_events(organization_id,actor_type,actor_user_id,action,entity_type,entity_id,request_id,details)
+    VALUES($1,'user',$2,$3,$4,$5,$6,$7)`, [org,user.id,action,type,id,requestId,JSON.stringify(details)]);
+}
+export function requireSuperAdministrator(user) {
+  if (!user.isSuperAdministrator) fail(403,'FORBIDDEN','Only a Super Administrator can perform this action.');
+}
+export async function guardPlatform(db) {
+  const row = await one(db,'UPDATE public.platform_authorization_guard SET auth_revision=auth_revision+1 WHERE id=1 RETURNING id');
+  if (!row) throw Error('Platform authorization guard is missing');
+}
+export const configurationAccessPredicate = `(t.owner_organization_id=$2 OR EXISTS (SELECT 1 FROM public.taxonomy_organization_access a WHERE a.taxonomy_id=t.id AND a.organization_id=$2)) AND EXISTS (SELECT 1 FROM public.organizations owner WHERE owner.id=t.owner_organization_id AND owner.status='active')`;

@@ -1,3 +1,6 @@
+import { isSuperAdministratorEmail } from './super-administrators.mjs';
+import { createOrganizationAdminService } from './organization-admin.mjs';
+import { workDomain } from './organization-domains.mjs';
 import { createQuoteService } from './quotes.mjs';
 import {
   fail,
@@ -10,6 +13,7 @@ import {
   guardUser,
   guardOrganization,
   authorize,
+  guardPlatform,
 } from './shared.mjs';
 export { HttpError } from './shared.mjs';
 function name(value) {
@@ -18,7 +22,7 @@ function name(value) {
   return value.trim();
 }
 function role(value) {
-  if (!['admin', 'editor', 'member'].includes(value))
+  if (!['administrator', 'sales'].includes(value))
     fail(422, 'INVALID_INPUT', 'Choose a valid role.');
   return value;
 }
@@ -32,18 +36,20 @@ function email(value) {
     fail(422, 'INVALID_INPUT', 'Enter a valid email address.');
   return value.trim().toLowerCase();
 }
-const profile = (u) => ({
+const profile = (u, identity) => ({
   id: String(u.id),
   email: u.email,
   displayName: u.display_name,
+  isSuperAdministrator: isSuperAdministratorEmail(identity?.email ?? u.email),
 });
-const organization = (o) => ({ id: String(o.id), name: o.name, role: o.role });
+const organization = (o) => ({ id: String(o.id), name: o.name, role: o.role, address: o.address ?? null, websiteUrl: o.website_url ?? null, email: o.email ?? null, phone: o.phone ?? null });
 const member = (m) => ({
   id: String(m.id),
   userId: String(m.user_id),
   email: m.email,
   displayName: m.display_name,
   role: m.role,
+  isSuperAdministrator: isSuperAdministratorEmail(m.email),
 });
 async function audit(db, user, org, action, type, id, requestId, details = {}) {
   await db.query(
@@ -233,6 +239,7 @@ export function createIdentityService(withTransaction) {
     let addedUser;
     if (addingMember) {
       fields(body, ['email', 'role']);
+      body.role ??= 'sales';
       role(body.role);
       const matches = await rows(
         db,
@@ -248,7 +255,7 @@ export function createIdentityService(withTransaction) {
     for (const id of [...userIds].sort((a, b) =>
       BigInt(a) < BigInt(b) ? -1 : BigInt(a) > BigInt(b) ? 1 : 0,
     )) {
-      if (id === u.id) u = await guardUser(db, id);
+      if (id === u.id) u = await guardUser(db, id, identity);
       else
         await db.query(
           'UPDATE public.users SET auth_revision=auth_revision+1 WHERE id=$1',
@@ -279,13 +286,13 @@ export function createIdentityService(withTransaction) {
       if (m.removed_at)
         fail(409, 'MEMBER_REMOVED', 'This member no longer has access.');
       const nextRole = !remove
-        ? (fields(body, ['role']), role(body.role))
+        ? (fields(body, ['role', 'displayName']), body.role === undefined ? m.role : role(body.role))
         : null;
-      if (m.role === 'admin' && nextRole !== 'admin') {
+      if (m.role === 'administrator' && nextRole !== 'administrator') {
         const other = await one(
           db,
           `SELECT m.id FROM public.organization_memberships m JOIN public.users u ON u.id=m.user_id
-            WHERE m.organization_id=$1 AND m.role='admin' AND m.removed_at IS NULL AND u.disabled_at IS NULL AND m.id<>$2 LIMIT 1`,
+            WHERE m.organization_id=$1 AND m.role='administrator' AND m.removed_at IS NULL AND u.disabled_at IS NULL AND m.id<>$2 LIMIT 1`,
           [org.id, m.id],
         );
         if (!other)
@@ -305,6 +312,11 @@ export function createIdentityService(withTransaction) {
           'UPDATE public.organization_memberships SET role=$1,updated_at=now() WHERE id=$2',
           [nextRole, m.id],
         );
+      if (!remove && body.displayName !== undefined) {
+        const displayName = body.displayName === null ? null : name(body.displayName);
+        await db.query('UPDATE public.users SET display_name=$1,updated_at=now() WHERE id=$2',[displayName,m.user_id]);
+        await audit(db,u,org.id,'profile.updated','user',m.user_id,requestId,{displayName});
+      }
       await audit(
         db,
         u,
@@ -320,6 +332,7 @@ export function createIdentityService(withTransaction) {
   }
   return {
     ...createQuoteService(withTransaction),
+    ...createOrganizationAdminService(withTransaction),
     async bootstrapProfile({ body = {}, identity, requestId }) {
       return withTransaction(async (db) => {
         let u = await one(
@@ -343,20 +356,40 @@ export function createIdentityService(withTransaction) {
           );
           await audit(db, u, null, 'user.created', 'user', u.id, requestId);
         } else {
-          await guardUser(db, u.id);
+          await guardUser(db, u.id, identity);
           u = await one(
             db,
             'UPDATE public.users SET email=$1,normalized_email=$2,updated_at=now() WHERE id=$3 RETURNING *',
             [identity.email.trim(), email(identity.email), u.id],
           );
         }
-        return { user: profile(u) };
+        const domain = workDomain(u.normalized_email);
+        if (domain) {
+          await guardPlatform(db);
+          let org = await one(db,'SELECT o.* FROM public.organization_domains d JOIN public.organizations o ON o.id=d.organization_id WHERE d.domain=$1',[domain]);
+          if (!org) {
+            org = await one(db,"INSERT INTO public.organizations(name,status) VALUES($1,'active') RETURNING *",[domain]);
+            await db.query('INSERT INTO public.organization_domains(domain,organization_id) VALUES($1,$2)',[domain,org.id]);
+            await audit(db,u,org.id,'organization.created','organization',org.id,requestId,{domain,automatic:true});
+          }
+          if (org.status === 'active') {
+            await guardOrganization(db,org.id);
+            const membership = await one(db,'SELECT * FROM public.organization_memberships WHERE organization_id=$1 AND user_id=$2',[org.id,u.id]);
+            if (!membership || membership.removed_at) {
+              const added = membership
+                ? await one(db,"UPDATE public.organization_memberships SET role='sales',removed_at=NULL,updated_at=now() WHERE id=$1 RETURNING *",[membership.id])
+                : await one(db,"INSERT INTO public.organization_memberships(organization_id,user_id,role) VALUES($1,$2,'sales') RETURNING *",[org.id,u.id]);
+              await audit(db,u,org.id,'membership.added','membership',added.id,requestId,{role:'sales',automatic:true,restored:!!membership});
+            }
+          }
+        }
+        return { user: profile(u, identity) };
       });
     },
     async readProfile({ identity }) {
       return withTransaction(async (db) => {
         const u = await readUser(db, identity);
-        return { user: profile(u) };
+        return { user: profile(u, identity) };
       });
     },
     async updateProfile({ body = {}, identity, requestId }) {
@@ -370,7 +403,7 @@ export function createIdentityService(withTransaction) {
           [value, u.id],
         );
         await audit(db, u, null, 'profile.updated', 'user', u.id, requestId);
-        return { user: profile(u) };
+        return { user: profile(u, identity) };
       });
     },
     async listProfileOrganizations({ query = {}, identity }) {
@@ -378,10 +411,10 @@ export function createIdentityService(withTransaction) {
         const u = await readUser(db, identity);
         return page(
           db,
-          `SELECT o.*,m.role,o.created_at::text AS cursor_time,o.id AS cursor_id
+          u.isSuperAdministrator ? `SELECT o.*,'administrator' AS role,o.created_at::text AS cursor_time,o.id AS cursor_id FROM public.organizations o WHERE o.status='active'` : `SELECT o.*,m.role,o.created_at::text AS cursor_time,o.id AS cursor_id
         FROM public.organizations o JOIN public.organization_memberships m ON m.organization_id=o.id
         WHERE m.user_id=$1 AND m.removed_at IS NULL AND o.status='active'`,
-          [u.id],
+          u.isSuperAdministrator ? [] : [u.id],
           'o.id',
           'o.created_at',
           query,
@@ -400,23 +433,23 @@ export function createIdentityService(withTransaction) {
       return withTransaction(async (db) => {
         const { u } = await participants(db, identity);
         const { org, access } = await organizationAccess(db, u, orgId, true);
-        fields(body, ['name']);
-        const old = org.name;
-        org.name = name(body.name);
-        await db.query(
-          'UPDATE public.organizations SET name=$1,updated_at=now() WHERE id=$2',
-          [org.name, org.id],
-        );
-        await audit(
-          db,
-          u,
-          org.id,
-          'organization.updated',
-          'organization',
-          org.id,
-          requestId,
-          { before: old, after: org.name },
-        );
+        fields(body, ['name','address','websiteUrl','email','phone']);
+        const before = organization({ ...org, role:access.role });
+        if (body.name !== undefined) org.name = name(body.name);
+        for (const [key,column,max] of [['address','address',2000],['websiteUrl','website_url',2048],['email','email',254],['phone','phone',80]]) {
+          if (body[key] === undefined) continue;
+          const raw = body[key];
+          if (raw !== null && (typeof raw !== 'string' || raw.length > max || /[\p{Cc}\p{Cs}]/u.test(key === 'address' ? raw.replace(/[\r\n\t]/g,'') : raw))) fail(422,'INVALID_INPUT',`Enter a valid ${key}.`);
+          let value = raw?.trim() || null;
+          if (value && key === 'email') value = email(value);
+          if (value && key === 'websiteUrl') {
+            try { const url = new URL(value); if (!['http:','https:'].includes(url.protocol) || url.username || url.password || url.href.length > 2048) throw Error(); value=url.href; }
+            catch { fail(422,'INVALID_INPUT','Enter an HTTP or HTTPS website URL.'); }
+          }
+          org[column] = value;
+        }
+        await db.query('UPDATE public.organizations SET name=$1,address=$2,website_url=$3,email=$4,phone=$5,updated_at=now() WHERE id=$6',[org.name,org.address,org.website_url,org.email,org.phone,org.id]);
+        await audit(db,u,org.id,'organization.updated','organization',org.id,requestId,{before,after:organization({...org,role:access.role})});
         return { organization: organization({ ...org, role: access.role }) };
       });
     },
@@ -488,7 +521,7 @@ export function createIdentityService(withTransaction) {
     async listMembers({ orgId, query = {}, identity }) {
       return withTransaction(async (db) => {
         const u = await readUser(db, identity);
-        const { org } = await organizationAccess(db, u, orgId, true, true);
+        const { org } = await organizationAccess(db, u, orgId, false, true);
         return page(
           db,
           `SELECT m.*,u.email,u.display_name,m.joined_at::text AS cursor_time,m.id AS cursor_id FROM public.organization_memberships m JOIN public.users u ON u.id=m.user_id
@@ -508,7 +541,8 @@ export function createIdentityService(withTransaction) {
           body,
           addingMember: true,
         });
-        const { org } = await organizationAccess(db, u, orgId, true);
+        const { org, access } = await organizationAccess(db, u, orgId);
+        if (access.role === 'sales' && body.role !== 'sales') fail(403,'FORBIDDEN','Sales users can only add Sales teammates.');
         if (!addedUser)
           fail(
             422,
@@ -524,7 +558,7 @@ export function createIdentityService(withTransaction) {
           fail(
             409,
             'ALREADY_MEMBER',
-            'This person is already a member. Change their role from Members.',
+            'This person is already a member. Change their role from Team.',
           );
         if (membership)
           membership = await one(

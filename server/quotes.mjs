@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
-import { fail, identifier, one, readUser, readOrganization, guardUser, guardOrganization, authorize } from './shared.mjs';
+import { fail, identifier, one, readUser, readOrganization, guardUser, guardOrganization, authorize, configurationAccessPredicate } from './shared.mjs';
 import { object, invalid, checkedSnapshot, cents, dollars } from './taxonomy-content.mjs';
 
 const conflict = () => fail(409, 'QUOTE_CONFLICT', 'This quote changed. Reload before saving; your changes have been retained.');
@@ -27,7 +27,7 @@ export function createQuoteService(withTransaction) {
           const ids = new Set([String(user.id)]);
           if (input.body.ownerId !== null) ids.add(identifier(input.body.ownerId));
           for (const id of [...ids].sort((a,b) => BigInt(a)<BigInt(b)?-1:1)) {
-            if (id === String(user.id)) user = await guardUser(db,id);
+            if (id === String(user.id)) user = await guardUser(db,id,input.identity);
             else await db.query('UPDATE public.users SET auth_revision=auth_revision+1 WHERE id=$1',[id]);
           }
         }
@@ -59,13 +59,20 @@ export function createQuoteService(withTransaction) {
         const previous = old?.lines.find(l => l.id === line.id);
         if (line.id !== null && (!previous || used.has(line.id))) invalid(`${path}/id`,'Use a unique saved line identity or null.');
         used.add(line.id);
+        if (previous && previous.taxonomyId === line.taxonomyId && previous.versionId === line.versionId) {
+          const segments = previous.snapshot.content.segments;
+          if (!Array.isArray(line.selections) || line.selections.length !== segments.length) invalid(`${path}/selections`,'Provide a choice or null for each segment.');
+          line.selections.forEach((choice,j)=>{ if (choice !== null && !segments[j].options.some(o=>o.id===choice)) invalid(`${path}/selections/${j}`,'Choose an option from the saved configuration.'); });
+        }
         let snapshot;
-        if (previous && previous.taxonomyId === line.taxonomyId && previous.versionId === line.versionId) snapshot = previous.snapshot;
+        if (previous && previous.taxonomyId === line.taxonomyId && previous.versionId === line.versionId && isDeepStrictEqual(previous.selections,line.selections)) snapshot = previous.snapshot;
         else {
-          const source = await one(db,`SELECT t.current_version_id,t.archived_at,v.content,v.principal_id,p.name AS principal_name
+          await db.query('UPDATE public.taxonomies t SET auth_revision=COALESCE(auth_revision,0)+1 WHERE t.id=$1 AND '+configurationAccessPredicate,[line.taxonomyId,org.id]);
+          const source = await one(db,`SELECT t.owner_organization_id,t.current_version_id,t.archived_at,v.content,v.principal_id,p.name AS principal_name
             FROM public.taxonomies t JOIN public.taxonomy_versions v ON v.id=t.current_version_id AND v.taxonomy_id=t.id
-            LEFT JOIN public.principals p ON p.id=v.principal_id WHERE t.id=$1 AND t.owner_organization_id=$2`,[line.taxonomyId,org.id]);
+            LEFT JOIN public.principals p ON p.id=v.principal_id WHERE t.id=$1 AND ${configurationAccessPredicate}`,[line.taxonomyId,org.id]);
           if (!source) invalid(`${path}/taxonomyId`,'Choose a configuration in this organization.');
+          if (String(source.owner_organization_id) !== String(org.id)) await guardOrganization(db,source.owner_organization_id);
           if (source.archived_at || String(source.current_version_id) !== line.versionId) fail(409,'CONFIGURATION_CHANGED','The configuration changed or was archived. Select the current product again and review its options.');
           checkedSnapshot(source.content);
           snapshot = { content: source.content, principalId: source.principal_id == null ? null : String(source.principal_id), principalName: source.principal_name };

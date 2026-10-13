@@ -1,10 +1,10 @@
 import { test, expect, type Page } from '@playwright/test'
 import { createHash } from 'node:crypto'
 const org = `/organizations/${createHash('sha256').update('10').digest('hex').slice(0,12)}`
-async function login(page: Page,scenario = 'admin') {
+async function login(page: Page,scenario = 'administrator') {
   await page.goto(`/login?returnTo=${encodeURIComponent(`${org}/quotes/new`)}`)
   await page.getByRole('button',{name:'Open demo workspace'}).click()
-  if (scenario !== 'admin') {
+  if (scenario !== 'administrator') {
     await page.getByLabel('Demo scenario').selectOption(scenario)
     await expect(page.getByRole('heading', { name: 'Organizations', exact: true })).toBeVisible()
     await page.locator('.org-card').filter({ hasText: 'Northstar Industries' }).click()
@@ -67,12 +67,15 @@ test('empty quote, member write access, save failure and stale conflict retain v
   await page.evaluate(()=>sessionStorage.setItem('quotes:fixture:quote-conflict','1'))
   await save(page).click(); await expect(page.getByRole('alert')).toContainText('This quote changed'); await expect(page.getByLabel('Project',{exact:true})).toHaveValue('Revised'); await expect(save(page)).toBeDisabled()
 })
-test('historical configuration stays editable after catalog archive and price change',async({page})=>{
+test('historical quote quantities stay editable while archived configurations reject new selections',async({page})=>{
   await login(page); await details(page); const line=await add(page); await line.getByRole('button',{name:'Done',exact:true}).click(); await save(page).click(); await expect(page).toHaveURL(/\/quotes\/\d+$/)
-  await page.evaluate(()=>{const key='quotes:fixture:configurations:v1'; const c=JSON.parse(sessionStorage.getItem(key)!); const p=c.taxonomies.find((t:any)=>t.id==='100'); p.archivedAt=new Date().toISOString(); p.version.content.basePrice='900.00'; sessionStorage.setItem(key,JSON.stringify(c))})
+  await page.evaluate(()=>{const key='quotes:fixture:configurations:v2'; const c=JSON.parse(sessionStorage.getItem(key)!); const p=c.taxonomies.find((t:any)=>t.id==='100'); p.archivedAt=new Date().toISOString(); p.version.content.basePrice='900.00'; sessionStorage.setItem(key,JSON.stringify(c))})
   await page.reload(); await page.getByRole('button',{name:'Edit line 1',exact:true}).click()
-  await page.getByRole('combobox',{name:'YY (position 3)'}).fill('BZ'); await page.getByRole('combobox',{name:'YY (position 3)'}).press('Tab')
+  await page.getByLabel('Quantity',{exact:true}).fill('2')
   await save(page).click(); await expect(page.getByRole('status').filter({hasText:'Quote saved.'})).toBeVisible(); await expect(page.getByRole('article')).toContainText('$120.00')
+  await page.getByRole('button',{name:'Edit line 1',exact:true}).click()
+  await page.getByRole('combobox',{name:'YY (position 3)'}).fill('BZ'); await page.getByRole('combobox',{name:'YY (position 3)'}).press('Tab')
+  await save(page).click(); await expect(page.getByRole('alert')).toContainText('configuration changed or was archived')
 })
 test('mobile picker keyboard, later catalog page and workspace scroll without page overflow',async({page})=>{
   await page.setViewportSize({width:390,height:844}); await login(page); await details(page)
@@ -86,10 +89,10 @@ test('mobile picker keyboard, later catalog page and workspace scroll without pa
   await save(page).click(); await expect(page).toHaveURL(/\/quotes\/\d+$/)
 })
 test('ordinary member can create and edit a quote; empty catalog remains usable',async({page})=>{
-  await login(page,'member'); await details(page); await save(page).click(); await expect(page).toHaveURL(/\/quotes\/\d+$/)
+  await login(page,'sales'); await details(page); await save(page).click(); await expect(page).toHaveURL(/\/quotes\/\d+$/)
   await expect(page.getByRole('button',{name:'+ Add line'})).toBeEnabled()
   await page.getByLabel('Project',{exact:true}).fill('Member revision'); await save(page).click(); await expect(page.getByRole('status').filter({hasText:'Quote saved.'})).toBeVisible()
-  await page.evaluate(()=>{const key='quotes:fixture:configurations:v1'; const value=JSON.parse(sessionStorage.getItem(key)!); value.taxonomies=[]; sessionStorage.setItem(key,JSON.stringify(value))})
+  await page.evaluate(()=>{const key='quotes:fixture:configurations:v2'; const value=JSON.parse(sessionStorage.getItem(key)!); value.taxonomies=[]; sessionStorage.setItem(key,JSON.stringify(value))})
   await page.reload(); await expect(page.getByText('No product configurations are available.',{exact:false})).toBeVisible(); await expect(page.getByRole('button',{name:'+ Add line'})).toBeDisabled(); await expect(save(page)).toBeEnabled()
 })
 test('revoked access clears private quote details and stops writes',async({page})=>{
@@ -119,14 +122,14 @@ test('desktop and mobile quote editor visual review',async({page})=>{
   await line.getByLabel('Quantity',{exact:true}).fill('3'); await line.getByRole('button',{name:'Done',exact:true}).click()
   line=await add(page,'Product 2'); await line.getByRole('combobox',{name:'YY (position 3)'}).focus()
   await page.evaluate(() => window.scrollTo(0,0))
-  await page.screenshot({path:'../tasks/5000/screenshots/editor-desktop.png',fullPage:true})
+  await page.screenshot({path:'test-results/quote-editor/editor-desktop.png',fullPage:true})
   await page.setViewportSize({width:390,height:844}); await page.getByLabel('Customer',{exact:true}).focus(); await line.getByRole('combobox',{name:'YY (position 3)'}).focus()
   await expect(line.getByRole('region',{name:'Part number segments'})).toBeVisible()
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true)
   const bounds = await line.getByRole('combobox',{name:'YY (position 3)'}).boundingBox()
   expect(bounds!.x).toBeGreaterThanOrEqual(0); expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390)
   await page.evaluate(() => window.scrollTo(0,0))
-  await page.screenshot({path:'../tasks/5000/screenshots/editor-mobile.png',fullPage:true})
+  await page.screenshot({path:'test-results/quote-editor/editor-mobile.png',fullPage:true})
 })
 
 test('reload after a concurrent change fetches the latest quote and token', async ({ page }) => {

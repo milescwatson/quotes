@@ -41,9 +41,9 @@ onMounted(load)
         <h3>{{ org.name }}</h3>
         <p>
           {{
-            org.role === 'admin'
+            org.role === 'administrator'
               ? 'Manage your team and workspace.'
-              : org.role === 'editor'
+              : org.role === 'sales'
                 ? 'Shape your products with your team.'
                 : 'Your team’s shared workspace.'
           }}

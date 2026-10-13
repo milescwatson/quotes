@@ -4,11 +4,10 @@ const route = useRoute()
 const org = computed(() =>
   identity.state.organizations.find((o) => o.id === identity.organizationId(route.params.orgId)),
 )
-const initials = computed(() =>
-  (identity.state.user?.displayName || identity.state.user?.email || 'Q')
-    .slice(0, 2)
-    .toUpperCase(),
-)
+const initials = computed(() => {
+  const parts = identity.state.user?.displayName?.trim().split(/\s+/u).filter(Boolean) || []
+  return (parts.length ? `${parts[0]![0]}${parts.length > 1 ? parts.at(-1)![0] : ''}` : identity.state.user?.email?.[0] || 'Q').toUpperCase()
+})
 const menu = ref(false)
 // Refresh access when a teammate adds this account while the app is open.
 let refreshing = false
@@ -39,21 +38,20 @@ onBeforeUnmount(() => {
             :to="`${identity.organizationPath(org.id)}/quotes`"
             active-class="selected"
             > Quotes</NuxtLink
-          ><template v-if="org.role === 'admin'"
-            ><NuxtLink
+          ><NuxtLink :to="`${identity.organizationPath(org.id)}/configurations`" active-class="selected">Product Configurations</NuxtLink
+          ><NuxtLink
               :to="`${identity.organizationPath(org.id)}/members`"
               active-class="selected"
-              > Members</NuxtLink
+              > Team</NuxtLink
             ></template
-          ></template
         >
       </nav>
       <div class="sidebar-bottom">
         <div v-if="identity.state.fixture" class="mb-4">
           <label for="demo-scenario" class="text-xs text-gray-500">Demo scenario</label>
-          <select id="demo-scenario" class="w-full" @change="identity.scenario(($event.target as HTMLSelectElement).value)">
-            <option value="admin">Admin</option>
-            <option value="member">Member</option>
+          <select id="demo-scenario" class="w-full" :value="identity.state.user?.isSuperAdministrator ? 'super' : identity.state.organizations.length ? identity.state.organizations[0]?.role : 'empty'" @change="identity.scenario(($event.target as HTMLSelectElement).value)">
+            <option value="administrator">Administrator</option><option value="super">Super Administrator</option>
+            <option value="sales">Sales</option>
             <option value="empty">No organizations</option>
           </select>
         </div>
@@ -84,7 +82,7 @@ onBeforeUnmount(() => {
         <div class="topbar-right ml-auto min-w-0">
           <OrganizationNav @focusin="refreshOrganizations" />
           <NuxtLink
-            v-if="org?.role === 'admin'"
+            v-if="org?.role === 'administrator'"
             :to="`${identity.organizationPath(org.id)}/settings`"
             aria-label="Admin settings"
             title="Admin settings"

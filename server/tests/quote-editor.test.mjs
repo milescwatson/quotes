@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readTestFile as readFile } from './schema.mjs';
 import { PGlite } from '@electric-sql/pglite';
 import { createIdentityService } from '../identity.mjs';
 import { createTaxonomyService } from '../taxonomy.mjs';
@@ -19,7 +19,7 @@ test('quote creation, partial options, snapshots, authorization, atomic validati
     for (const p of ['versions/0001/identity/schema.sql','versions/0001/quotes/schema.sql','versions/0002/taxonomy/schema.sql','versions/0003/principals/schema.sql']) await db.exec((await read(p)).replaceAll('INDEX ASYNC','INDEX').replaceAll('ALTER TABLE ASYNC','ALTER TABLE'));
     await db.exec(`INSERT INTO users(id,cognito_issuer,cognito_subject,email,normalized_email) VALUES(1,'test','admin','a@example.com','a@example.com'),(2,'test','member','m@example.com','m@example.com'),(3,'test','outsider','o@example.com','o@example.com');
       INSERT INTO organizations(id,name,status) VALUES(10,'Org','active'),(11,'Other','active');
-      INSERT INTO organization_memberships(organization_id,user_id,role) VALUES(10,1,'admin'),(10,2,'member'),(11,3,'admin');
+      INSERT INTO organization_memberships(organization_id,user_id,role) VALUES(10,1,'administrator'),(10,2,'sales'),(11,3,'administrator');
       INSERT INTO principals(id,name,normalized_name,website_url,website_key,created_by_user_id) VALUES(1,'Acme','acme','https://acme.com','acme.com',1);
       INSERT INTO quotes(id,organization_id,customer_name,project_name,modified_by) VALUES(100,10,'Legacy','Project',1);`);
     await db.exec(await read('versions/0004/quotes/schema.sql'));
@@ -37,7 +37,7 @@ test('quote creation, partial options, snapshots, authorization, atomic validati
       assert.equal(q.lines[0].snapshot.principalName,'Acme'); assert.notEqual(q.lines[0].id,q.lines[1].id);
       assert.equal((await call(quotes.listQuotes)).totalItems,2);
     });
-    const write = (value=q) => ({customerName:value.customerName,projectName:value.projectName,ownerId:value.ownerId,expectedToken:value.token,lines:value.lines.map(({id,taxonomyId,versionId,selections,quantity})=>({id,taxonomyId,versionId,selections,quantity}))});
+    const write = (value=q) => ({customerName:value.customerName,projectName:value.projectName,ownerId:value.ownerId,expectedToken:value.token,lines:value.lines.map(({id,taxonomyId,versionId,selections,quantity})=>({id,taxonomyId,versionId,selections:structuredClone(selections),quantity}))});
     await t.test('no-op leaves metadata intact; empty selections and zero lines are savable',async()=>{
       assert.equal((await call(quotes.updateQuote,write(),q.id)).unchanged,true);
       const b=write(); b.lines[0].selections[1]=null;
@@ -56,9 +56,10 @@ test('quote creation, partial options, snapshots, authorization, atomic validati
     const expensive = (await call(catalog.createTaxonomy,{principalId:'1',content:high},undefined,'admin')).body.taxonomy;
     await assert.rejects(()=>call(quotes.createQuote,{...body,lines:[{id:null,taxonomyId:expensive.id,versionId:expensive.version.id,selections:expensive.version.content.segments.map(s=>s.options[0].id),quantity:2}]}),e=>e.status===422);
     await db.query('UPDATE taxonomies SET archived_at=now(),archived_by_user_id=1 WHERE id=$1',[product.id]);
-    const historical=write(); historical.lines[0].selections[1]=source.segments[1].options[1].id; historical.lines[0].quantity=4;
+    const forbidden=write(); forbidden.lines[0].selections[1]=source.segments[1].options[1].id; await reject(()=>call(quotes.updateQuote,forbidden,q.id),'CONFIGURATION_CHANGED');
+    const historical=write(); historical.lines[0].quantity=4;
     q=(await call(quotes.updateQuote,historical,q.id)).quote;
-    assert.equal(q.lines[0].partNumber,'F02'); assert.equal(q.lines[0].unitPrice,'0.40'); assert.equal(q.total,'2.20');
+    assert.equal(q.lines[0].partNumber,'FXX'); assert.equal(q.lines[0].unitPrice,'0.10'); assert.equal(q.total,'1.00');
     await t.test('new archived/stale sources fail while existing snapshots remain readable',async()=>{
       await reject(()=>call(quotes.createQuote,body),'CONFIGURATION_CHANGED');
       assert.equal((await call(quotes.readQuote,{},q.id)).quote.lines[0].versionId,product.version.id);

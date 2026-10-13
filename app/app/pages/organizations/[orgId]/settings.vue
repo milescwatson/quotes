@@ -10,19 +10,22 @@ const { data, loading, error, load } = useResource<{ organization: Organization 
 const settingsPath = computed(() => `${identity.organizationPath(identity.organizationId(String(route.params.orgId)))}/settings`)
 const sections = computed(() => [
   { label: 'General Information', to: settingsPath.value },
-  { label: 'Product Configurations', to: `${settingsPath.value}/configurations` },
   { label: 'Principals', to: `${settingsPath.value}/principals` },
 ])
+// Redirect legacy configuration URLs before the administrator-only settings gate.
+if (route.path === `${settingsPath.value}/configurations`) {
+  await navigateTo({ path: `${identity.organizationPath(identity.organizationId(route.params.orgId))}/configurations`, query: route.query, hash: route.hash }, { replace:true })
+}
 // Preserve existing configuration bookmarks.
 if (route.query.section === 'configurations') {
   const { section, ...query } = route.query
-  await navigateTo({ path: `${settingsPath.value}/configurations`, query }, { replace: true })
+  await navigateTo({ path: `${identity.organizationPath(identity.organizationId(route.params.orgId))}/configurations`, query, hash: route.hash }, { replace: true })
 }
 </script>
 <template>
-  <PageHeading eyebrow="WORKSPACE" title="Organization settings" description="Manage your workspace, product configurations, and principals." />
+  <PageHeading eyebrow="WORKSPACE" title="Organization settings" description="Manage your company details and principals." />
   <ResourceState :loading="loading" :error="error" @retry="load">
-    <div v-if="data?.organization.role === 'admin'" class="grid min-w-0 gap-6 lg:grid-cols-[14rem_minmax(0,1fr)]">
+    <div v-if="data?.organization.role === 'administrator'" class="grid min-w-0 gap-6 lg:grid-cols-[14rem_minmax(0,1fr)]">
       <nav aria-label="Settings sections" class="self-start rounded-md border border-gray-200 bg-white p-2">
         <ul class="space-y-1">
           <li v-for="section in sections" :key="section.to">

@@ -43,7 +43,7 @@ test('member and editor roles can list and empty organizations show no paginatio
   await login(page, '11')
   await expect(rows(page)).toHaveCount(1)
   await expect(rows(page).first()).toContainText('Forma - Office Renovation')
-  await page.getByLabel('Demo scenario').selectOption('member')
+  await page.getByLabel('Demo scenario').selectOption('sales')
   await page.locator('.org-card').filter({ hasText: 'Northstar Industries' }).click()
   await expect(page.getByRole('heading', { name: 'Quotes', exact: true })).toBeVisible()
   await page.getByRole('link', { name: 'Quotes', exact: true }).last().click()
@@ -77,7 +77,7 @@ test('revocation and session expiry clear quote rows', async ({ page }) => {
   await page.getByRole('button', { name: 'Next', exact: true }).click()
   await expect(page.getByRole('alert')).toContainText('no longer have access')
   await expect(rows(page)).toHaveCount(0)
-  await page.getByLabel('Demo scenario').selectOption('admin')
+  await page.getByLabel('Demo scenario').selectOption('administrator')
   await page.locator('.org-card').filter({ hasText: 'Northstar Industries' }).click()
   await page.getByRole('link', { name: 'Quotes', exact: true }).last().click()
   await expect(rows(page)).toHaveCount(50)
@@ -98,17 +98,17 @@ test('mobile table scroll is contained and long project names remain readable', 
   await table.focus()
   await expect(table).toBeFocused()
   await page.evaluate(() => window.scrollTo(0, 0))
-  await page.screenshot({ path: '../tasks/2000/screenshots/quotes-mobile.png', fullPage: false })
+  await page.screenshot({ path: 'test-results/quotes/quotes-mobile.png', fullPage: false })
 })
 
 test('desktop list visual review', async ({ page }) => {
   await login(page)
   await expect(rows(page)).toHaveCount(50)
-  await page.screenshot({ path: '../tasks/2000/screenshots/quotes-desktop.png', fullPage: false })
+  await page.screenshot({ path: 'test-results/quotes/quotes-desktop.png', fullPage: false })
   await page.getByRole('button', { name: 'Next', exact: true }).click()
   await expect(rows(page)).toHaveCount(5)
   await page.evaluate(() => window.scrollTo(0, 0))
-  await page.screenshot({ path: '../tasks/2000/screenshots/quotes-pagination.png', fullPage: false })
+  await page.screenshot({ path: 'test-results/quotes/quotes-pagination.png', fullPage: false })
 })
 
 

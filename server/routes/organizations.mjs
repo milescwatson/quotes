@@ -1,5 +1,7 @@
 import { business, operationInput } from './context.mjs';
 export function registerOrganizationRoutes(app, service) {
+  app.get('/organizations/:orgId/domains', business, request => service.listOrganizationDomains(operationInput(request)));
+  app.put('/organizations/:orgId/domains', business, request => service.updateOrganizationDomains(operationInput(request)));
   app.get('/organizations/:orgId', business, (request) =>
     service.readOrganization(operationInput(request)),
   );

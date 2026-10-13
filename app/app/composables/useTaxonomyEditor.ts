@@ -14,9 +14,9 @@ export function useTaxonomyEditor() {
   const organization = computed(() => identity.organizationId(route.params.orgId))
   const org = computed(() => identity.state.organizations.find(o => o.id === organization.value))
   const isNew = computed(() => !route.params.taxonomyId)
-  const canEdit = computed(() => ready.value && !!org.value && ['admin', 'editor'].includes(org.value.role) && (isNew.value || !!saved.value?.permissions.canEdit))
+  const canEdit = computed(() => ready.value && !!org.value && ['administrator', 'sales'].includes(org.value.role) && (isNew.value || !!saved.value?.permissions.canEdit))
   const dirty = computed(() => draftFingerprint(draft.value) !== baseline.value)
-  const back = computed(() => `${identity.organizationPath(organization.value)}/settings/configurations`)
+  const back = computed(() => `${identity.organizationPath(organization.value)}/configurations`)
   let generation = 0
   const saveMutation = useMutation({
     mutationFn: (input: { organization: string; taxonomyId: string | null; body: Record<string, unknown> }) => identity.request<{ taxonomy: Taxonomy; unchanged: boolean }>(`/organizations/${input.organization}/taxonomies${input.taxonomyId ? `/${input.taxonomyId}/versions` : ''}`, { method: 'POST', body: input.body }),
@@ -35,7 +35,7 @@ export function useTaxonomyEditor() {
     const orgId = organization.value
     const detailId = String(route.params.taxonomyId || '')
     try {
-      if (isNew.value && !['admin', 'editor'].includes(org.value?.role || '')) throw new ApiError(403, 'FORBIDDEN', 'Your organization role cannot create configurations.')
+      if (isNew.value && !['administrator', 'sales'].includes(org.value?.role || '')) throw new ApiError(403, 'FORBIDDEN', 'Your organization role cannot create configurations.')
       const detailKey = isNew.value ? null : queryKeys.taxonomy(orgId, detailId)
       const [principals, result] = await Promise.all([
         queryClient.fetchQuery(principalChoicesOptions(orgId, identity)),

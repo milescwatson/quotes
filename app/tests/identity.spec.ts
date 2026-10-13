@@ -35,8 +35,8 @@ test('workspace navigation, organization switcher, and profile updates', async (
     page.getByRole('heading', { name: 'Quotes', exact: true }),
   ).toBeVisible()
   await expect(
-    page.getByRole('link', { name: 'Members', exact: true }),
-  ).toHaveCount(0)
+    page.getByRole('link', { name: 'Team', exact: true }),
+  ).toBeVisible()
   await expect(page.getByRole('link', { name: 'Admin settings', exact: true })).toHaveCount(0)
   await page.getByRole('link', { name: /Alex Morgan/ }).click()
   await page.getByLabel('Display name').fill('Alex Updated')
@@ -65,11 +65,11 @@ test('member roles, modal focus, last-admin conflict, and removal', async ({
     page.getByRole('button', { name: 'Remove Alex Morgan' }),
   ).toBeFocused()
   await page.getByRole('button', { name: 'Change role for Jamie Chen' }).click()
-  await page.getByLabel('Role', { exact: true }).selectOption('member')
+  await page.getByLabel('Role', { exact: true }).selectOption('sales')
   await page.getByRole('button', { name: 'Save role' }).click()
   await expect(
     page.getByRole('row').filter({ hasText: 'Jamie Chen' }),
-  ).toContainText('member')
+  ).toContainText('Sales')
   await page.getByRole('button', { name: 'Remove Morgan Lee' }).click()
   await page.getByRole('button', { name: 'Remove member', exact: true }).click()
   await expect(
@@ -79,10 +79,10 @@ test('member roles, modal focus, last-admin conflict, and removal', async ({
 test('admin adds members immediately and handles duplicate and unknown accounts', async ({ page }) => {
   await login(page, `/organizations/${org}/members`)
   await page.getByLabel('Email address', { exact: true }).fill('new@example.com')
-  await page.getByLabel('Access role', { exact: true }).selectOption('editor')
+  await page.getByLabel('Access role', { exact: true }).selectOption('sales')
   await page.getByRole('button', { name: 'Add member', exact: true }).click()
   await expect(page.getByRole('main').getByRole('status').filter({ hasText: 'now has access' })).toBeVisible()
-  await expect(page.getByRole('row').filter({ hasText: 'new@example.com' })).toContainText('editor')
+  await expect(page.getByRole('row').filter({ hasText: 'new@example.com' })).toContainText('Sales')
   await page.getByLabel('Email address', { exact: true }).fill('new@example.com')
   await page.getByRole('button', { name: 'Add member', exact: true }).click()
   await expect(page.getByRole('alert')).toContainText('already a member')
@@ -97,12 +97,13 @@ test('empty organization and member-only views', async ({ page }) => {
   await expect(
     page.getByRole('heading', { name: 'No organizations yet.' }),
   ).toBeVisible()
-  await page.getByLabel('Demo scenario').selectOption('member')
+  await page.getByLabel('Demo scenario').selectOption('sales')
   await page.goto(`/organizations/${org}/members`)
-  await expect(page.getByRole('alert')).toContainText('Only an administrator')
+  await expect(page.getByRole('heading', {name:'Team',exact:true})).toBeVisible()
+  await expect(page.getByRole('button',{name:'Change role for Jamie Chen'})).toHaveCount(0)
   await expect(
-    page.getByRole('link', { name: 'Members', exact: true }),
-  ).toHaveCount(0)
+    page.getByRole('link', { name: 'Team', exact: true }),
+  ).toBeVisible()
 })
 test('transient loading errors retry once and expired sessions clear workspace data', async ({
   page,
@@ -115,7 +116,7 @@ test('transient loading errors retry once and expired sessions clear workspace d
   await page.evaluate(() =>
     sessionStorage.setItem('quotes:fixture:failure', '503'),
   )
-  await page.getByRole('link', { name: 'Members', exact: true }).click()
+  await page.getByRole('link', { name: 'Team', exact: true }).click()
   await expect(
     page.getByText('jamie@example.com', { exact: true }),
   ).toBeVisible()
@@ -179,7 +180,7 @@ test('late responses cannot repopulate a previous organization', async ({
   await page.evaluate(() =>
     sessionStorage.setItem('quotes:fixture:delay', '700'),
   )
-  await page.getByRole('link', { name: 'Members', exact: true }).click()
+  await page.getByRole('link', { name: 'Team', exact: true }).click()
   await expect(page.getByRole('main').getByRole('status')).toContainText(
     'Loading',
   )

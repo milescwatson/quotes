@@ -98,7 +98,7 @@ test('registered Fastify methods and paths exactly match the retained OpenAPI co
       .map((m) => `${m.toUpperCase()} ${path}`),
   );
   assert.deepEqual(registered.sort(), declared.sort());
-  assert.equal(new Set(registered).size, 26);
+  assert.equal(new Set(registered).size, 30);
   const contract = await readFile(new URL('../../AWS/openapi.yaml', import.meta.url), 'utf8');
   assert.doesNotMatch(contract, /(?:^|\s)[&*][a-zA-Z0-9_-]+(?:\s|$)/m, 'Gateway requires an expanded YAML contract without aliases');
   for (const route of registered) assert.ok(api['x-amazon-apigateway-cors'].allowMethods.includes(route.split(' ')[0]), `${route} must be allowed by Gateway CORS`);

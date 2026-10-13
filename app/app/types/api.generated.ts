@@ -284,6 +284,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/organizations/{orgId}/domains": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listOrganizationDomains"];
+        put: operations["updateOrganizationDomains"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/organizations/{orgId}/taxonomies/{taxonomyId}/sharing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["readTaxonomySharing"];
+        put: operations["updateTaxonomySharing"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -414,13 +446,20 @@ export interface components {
             /** Format: email */
             email: string;
             displayName: string | null;
+            isSuperAdministrator: boolean;
         };
         Organization: {
             /** @description Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807). */
             id: string;
             name: string;
             /** @enum {string} */
-            role: "admin" | "editor" | "member";
+            role: "sales" | "administrator";
+            address?: string | null;
+            /** Format: uri */
+            websiteUrl?: string | null;
+            /** Format: email */
+            email?: string | null;
+            phone?: string | null;
         };
         Member: {
             /** @description Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807). */
@@ -431,7 +470,8 @@ export interface components {
             email: string;
             displayName: string | null;
             /** @enum {string} */
-            role: "admin" | "editor" | "member";
+            role: "sales" | "administrator";
+            isSuperAdministrator: boolean;
         };
         Success: {
             success: boolean;
@@ -440,11 +480,18 @@ export interface components {
             displayName: string | null;
         };
         OrganizationUpdate: {
-            name: string;
+            name?: string;
+            address?: string | null;
+            /** Format: uri */
+            websiteUrl?: string | null;
+            /** Format: email */
+            email?: string | null;
+            phone?: string | null;
         };
         RoleUpdate: {
             /** @enum {string} */
-            role: "admin" | "editor" | "member";
+            role?: "sales" | "administrator";
+            displayName?: string | null;
         };
         ProfileResponse: {
             user: components["schemas"]["Profile"];
@@ -463,8 +510,11 @@ export interface components {
         MemberCreate: {
             /** Format: email */
             email: string;
-            /** @enum {string} */
-            role: "admin" | "editor" | "member";
+            /**
+             * @default sales
+             * @enum {string}
+             */
+            role: "sales" | "administrator";
         };
         MemberResponse: {
             member: components["schemas"]["Member"];
@@ -540,11 +590,7 @@ export interface components {
             /** Format: date-time */
             archivedAt: string | null;
             currentVersionId: string;
-            permissions: {
-                canEdit: boolean;
-                canArchive: boolean;
-                canPreview: boolean;
-            };
+            permissions: components["schemas"]["ConfigurationPermissions"];
             version: components["schemas"]["TaxonomyVersion"];
             principalId: string;
             principalName: string;
@@ -619,6 +665,8 @@ export interface components {
                 };
                 principalId: string;
                 principalName: string;
+                ownerOrganizationId: string;
+                permissions: components["schemas"]["ConfigurationPermissions"];
             }[];
             page: number;
             pageSize: number;
@@ -644,6 +692,23 @@ export interface components {
             pageSize: number;
             totalItems: number;
             totalPages: number;
+        };
+        ConfigurationPermissions: {
+            canEdit: boolean;
+            canArchive: boolean;
+            canPreview: boolean;
+            canManageSharing: boolean;
+        };
+        Domains: {
+            domains: string[];
+        };
+        ConfigurationSharing: {
+            organizationIds: string[];
+            revision: string;
+        };
+        ConfigurationSharingUpdate: {
+            organizationIds: string[];
+            expectedRevision: string;
         };
     };
     responses: never;
@@ -2798,6 +2863,320 @@ export interface operations {
                 };
             };
             /** @description Request failed; see error code */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listOrganizationDomains: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orgId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful operation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Domains"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Access denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Resource unavailable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description State conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Invalid request */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Temporarily unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    updateOrganizationDomains: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orgId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Domains"];
+            };
+        };
+        responses: {
+            /** @description Successful operation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Domains"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Access denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Resource unavailable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description State conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Invalid request */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Temporarily unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    readTaxonomySharing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orgId: string;
+                taxonomyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful operation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfigurationSharing"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Access denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Resource unavailable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description State conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Invalid request */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Temporarily unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    updateTaxonomySharing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orgId: string;
+                taxonomyId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfigurationSharingUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful operation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConfigurationSharing"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Access denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Resource unavailable */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description State conflict */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Invalid request */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Temporarily unavailable */
             503: {
                 headers: {
                     [name: string]: unknown;

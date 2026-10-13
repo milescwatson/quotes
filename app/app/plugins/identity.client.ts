@@ -79,11 +79,9 @@ export default defineNuxtPlugin(async () => {
       throw error
     }
   }
-  async function refresh() {
+  async function refresh({ bootstrap = false } = {}) {
     const epoch = sessionEpoch
-    const result = await request<{ user: Profile }>('/me/bootstrap', {
-      method: 'POST',
-    })
+    const result = await request<{ user: Profile }>(bootstrap ? '/me/bootstrap' : '/me', bootstrap ? { method:'POST' } : {})
     state.user = result.user
     const organizations: Organization[] = []
     let cursor: string | null = null
@@ -105,7 +103,7 @@ export default defineNuxtPlugin(async () => {
   }
   async function ensure() {
     if (state.ready) return
-    initializing ??= refresh()
+    initializing ??= refresh({ bootstrap:true })
       .catch((error) => {
         clear()
         state.error = error instanceof ApiError && error.status === 401
@@ -121,7 +119,7 @@ export default defineNuxtPlugin(async () => {
   async function signIn(destination: string) {
     if (demo) {
       demo.signIn()
-      await refresh()
+      await refresh({ bootstrap:true })
       state.ready = true
       await navigateTo(destination)
     } else await auth.signIn(destination)
@@ -160,7 +158,7 @@ export default defineNuxtPlugin(async () => {
         scenario,
         async complete() {
           const destination = await auth.complete()
-          await refresh()
+          await refresh({ bootstrap:true })
           state.ready = true
           return destination
         },

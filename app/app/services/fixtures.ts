@@ -1,3 +1,4 @@
+import { isSuperAdministratorEmail } from '~/utils/super-administrators'
 import { createConfigurationFixtures } from './configuration-fixtures'
 import {
   ApiError,
@@ -18,11 +19,13 @@ export function createFixtures() {
   const me = id(1),
     north = id(10),
     studio = id(11)
-  function seed(scenario = 'admin') {
+  function seed(scenario = 'administrator') {
+    scenario = scenario === 'admin' ? 'administrator' : scenario === 'member' ? 'sales' : scenario
     const user: Profile = {
       id: me,
-      email: 'alex@example.com',
+      email: scenario === 'super' ? 'mc.watson415@gmail.com' : 'alex@example.com',
       displayName: 'Alex Morgan',
+      isSuperAdministrator: isSuperAdministratorEmail(scenario === 'super' ? 'mc.watson415@gmail.com' : 'alex@example.com'),
     }
     const organizations: Organization[] =
       scenario === 'empty'
@@ -31,10 +34,10 @@ export function createFixtures() {
             {
               id: north,
               name: 'Northstar Industries',
-              role: scenario === 'member' ? 'member' : 'admin',
+              role: scenario === 'sales' ? 'sales' : 'administrator',
             },
-            { id: studio, name: 'Forma Studio', role: 'editor' },
-            { id: id(12), name: 'Harbor Workshop', role: 'member' },
+            { id: studio, name: 'Forma Studio', role: 'sales' },
+            { id: id(12), name: 'Harbor Workshop', role: 'sales' },
           ]
     const members: Record<string, Member[]> = {
       [north]: [
@@ -43,26 +46,29 @@ export function createFixtures() {
           userId: me,
           email: user.email,
           displayName: user.displayName,
-          role: scenario === 'member' ? 'member' : 'admin',
+          isSuperAdministrator: user.isSuperAdministrator,
+          role: scenario === 'sales' ? 'sales' : 'administrator',
         },
         {
           id: id(21),
           userId: id(2),
           email: 'jamie@example.com',
           displayName: 'Jamie Chen',
-          role: 'editor',
+          isSuperAdministrator: false,
+          role: 'sales',
         },
         {
           id: id(22),
           userId: id(3),
           email: 'morgan@example.com',
           displayName: 'Morgan Lee',
-          role: 'member',
+          isSuperAdministrator: false,
+          role: 'sales',
         },
       ],
-      [id(12)]: [{ id: id(32), userId: me, email: user.email, displayName: user.displayName, role: 'member' }],
-      [studio]: [{ id: id(30), userId: me, email: user.email, displayName: user.displayName, role: 'editor' },
-        { id: id(31), userId: id(2), email: 'jamie@example.com', displayName: 'Jamie Chen', role: 'member' }],
+      [id(12)]: [{ id: id(32), userId: me, email: user.email, displayName: user.displayName, isSuperAdministrator:user.isSuperAdministrator, role: 'sales' }],
+      [studio]: [{ id: id(30), userId: me, email: user.email, displayName: user.displayName, isSuperAdministrator:user.isSuperAdministrator, role: 'sales' },
+        { id: id(31), userId: id(2), email: 'jamie@example.com', displayName: 'Jamie Chen', isSuperAdministrator:false, role: 'sales' }],
     }
     const accounts: Profile[] = [
       user,
@@ -70,9 +76,10 @@ export function createFixtures() {
         id: userId,
         email,
         displayName,
+        isSuperAdministrator:false,
       })),
-      { id: id(4), email: 'new@example.com', displayName: 'New Teammate' },
-      { id: id(5), email: 'former@example.com', displayName: null },
+      { id: id(4), email: 'new@example.com', displayName: 'New Teammate', isSuperAdministrator:false },
+      { id: id(5), email: 'former@example.com', displayName: null, isSuperAdministrator:false },
     ]
     const makeQuote = (organizationId: string, index: number): Quote => {
       const customerName = index === 0 ? 'Acme' : `Customer ${index + 1}`
@@ -95,15 +102,17 @@ export function createFixtures() {
       [studio]: [{ ...makeQuote(studio, 0), customerName: 'Forma', title: 'Forma - Office Renovation' }],
       [id(12)]: [],
     }
-    return { user, organizations, members, accounts, quotes }
+    return { user, organizations, members, accounts, quotes, domains: {} as Record<string,string[]> }
   }
   let state = seed()
   try {
-    const stored = sessionStorage.getItem('quotes:fixture:data:v2')
+    const stored = sessionStorage.getItem('quotes:fixture:data:v3')
     if (stored) state = { ...state, ...JSON.parse(stored) }
   } catch {
     /* Reset invalid preview data. */
   }
+  state.user.isSuperAdministrator=isSuperAdministratorEmail(state.user.email)
+  for (const member of Object.values(state.members).flat()) member.isSuperAdministrator=isSuperAdministratorEmail(member.email)
   // Upgrade existing demo sessions without resetting the user's data.
   for (const quotes of Object.values(state.quotes)) for (const quote of quotes) {
     quote.ownerId ??= null
@@ -111,7 +120,7 @@ export function createFixtures() {
   }
   for (const orgId of [studio, id(12)]) if (!state.members[orgId]?.length) state.members[orgId] = seed().members[orgId]!
   const save = () =>
-    sessionStorage.setItem('quotes:fixture:data:v2', JSON.stringify(state))
+    sessionStorage.setItem('quotes:fixture:data:v3', JSON.stringify(state))
   const fail = (status: number, code: string, message: string): never => {
     throw new ApiError(status, code, message)
   }
@@ -155,16 +164,17 @@ export function createFixtures() {
         )
       }
       const method = options.method || 'GET',
-        body = options.body as any
+        body = JSON.parse(JSON.stringify(options.body ?? {})) as any
       const [pathname] = path.split('?')
       const parts = pathname!.split('/').filter(Boolean)
       let result: any
       const page = (items: unknown[]) => ({ items, nextCursor: null })
       if (pathname === '/me/bootstrap' || pathname === '/me') {
         if (method === 'PATCH') state.user.displayName = body.displayName
+        state.user.isSuperAdministrator=isSuperAdministratorEmail(state.user.email)
         result = { user: state.user }
       } else if (pathname === '/me/organizations')
-        result = page(state.organizations)
+        result = page(state.organizations.map(org => state.user.isSuperAdministrator ? {...org,role:'administrator'} : org))
       else if (parts[0] === 'organizations') {
         const orgId = parts[1]!,
           org = state.organizations.find((o) => o.id === orgId)
@@ -174,6 +184,14 @@ export function createFixtures() {
             'NOT_FOUND',
             'You no longer have access to this organization.',
           )
+        if (parts[2]==='domains') {
+          if (!state.user.isSuperAdministrator) fail(403,'FORBIDDEN','Super Administrator access required.')
+          if (method==='PUT') {
+            for (const domain of body.domains) if (Object.entries(state.domains).some(([id,values])=>id!==orgId && values.includes(domain))) fail(409,'DOMAIN_ASSIGNED','This domain is already assigned.')
+            state.domains[orgId]=body.domains
+          }
+          save(); return structuredClone({domains:state.domains[orgId] || []}) as T
+        }
         if (['taxonomies', 'principals'].includes(parts[2] || '')) return structuredClone(configurations.request(path, method, body, org!, state.user)) as T
         const quoteDetail = (quote: Quote & Partial<QuoteDetail>): QuoteDetail => ({ ...quote, token: quote.modifiedWhen, lines: quote.lines ?? [], currency: 'USD', total: (() => { const n = (quote.lines ?? []).reduce((sum,l) => sum + BigInt(l.lineTotal.replace('.','')),0n); return `${n / 100n}.${String(n % 100n).padStart(2,'0')}` })() })
         if (parts[2] === 'quotes' && ((parts.length === 4 && ['GET','PUT'].includes(method)) || (parts.length === 3 && method === 'POST'))) {
@@ -188,9 +206,11 @@ export function createFixtures() {
           const lines = body.lines.map((input: any) => {
             const old = previous?.lines?.find(l => l.id === input.id)
             if (!Number.isInteger(input.quantity) || input.quantity < 1 || input.quantity > 1000000) fail(422,'INVALID_INPUT','Use a positive whole quantity.')
-            let snapshot = old && old.taxonomyId === input.taxonomyId && old.versionId === input.versionId ? old.snapshot : null
+            let snapshot = old && old.taxonomyId === input.taxonomyId && old.versionId === input.versionId && JSON.stringify(old.selections) === JSON.stringify(input.selections) ? old.snapshot : null
             if (!snapshot) {
-              const { taxonomy: t } = configurations.request(`/organizations/${orgId}/taxonomies/${input.taxonomyId}`, 'GET', {}, org!, state.user) as { taxonomy: Taxonomy }
+              let t: Taxonomy
+              try { t = (configurations.request(`/organizations/${orgId}/taxonomies/${input.taxonomyId}`, 'GET', {}, org!, state.user) as { taxonomy:Taxonomy }).taxonomy }
+              catch(e) { if (e instanceof ApiError && e.status===404) fail(422,'INVALID_INPUT','Choose a configuration with current access.'); throw e }
               if (t.archivedAt || t.version.id !== input.versionId) fail(409,'CONFIGURATION_CHANGED','The configuration changed or was archived. Select the current product again and review its options.')
               snapshot = { content: t.version.content, principalId: t.version.principalId, principalName: t.principalName }
             }
@@ -207,8 +227,8 @@ export function createFixtures() {
         const listingQuotes = parts.length === 3 && parts[2] === 'quotes' && method === 'GET'
         const listingOwners = parts.length === 3 && parts[2] === 'quote-owners' && method === 'GET'
         const editingOwner = parts.length === 4 && parts[2] === 'quotes' && method === 'PATCH'
-        if (!listingQuotes && !listingOwners && !editingOwner && (parts.length > 2 || method !== 'GET')) {
-          if (org!.role !== 'admin')
+        if (!listingQuotes && !listingOwners && !editingOwner && !(parts[2] === 'members' && !parts[3] && ['GET','POST'].includes(method)) && (parts.length > 2 || method !== 'GET')) {
+          if (org!.role !== 'administrator' && !state.user.isSuperAdministrator)
             fail(
               403,
               'FORBIDDEN',
@@ -248,7 +268,7 @@ export function createFixtures() {
             totalItems: items.length, totalPages: Math.ceil(items.length / pageSize),
           }
         } else if (parts.length === 2) {
-          if (method === 'PATCH') org!.name = body.name
+          if (method === 'PATCH') Object.assign(org!,body)
           result = { organization: org }
         } else if (parts[2] === 'members') {
           const members = state.members[orgId] || []
@@ -256,9 +276,9 @@ export function createFixtures() {
             const member = members.find((m) => m.id === parts[3])
             if (!member) fail(404, 'NOT_FOUND', 'Member not found.')
             if (
-              member!.role === 'admin' &&
-              (method === 'DELETE' || body.role !== 'admin') &&
-              members.filter((m) => m.role === 'admin').length === 1
+              member!.role === 'administrator' &&
+              (method === 'DELETE' || (body.role !== undefined && body.role !== 'administrator')) &&
+              members.filter((m) => m.role === 'administrator').length === 1
             )
               fail(
                 409,
@@ -267,16 +287,17 @@ export function createFixtures() {
               )
             if (method === 'DELETE')
               state.members[orgId] = members.filter((m) => m.id !== parts[3])
-            else member!.role = body.role
+            else { if (body.role !== undefined) member!.role = body.role; if (body.displayName !== undefined) { for (const m of Object.values(state.members).flat()) if (m.userId===member!.userId) m.displayName=body.displayName; if (member!.userId===me) state.user.displayName=body.displayName } }
             if (member!.userId === me) {
               if (method === 'DELETE')
                 state.organizations = state.organizations.filter(
                   (o) => o.id !== orgId,
                 )
-              else org!.role = body.role
+              else if (body.role !== undefined) org!.role = body.role
             }
             result = { success: true }
           } else if (method === 'POST') {
+            if (org!.role === 'sales' && !state.user.isSuperAdministrator && body.role !== 'sales') fail(403,'FORBIDDEN','Sales users can only add Sales teammates.')
             const email = String(body.email).trim().toLowerCase()
             const account = state.accounts.find(
               (a) => a.email.toLowerCase() === email,
@@ -291,13 +312,14 @@ export function createFixtures() {
               fail(
                 409,
                 'ALREADY_MEMBER',
-                'This person is already a member. Change their role from Members.',
+                'This person is already a member. Change their role from Team.',
               )
             const added: Member = {
               id: String(nextMemberId = Math.max(nextMemberId, ...Object.values(state.members).flat().map(member => Number(member.id))) + 1),
               userId: account!.id,
               email: account!.email,
               displayName: account!.displayName,
+              isSuperAdministrator:account!.isSuperAdministrator,
               role: body.role,
             }
             members.push(added)

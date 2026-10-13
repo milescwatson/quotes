@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readTestFile as readFile } from './schema.mjs';
 import { PGlite } from '@electric-sql/pglite';
 import { createIdentityService } from '../identity.mjs';
 import { createPrincipalService } from '../principals.mjs';
@@ -45,7 +45,7 @@ test('page reads validate access without writes; mutations retain authorization 
     await db.exec(`INSERT INTO users(id,cognito_issuer,cognito_subject,email,normalized_email)
       VALUES(1,'test','admin','admin@example.com','admin@example.com');
       INSERT INTO organizations(id,name,status) VALUES(10,'Workspace','active');
-      INSERT INTO organization_memberships(organization_id,user_id,role) VALUES(10,1,'admin');`);
+      INSERT INTO organization_memberships(organization_id,user_id,role) VALUES(10,1,'administrator');`);
     await principals.createPrincipal({ ...request, body: { name: 'Acme', websiteUrl: 'acme.com' } });
     const { body: { taxonomy } } = await taxonomies.createTaxonomy({ ...request, body: { principalId: '1', content } });
     const reads = [
@@ -91,12 +91,12 @@ test('page reads validate access without writes; mutations retain authorization 
         await db.exec(restore);
       });
     }
-    await t.test('member lists still require admin access', async () => {
-      await db.exec("UPDATE organization_memberships SET role='member'");
-      await assert.rejects(() => identity.listMembers(request), { code: 'FORBIDDEN', status: 403 });
+    await t.test('Sales users can view Team', async () => {
+      await db.exec("UPDATE organization_memberships SET role='sales'");
+      await identity.listMembers(request);
       await principals.listPrincipals(request);
       await taxonomies.listTaxonomies(request);
-      await db.exec("UPDATE organization_memberships SET role='admin'");
+      await db.exec("UPDATE organization_memberships SET role='administrator'");
     });
     await t.test('principal and configuration creation still increment both guards', async () => {
       readOnly = false;

@@ -107,7 +107,7 @@ export function createPrincipalService(withTransaction) {
             'BOOTSTRAP_REQUIRED',
             'Please sign in to initialize your account.',
           );
-        const user = await guardUser(db, account.id),
+        const user = await guardUser(db, account.id, identity),
           org = await guardOrganization(db, orgId);
         await authorize(db, user, org, admin);
         return work(db, user);

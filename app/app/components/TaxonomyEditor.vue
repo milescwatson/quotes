@@ -1,7 +1,17 @@
 <script setup lang="ts">
 import { blankOption, blankSegment, formatPrice } from '~/utils/configuration'
+import { useQueryClient } from '@tanstack/vue-query'
 import type { SegmentDraft, OptionDraft } from '~/types/taxonomy'
 const { ready, draft, saved, choices, loading, busy, failure, notice, errors, conflicted, canEdit, dirty, back, reload, save } = useTaxonomyEditor()
+const identity = useIdentity(), route = useRoute()
+const archiveBusy = ref(false), queryClient = useQueryClient()
+async function archive() {
+  if (!saved.value?.permissions.canArchive || !window.confirm('This will delete the configuration from your entire organization’s catalog and every organization it is shared with. Existing quotes will retain their saved product details.')) return
+  archiveBusy.value=true
+  try { await identity.request(`/organizations/${identity.organizationId(route.params.orgId)}/taxonomies/${saved.value.id}/archive`,{method:'POST',body:{expectedVersionId:saved.value.currentVersionId}});await queryClient.invalidateQueries({predicate:q=>q.queryKey.includes('taxonomies')});await navigateTo(back.value) }
+  catch(e) { failure.value=(e as Error).message }
+  finally { archiveBusy.value=false }
+}
 const announcement = ref('')
 const disabled = computed(() => busy.value || !canEdit.value || conflicted.value)
 const message = (path: string) => errors.value.find(e => e.path === path)?.message
@@ -53,7 +63,7 @@ function blurBase() { const formatted = formatPrice(draft.value.basePrice, true)
 <template>
   <div class="configuration-editor min-w-0">
     <NuxtLink :to="back" class="mb-5 inline-flex items-center gap-3 text-sm text-gray-600"><span aria-hidden="true">‹</span> Configuration Editor</NuxtLink>
-    <div class="mb-5 flex items-center justify-between gap-3"><h1>Product Configuration</h1><div class="flex flex-wrap items-center justify-end gap-3"><span v-if="saved && !dirty" class="text-xs text-gray-500">Saved</span><span v-if="dirty && canEdit" class="text-xs text-gray-500">Unsaved changes</span><button v-if="canEdit" class="button secondary" :disabled="busy || loading || conflicted" @click="save">{{ busy ? 'Saving…' : 'Save' }}</button></div></div>
+    <div class="mb-5 flex items-center justify-between gap-3"><h1>Product Configuration</h1><div class="flex flex-wrap items-center justify-end gap-3"><button v-if="saved?.permissions.canArchive" class="button secondary" :disabled="busy || archiveBusy" @click="archive">Archive configuration</button><span v-if="saved && !dirty" class="text-xs text-gray-500">Saved</span><span v-if="dirty && canEdit" class="text-xs text-gray-500">Unsaved changes</span><button v-if="canEdit" class="button secondary" :disabled="busy || loading || conflicted" @click="save">{{ busy ? 'Saving…' : 'Save' }}</button></div></div>
     <p v-if="notice" role="status" class="success">{{ notice }}</p><p class="sr-only" aria-live="polite">{{ announcement }}</p>
     <p v-if="failure" class="error" role="alert">{{ failure }} <button class="text-button" :disabled="busy" @click="reload">Reload configuration</button></p>
     <div v-if="errors.length" class="error" role="alert"><p>Please correct the following:</p><ul class="list-disc pl-5"><li v-for="(e, i) in errors" :key="i">{{ e.message }}</li></ul></div>
@@ -61,6 +71,8 @@ function blurBase() { const formatted = formatPrice(draft.value.basePrice, true)
     <template v-else-if="ready">
       <p v-if="saved?.archivedAt" class="mb-4 text-gray-600">This configuration is archived.</p>
       <p v-else-if="!canEdit" class="mb-4 text-gray-600">Read-only configuration.</p>
+      <NuxtLink v-if="saved && !canEdit && identity.state.user?.isSuperAdministrator && saved.ownerOrganizationId !== identity.organizationId(route.params.orgId)" :to="`${identity.organizationPath(saved.ownerOrganizationId)}/taxonomies/${saved.id}`" class="mb-4 inline-block text-blue-600">Switch to owning organization to edit</NuxtLink>
+      <ConfigurationSharing v-if="saved?.permissions.canManageSharing" :taxonomy="saved" :organization="identity.organizationId(route.params.orgId)" />
       <fieldset :disabled="disabled" class="min-w-0">
         <div class="rounded-t-md border border-gray-200 bg-white p-4 sm:p-5">
           <div class="flex flex-wrap items-start gap-x-5 gap-y-3">

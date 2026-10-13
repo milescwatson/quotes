@@ -1,7 +1,7 @@
 openapi: 3.0.1
 info:
   title: ${api_name}
-  version: 0.3.0
+  version: 0.5.0
   description: Quotes identity, organization, quote, and taxonomy MVP API. Authorization and
     validation are enforced in Lambda.
 paths:
@@ -492,8 +492,7 @@ paths:
           schema:
             type: string
             pattern: ^[1-9][0-9]{0,18}$
-            description: Positive bigint identifier encoded as a decimal string (maximum
-              9223372036854775807).
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
       responses:
         "200":
           description: Successful operation
@@ -720,16 +719,14 @@ paths:
           schema:
             type: string
             pattern: ^[1-9][0-9]{0,18}$
-            description: Positive bigint identifier encoded as a decimal string (maximum
-              9223372036854775807).
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
         - name: quoteId
           in: path
           required: true
           schema:
             type: string
             pattern: ^[1-9][0-9]{0,18}$
-            description: Positive bigint identifier encoded as a decimal string (maximum
-              9223372036854775807).
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
       responses:
         "200":
           description: Successful operation
@@ -796,16 +793,14 @@ paths:
           schema:
             type: string
             pattern: ^[1-9][0-9]{0,18}$
-            description: Positive bigint identifier encoded as a decimal string (maximum
-              9223372036854775807).
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
         - name: quoteId
           in: path
           required: true
           schema:
             type: string
             pattern: ^[1-9][0-9]{0,18}$
-            description: Positive bigint identifier encoded as a decimal string (maximum
-              9223372036854775807).
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
       responses:
         "200":
           description: Successful operation
@@ -1871,6 +1866,272 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/PrincipalInput"
+  /organizations/{orgId}/domains:
+    get:
+      operationId: listOrganizationDomains
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Domains"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Resource unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: State conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+    put:
+      operationId: updateOrganizationDomains
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Domains"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Resource unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: State conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Domains"
+  /organizations/{orgId}/taxonomies/{taxonomyId}/sharing:
+    get:
+      operationId: readTaxonomySharing
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfigurationSharing"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Resource unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: State conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: taxonomyId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+    put:
+      operationId: updateTaxonomySharing
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConfigurationSharing"
+        "401":
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Access denied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Resource unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: State conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+        - name: taxonomyId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfigurationSharingUpdate"
 components:
   schemas:
     Health:
@@ -2067,13 +2328,11 @@ components:
         id:
           type: string
           pattern: ^[1-9][0-9]{0,18}$
-          description: Positive bigint identifier encoded as a decimal string (maximum
-            9223372036854775807).
+          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
         organizationId:
           type: string
           pattern: ^[1-9][0-9]{0,18}$
-          description: Positive bigint identifier encoded as a decimal string (maximum
-            9223372036854775807).
+          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
         customerId:
           type: integer
           format: int32
@@ -2091,8 +2350,7 @@ components:
         modifiedBy:
           type: string
           pattern: ^[1-9][0-9]{0,18}$
-          description: Positive bigint identifier encoded as a decimal string (maximum
-            9223372036854775807).
+          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
         modifiedByName:
           type: string
         modifiedWhen:
@@ -2101,8 +2359,7 @@ components:
         ownerId:
           type: string
           pattern: ^[1-9][0-9]{0,18}$
-          description: Positive bigint identifier encoded as a decimal string (maximum
-            9223372036854775807).
+          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
           nullable: true
         ownerName:
           type: string
@@ -2275,10 +2532,13 @@ components:
         displayName:
           type: string
           nullable: true
+        isSuperAdministrator:
+          type: boolean
       required:
         - id
         - email
         - displayName
+        - isSuperAdministrator
       additionalProperties: false
     Organization:
       type: object
@@ -2292,9 +2552,26 @@ components:
         role:
           type: string
           enum:
-            - admin
-            - editor
-            - member
+            - sales
+            - administrator
+        address:
+          type: string
+          nullable: true
+          maxLength: 2000
+        websiteUrl:
+          type: string
+          nullable: true
+          maxLength: 2048
+          format: uri
+        email:
+          type: string
+          nullable: true
+          maxLength: 254
+          format: email
+        phone:
+          type: string
+          nullable: true
+          maxLength: 80
       required:
         - id
         - name
@@ -2320,15 +2597,17 @@ components:
         role:
           type: string
           enum:
-            - admin
-            - editor
-            - member
+            - sales
+            - administrator
+        isSuperAdministrator:
+          type: boolean
       required:
         - id
         - userId
         - email
         - displayName
         - role
+        - isSuperAdministrator
       additionalProperties: false
     Success:
       type: object
@@ -2356,8 +2635,24 @@ components:
           type: string
           minLength: 1
           maxLength: 120
-      required:
-        - name
+        address:
+          type: string
+          nullable: true
+          maxLength: 2000
+        websiteUrl:
+          type: string
+          nullable: true
+          maxLength: 2048
+          format: uri
+        email:
+          type: string
+          nullable: true
+          maxLength: 254
+          format: email
+        phone:
+          type: string
+          nullable: true
+          maxLength: 80
       additionalProperties: false
     RoleUpdate:
       type: object
@@ -2365,11 +2660,12 @@ components:
         role:
           type: string
           enum:
-            - admin
-            - editor
-            - member
-      required:
-        - role
+            - sales
+            - administrator
+        displayName:
+          type: string
+          nullable: true
+          maxLength: 120
       additionalProperties: false
     ProfileResponse:
       type: object
@@ -2426,12 +2722,11 @@ components:
         role:
           type: string
           enum:
-            - admin
-            - editor
-            - member
+            - sales
+            - administrator
+          default: sales
       required:
         - email
-        - role
     MemberResponse:
       type: object
       properties:
@@ -2580,7 +2875,9 @@ components:
           maxItems: 49
           items:
             type: string
-            enum: ["-", ""]
+            enum:
+              - "-"
+              - ""
         currency:
           type: string
           enum:
@@ -2618,7 +2915,9 @@ components:
           maxItems: 49
           items:
             type: string
-            enum: ["-", ""]
+            enum:
+              - "-"
+              - ""
         currency:
           type: string
           enum:
@@ -2713,19 +3012,7 @@ components:
           maxLength: 19
           pattern: ^[1-9][0-9]{0,18}$
         permissions:
-          type: object
-          additionalProperties: false
-          properties:
-            canEdit:
-              type: boolean
-            canArchive:
-              type: boolean
-            canPreview:
-              type: boolean
-          required:
-            - canEdit
-            - canArchive
-            - canPreview
+          $ref: "#/components/schemas/ConfigurationPermissions"
         version:
           $ref: "#/components/schemas/TaxonomyVersion"
         principalId:
@@ -2988,6 +3275,10 @@ components:
                 pattern: ^[1-9][0-9]{0,18}$
               principalName:
                 type: string
+              ownerOrganizationId:
+                type: string
+              permissions:
+                $ref: "#/components/schemas/ConfigurationPermissions"
             required:
               - id
               - productFamilyName
@@ -2997,6 +3288,8 @@ components:
               - modifiedBy
               - principalId
               - principalName
+              - ownerOrganizationId
+              - permissions
           minItems: 0
         page:
           type: integer
@@ -3086,6 +3379,68 @@ components:
         - pageSize
         - totalItems
         - totalPages
+    ConfigurationPermissions:
+      type: object
+      additionalProperties: false
+      properties:
+        canEdit:
+          type: boolean
+        canArchive:
+          type: boolean
+        canPreview:
+          type: boolean
+        canManageSharing:
+          type: boolean
+      required:
+        - canEdit
+        - canArchive
+        - canPreview
+        - canManageSharing
+    Domains:
+      type: object
+      additionalProperties: false
+      properties:
+        domains:
+          type: array
+          maxItems: 100
+          uniqueItems: true
+          items:
+            type: string
+            maxLength: 253
+      required:
+        - domains
+    ConfigurationSharing:
+      type: object
+      additionalProperties: false
+      properties:
+        organizationIds:
+          type: array
+          maxItems: 100
+          uniqueItems: true
+          items:
+            type: string
+        revision:
+          type: string
+          pattern: ^[0-9]{1,19}$
+      required:
+        - organizationIds
+        - revision
+    ConfigurationSharingUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        organizationIds:
+          type: array
+          maxItems: 100
+          uniqueItems: true
+          items:
+            type: string
+        expectedRevision:
+          type: string
+          pattern: ^[0-9]{1,19}$
+      required:
+        - organizationIds
+        - expectedRevision
   securitySchemes:
     CognitoJwt:
       type: oauth2

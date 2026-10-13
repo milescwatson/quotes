@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readTestFile as readFile } from './schema.mjs';
 import { PGlite } from '@electric-sql/pglite';
 import YAML from 'yaml';
 import { createPrincipalService, principalInput } from '../principals.mjs';
@@ -104,7 +104,7 @@ test('principal schema, global directory, roles, uniqueness, assignment history 
           .replaceAll('ALTER TABLE ASYNC', 'ALTER TABLE'),
       );
     await db.exec(
-      "INSERT INTO users(id,cognito_issuer,cognito_subject,email,normalized_email) VALUES(1,'test','admin','a@b.com','a@b.com'),(2,'test','editor','e@b.com','e@b.com'),(3,'test','member','m@b.com','m@b.com'); INSERT INTO organizations(id,name,status) VALUES(10,'One','active'),(11,'Two','active'); INSERT INTO organization_memberships(organization_id,user_id,role) VALUES(10,1,'admin'),(11,1,'admin'),(10,2,'editor'),(10,3,'member')",
+      "INSERT INTO users(id,cognito_issuer,cognito_subject,email,normalized_email) VALUES(1,'test','admin','a@b.com','a@b.com'),(2,'test','editor','e@b.com','e@b.com'),(3,'test','member','m@b.com','m@b.com'); INSERT INTO organizations(id,name,status) VALUES(10,'One','active'),(11,'Two','active'); INSERT INTO organization_memberships(organization_id,user_id,role) VALUES(10,1,'administrator'),(11,1,'administrator'),(10,2,'sales'),(10,3,'sales')",
     );
     await t.test(
       'only admins create; directory shared with active members',

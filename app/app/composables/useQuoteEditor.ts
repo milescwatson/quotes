@@ -62,7 +62,7 @@ export function useQuoteEditor() {
       if (current !== generation) return
       owners.value = team.items
       if (result) adopt(result.quote)
-      else { saved.value = null; customer.value = ''; project.value = ''; owner.value = identity.state.user?.id ?? null; lines.value = []; keys.value = []; pending.value.clear(); baseline.value = fingerprint() }
+      else { saved.value = null; customer.value = ''; project.value = ''; owner.value = team.items.some(person => person.id === identity.state.user?.id) ? identity.state.user!.id : null; lines.value = []; keys.value = []; pending.value.clear(); baseline.value = fingerprint() }
       ready.value = true; void catalog()
     } catch (e) { if (current === generation) error.value = (e as Error).message }
     finally { if (current === generation) loading.value = false }

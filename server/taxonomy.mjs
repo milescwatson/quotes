@@ -10,6 +10,9 @@ import {
   guardUser,
   guardOrganization,
   authorize,
+  requireSuperAdministrator,
+  auditEvent,
+  configurationAccessPredicate,
 } from './shared.mjs';
 import {
   bounded,
@@ -51,7 +54,7 @@ async function version(db, id) {
   checkedSnapshot(v.content);
   return v;
 }
-function resource(t, v, role) {
+function resource(t, v, role, orgId, superAdministrator = false) {
   return {
     id: String(t.id),
     ownerOrganizationId: String(t.owner_organization_id),
@@ -61,9 +64,10 @@ function resource(t, v, role) {
     principalId: String(t.principal_id),
     principalName: t.principal_name,
     permissions: {
-      canEdit: !t.archived_at && ['admin', 'editor'].includes(role),
-      canArchive: !t.archived_at && role === 'admin',
+      canEdit: !t.archived_at && String(t.owner_organization_id) === String(orgId) && ['administrator','sales'].includes(role),
+      canArchive: !t.archived_at && String(t.owner_organization_id) === String(orgId) && ['administrator','sales'].includes(role),
       canPreview: !t.archived_at,
+      canManageSharing: !t.archived_at && String(t.owner_organization_id) === String(orgId) && superAdministrator,
     },
     version: {
       id: String(v.id),
@@ -139,7 +143,7 @@ export function createTaxonomyService(withTransaction) {
             'BOOTSTRAP_REQUIRED',
             'Please sign in to initialize your account.',
           );
-        const user = await guardUser(db, account.id);
+        const user = await guardUser(db, account.id, identity);
         const org = await guardOrganization(db, orgId);
         const access = await authorize(db, user, org);
         return work(db, { user, org, access });
@@ -158,19 +162,48 @@ export function createTaxonomyService(withTransaction) {
       throw error;
     }
   }
-  function editable(access, archive = false) {
-    if (
-      archive
-        ? access.role !== 'admin'
-        : !['admin', 'editor'].includes(access.role)
-    )
-      fail(
-        403,
-        'FORBIDDEN',
-        'Your organization role does not allow this action.',
-      );
+  function editable(access) {
+    if (!['administrator','sales'].includes(access.role)) fail(403,'FORBIDDEN','Your organization role does not allow this action.');
+  }
+  async function owned(db,taxonomyId,orgId) {
+    const t = await one(db,'UPDATE public.taxonomies SET auth_revision=COALESCE(auth_revision,0)+1 WHERE id=$1 AND owner_organization_id=$2 RETURNING *',[taxonomyId,orgId]);
+    if (!t) missing();
+    return t;
+  }
+  async function accessible(db,taxonomyId,orgId) {
+    return one(db,`SELECT t.* FROM public.taxonomies t WHERE t.id=$1 AND ${configurationAccessPredicate}`,[taxonomyId,orgId]);
   }
   return {
+    async readTaxonomySharing({orgId,taxonomyId,identity,body={},query={}}) {
+      identifier(taxonomyId); object(body,[]); object(query,[]);
+      return transaction(identity,orgId,async (db,{user}) => {
+        requireSuperAdministrator(user);
+        const t = await one(db,'SELECT * FROM public.taxonomies WHERE id=$1 AND owner_organization_id=$2',[taxonomyId,orgId]);
+        if (!t) missing();
+        const organizationIds = (await rows(db,'SELECT organization_id FROM public.taxonomy_organization_access WHERE taxonomy_id=$1 ORDER BY organization_id',[t.id])).map(r=>String(r.organization_id));
+        return reply({organizationIds,revision:String(t.sharing_revision ?? 0)});
+      },true);
+    },
+    async updateTaxonomySharing({orgId,taxonomyId,identity,body={},query={},requestId}) {
+      identifier(taxonomyId); object(query,[]); object(body,['organizationIds','expectedRevision']);
+      if (!Array.isArray(body.organizationIds) || body.organizationIds.length > 100) invalid('/organizationIds','Select at most 100 organizations.');
+      const recipients = [...new Set(body.organizationIds.map(identifier))].sort((a,b)=>BigInt(a)<BigInt(b)?-1:1);
+      if (recipients.includes(orgId)) invalid('/organizationIds','The owning organization already has access.');
+      if (typeof body.expectedRevision !== 'string' || !/^[0-9]{1,19}$/.test(body.expectedRevision)) invalid('/expectedRevision','Provide the saved sharing revision.');
+      return transaction(identity,orgId,async (db,{user}) => {
+        requireSuperAdministrator(user);
+        const t = await owned(db,taxonomyId,orgId);
+        if (t.archived_at) fail(409,'TAXONOMY_ARCHIVED','This configuration is archived.');
+        if (BigInt(t.sharing_revision ?? 0) !== BigInt(body.expectedRevision)) fail(409,'SHARING_CONFLICT','Sharing changed. Reload and review the current organizations.');
+        const before = (await rows(db,'SELECT organization_id FROM public.taxonomy_organization_access WHERE taxonomy_id=$1',[t.id])).map(r=>String(r.organization_id));
+        for (const id of recipients) await readOrganization(db,id);
+        await db.query('DELETE FROM public.taxonomy_organization_access WHERE taxonomy_id=$1',[t.id]);
+        for (const id of recipients) await db.query('INSERT INTO public.taxonomy_organization_access(taxonomy_id,organization_id) VALUES($1,$2)',[t.id,id]);
+        const revision = (await one(db,'UPDATE public.taxonomies SET sharing_revision=COALESCE(sharing_revision,0)+1 WHERE id=$1 RETURNING sharing_revision',[t.id])).sharing_revision;
+        await auditEvent(db,user,orgId,'taxonomy.sharing_updated','taxonomy',t.id,requestId,{before,after:recipients});
+        return reply({organizationIds:recipients,revision:String(revision)});
+      });
+    },
     async listTaxonomies({ body = {}, query = {}, orgId, identity }) {
       bounded(body);
       identifier(orgId);
@@ -183,24 +216,26 @@ export function createTaxonomyService(withTransaction) {
           (
             await one(
               db,
-              'SELECT count(*) AS total FROM public.taxonomies WHERE owner_organization_id=$1 AND archived_at IS NULL AND ($2::bigint IS NULL OR principal_id=$2)',
+              `SELECT count(*) AS total FROM public.taxonomies t WHERE (t.owner_organization_id=$1 OR EXISTS (SELECT 1 FROM public.taxonomy_organization_access a WHERE a.taxonomy_id=t.id AND a.organization_id=$1)) AND EXISTS (SELECT 1 FROM public.organizations owner WHERE owner.id=t.owner_organization_id AND owner.status='active') AND t.archived_at IS NULL AND ($2::bigint IS NULL OR t.principal_id=$2)`,
               [orgId, query.principalId ?? null],
             )
           ).total,
         );
         const items = await rows(
           db,
-          `SELECT t.id,t.principal_id,p.name AS principal_name,t.current_version_id,v.version_number,v.content->>'productFamilyName' AS family_name,v.content->'segments' AS segments,v.content->'separators' AS separators,
+          `SELECT t.id,t.owner_organization_id,t.principal_id,p.name AS principal_name,t.current_version_id,v.version_number,v.content->>'productFamilyName' AS family_name,v.content->'segments' AS segments,v.content->'separators' AS separators,
             v.created_at,v.created_by_user_id,COALESCE(u.display_name,u.email) AS modifier_name
             FROM public.taxonomies t JOIN public.taxonomy_versions v ON v.id=t.current_version_id AND v.taxonomy_id=t.id
             JOIN public.users u ON u.id=v.created_by_user_id JOIN public.principals p ON p.id=t.principal_id
-            WHERE t.owner_organization_id=$1 AND t.archived_at IS NULL AND ($4::bigint IS NULL OR t.principal_id=$4)
+            WHERE (t.owner_organization_id=$1 OR EXISTS (SELECT 1 FROM public.taxonomy_organization_access a WHERE a.taxonomy_id=t.id AND a.organization_id=$1)) AND EXISTS (SELECT 1 FROM public.organizations owner WHERE owner.id=t.owner_organization_id AND owner.status='active') AND t.archived_at IS NULL AND ($4::bigint IS NULL OR t.principal_id=$4)
             ORDER BY t.created_at DESC,t.id DESC LIMIT $2 OFFSET $3`,
           [orgId, pageSize, offset, query.principalId ?? null],
         );
         return reply({
           items: items.map((v) => ({
             id: String(v.id),
+            ownerOrganizationId: String(v.owner_organization_id),
+            permissions: { canEdit: String(v.owner_organization_id) === orgId, canArchive: String(v.owner_organization_id) === orgId, canPreview: true, canManageSharing: String(v.owner_organization_id) === orgId && !!user.isSuperAdministrator },
             productFamilyName: v.family_name,
             modelCode: v.segments.map(s => s.options.length === 1 ? s.options[0].code : s.placeholder).map((code,i) => (i ? (v.separators?.[i-1] ?? '-') : '') + code).join(''),
             principalId: String(v.principal_id),
@@ -253,7 +288,7 @@ export function createTaxonomyService(withTransaction) {
         t.principal_name = principal.name;
         return reply(
           {
-            taxonomy: resource(t, await version(db, reserved.id), access.role),
+            taxonomy: resource(t, await version(db, reserved.id), access.role, orgId, !!user.isSuperAdministrator),
             unchanged: false,
           },
           201,
@@ -267,11 +302,7 @@ export function createTaxonomyService(withTransaction) {
       object(query, []);
       object(body, []);
       return transaction(identity, orgId, async (db, { user, access }) => {
-        const t = await one(
-          db,
-          'SELECT * FROM public.taxonomies WHERE id=$1 AND owner_organization_id=$2',
-          [taxonomyId, orgId],
-        );
+        const t = await accessible(db,taxonomyId,orgId);
         if (!t) missing();
         t.principal_name = (
           await requirePrincipal(db, String(t.principal_id))
@@ -280,7 +311,7 @@ export function createTaxonomyService(withTransaction) {
           taxonomy: resource(
             t,
             await version(db, t.current_version_id),
-            access.role,
+            access.role, orgId, !!user.isSuperAdministrator,
           ),
         });
       }, true);
@@ -299,11 +330,7 @@ export function createTaxonomyService(withTransaction) {
       object(body, ['expectedVersionId']);
       return transaction(identity, orgId, async (db, { user, access }) => {
         editable(access, true);
-        const t = await one(
-          db,
-          'SELECT * FROM public.taxonomies WHERE id=$1 AND owner_organization_id=$2 FOR UPDATE',
-          [taxonomyId, orgId],
-        );
+        const t = await owned(db,taxonomyId,orgId);
         if (!t) missing();
         t.principal_name = (
           await requirePrincipal(db, String(t.principal_id))
@@ -339,11 +366,7 @@ export function createTaxonomyService(withTransaction) {
       object(query, []);
       object(body, ['versionId', 'selections']);
       return transaction(identity, orgId, async (db, { user, access }) => {
-        const t = await one(
-          db,
-          'SELECT * FROM public.taxonomies WHERE id=$1 AND owner_organization_id=$2',
-          [taxonomyId, orgId],
-        );
+        const t = await accessible(db,taxonomyId,orgId);
         if (!t) missing();
         t.principal_name = (
           await requirePrincipal(db, String(t.principal_id))
@@ -380,11 +403,7 @@ export function createTaxonomyService(withTransaction) {
       );
       return transaction(identity, orgId, async (db, { user, access }) => {
         editable(access);
-        const t = await one(
-          db,
-          'SELECT * FROM public.taxonomies WHERE id=$1 AND owner_organization_id=$2 FOR UPDATE',
-          [taxonomyId, orgId],
-        );
+        const t = await owned(db,taxonomyId,orgId);
         if (!t) missing();
         t.principal_name = (
           await requirePrincipal(db, String(t.principal_id))
@@ -401,7 +420,7 @@ export function createTaxonomyService(withTransaction) {
           String(t.principal_id) === body.principalId
         )
           return reply({
-            taxonomy: resource(t, previous, access.role),
+            taxonomy: resource(t, previous, access.role, orgId, !!user.isSuperAdministrator),
             unchanged: true,
           });
         if (previous.version_number === 2147483647)
@@ -433,7 +452,7 @@ export function createTaxonomyService(withTransaction) {
             taxonomy: resource(
               advanced,
               await version(db, next.id),
-              access.role,
+              access.role, orgId, !!user.isSuperAdministrator,
             ),
             unchanged: false,
           },

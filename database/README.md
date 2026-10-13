@@ -75,3 +75,7 @@ Apply the additive [principal migration](versions/0003/principals/README.md) aft
 ## Quote editor (0004)
 
 Follow the additive [quote migration](versions/0004/quotes/README.md) after 0003. It adds snapshot documents and runtime quote-write grants, with a bounded backfill of empty documents for existing quotes. The migration is applied to development; see the deployment ledger for live evidence. Quote service/migration coverage is in `server/tests/quote-editor.test.mjs`.
+
+## Organization roles and sharing (0005)
+
+[0005](versions/0005/organizations/README.md) replaces membership roles with Sales/Administrator, adds global Super Administrator privileges, company contact fields, exact enrollment-domain assignments, and configuration sharing. Its checkpoint runner keeps the API paused until the matching release. [Task 6000](../tasks/6000/implementation.md) records local checks and live-release status; older version-specific identity tests remain historical schema coverage.

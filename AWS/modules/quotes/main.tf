@@ -23,7 +23,7 @@ resource "aws_amplify_app" "frontend" {
   enable_branch_auto_deletion = false
   iam_service_role_arn        = aws_iam_role.amplify.arn
   build_spec                  = file("${path.module}/../../../amplify.yml")
-  environment_variables = { NITRO_PRESET = "aws-amplify" }
+  environment_variables       = { NITRO_PRESET = "aws-amplify" }
   lifecycle { ignore_changes = [access_token, oauth_token] }
 }
 resource "aws_amplify_branch" "frontend" {
@@ -121,7 +121,7 @@ resource "aws_lambda_function" "api" {
   source_code_hash               = data.archive_file.api.output_base64sha256
   memory_size                    = 512
   timeout                        = 15
-  reserved_concurrent_executions = -1
+  reserved_concurrent_executions = var.api_reserved_concurrent_executions
   publish                        = true
   environment { variables = {
     ENVIRONMENT       = var.environment

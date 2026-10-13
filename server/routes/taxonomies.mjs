@@ -1,5 +1,7 @@
 import { boundedBusiness, operationInput, respond } from './context.mjs';
 export function registerTaxonomyRoutes(app, service) {
+  app.get('/organizations/:orgId/taxonomies/:taxonomyId/sharing', boundedBusiness, async (request,reply) => respond(reply,await service.readTaxonomySharing(operationInput(request))));
+  app.put('/organizations/:orgId/taxonomies/:taxonomyId/sharing', boundedBusiness, async (request,reply) => respond(reply,await service.updateTaxonomySharing(operationInput(request))));
   app.get(
     '/organizations/:orgId/taxonomies',
     boundedBusiness,

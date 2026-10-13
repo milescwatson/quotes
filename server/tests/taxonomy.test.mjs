@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readTestFile as readFile } from './schema.mjs';
 import { PGlite } from '@electric-sql/pglite';
 import YAML from 'yaml';
 import { createTaxonomyService } from '../taxonomy.mjs';
@@ -75,7 +75,7 @@ test('normalization, ordering, nested IDs, valid-only saves and exact prices', (
     (c) => (c.segments[1].defaultOptionIndex = 2),
     (c) => (c.segments[1].options[1].code = '01'),
     (c) => (c.segments[1].placeholder = 'f'),
-    (c) => (c.segments[1].options[0].code = 'A-B'),
+    (c) => (c.segments[1].options[0].code = 'A B'),
     (c) => (c.basePrice = 100),
     (c) => (c.basePrice = '1e2'),
     (c) => (c.basePrice = '-1'),
@@ -204,7 +204,7 @@ test('schema, service, organization access, rollback and runtime grants', async 
       [issuer],
     );
     await db.exec(
-      `INSERT INTO organizations(id,name,status) VALUES (10,'First','active'),(11,'Other','active'),(12,'Pending','pending'); INSERT INTO organization_memberships(organization_id,user_id,role) VALUES (10,1,'admin'),(10,2,'editor'),(10,3,'member'),(11,4,'admin'),(12,1,'admin');`,
+      `INSERT INTO organizations(id,name,status) VALUES (10,'First','active'),(11,'Other','active'),(12,'Pending','pending'); INSERT INTO organization_memberships(organization_id,user_id,role) VALUES (10,1,'administrator'),(10,2,'sales'),(10,3,'sales'),(11,4,'administrator'),(12,1,'administrator');`,
     );
     await db.exec(
       (await read('../../database/versions/0003/principals/schema.sql'))
@@ -307,10 +307,7 @@ test('schema, service, organization access, rollback and runtime grants', async 
             (await call(service.readTaxonomy, saved.id, {}, sub)).statusCode,
             200,
           );
-        await rejects(
-          () => call(create, undefined, { content: content() }, 'member'),
-          'FORBIDDEN',
-        );
+        assert.equal((await call(service.readTaxonomy,saved.id,{},'member')).body.taxonomy.permissions.canEdit,true);
         await rejects(
           () => call(service.readTaxonomy, saved.id, {}, 'stranger'),
           'NOT_FOUND',
@@ -478,16 +475,7 @@ test('schema, service, organization access, rollback and runtime grants', async 
     await t.test(
       'archive preserves snapshots, excludes listing and blocks saves/preview',
       async () => {
-        await rejects(
-          () =>
-            call(
-              service.archiveTaxonomy,
-              saved.id,
-              { expectedVersionId: saved.currentVersionId },
-              'editor',
-            ),
-          'FORBIDDEN',
-        );
+        assert.equal((await call(service.readTaxonomy,saved.id,{},'editor')).body.taxonomy.permissions.canArchive,true);
         const before = Number(
           (await q('SELECT count(*) FROM taxonomy_versions')).rows[0].count,
         );
@@ -583,7 +571,7 @@ test('single attempt includes commit failures and conflict mapping', async () =>
   }
 });
 
-test('six authenticated Gateway routes, statuses and bounded HTTP bodies', async () => {
+test('eight authenticated Gateway routes, statuses and bounded HTTP bodies', async () => {
   const api = YAML.parse(await read('../../AWS/openapi.yaml'));
   const env = {
     COGNITO_ISSUER: issuer,
@@ -665,7 +653,7 @@ test('six authenticated Gateway routes, statuses and bounded HTTP bodies', async
     Object.entries(api.paths).flatMap(([p, ops]) =>
       p.includes('/taxonomies') ? Object.keys(ops) : [],
     ).length,
-    6,
+    8,
   );
 });
 

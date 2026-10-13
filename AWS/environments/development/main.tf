@@ -26,13 +26,18 @@ provider "aws" {
     tags = { Application = "quotes", Environment = "development", ManagedBy = "terraform" }
   }
 }
+variable "api_reserved_concurrent_executions" {
+  type    = number
+  default = -1
+}
 module "quotes" {
-  source             = "../../modules/quotes"
-  environment        = "development"
-  branch_name        = "development"
-  region             = var.region
-  account_id         = var.account_id
-  repository_url     = var.repository_url
-  notification_email = var.notification_email
+  source                             = "../../modules/quotes"
+  api_reserved_concurrent_executions = var.api_reserved_concurrent_executions
+  environment                        = "development"
+  branch_name                        = "development"
+  region                             = var.region
+  account_id                         = var.account_id
+  repository_url                     = var.repository_url
+  notification_email                 = var.notification_email
 }
 output "deployment" { value = module.quotes.deployment }
