@@ -182,7 +182,7 @@ test('drag handles reorder segments and options', async ({ page }) => {
   await expect(page.locator('p[role="status"]')).toContainText('Configuration saved.')
 })
 
-test('principal choices include later pages and list retries preserve the current page', async ({ page }) => {
+test('principal choices include later pages and transient list failures retry once', async ({ page }) => {
   await login(page)
   // Persist the seed, then add realistic later pages without changing the production adapter.
   await page.getByRole('navigation', { name: 'Settings sections' }).getByRole('link', { name: 'Principals', exact: true }).click()
@@ -202,9 +202,6 @@ test('principal choices include later pages and list retries preserve the curren
   const nav = page.getByRole('navigation', { name: 'Configurations pagination' })
   await page.evaluate(() => sessionStorage.setItem('quotes:fixture:failure', '503'))
   await nav.getByRole('button', { name: 'Next', exact: true }).click()
-  await expect(page.getByRole('alert')).toContainText('could not reach')
-  await expect(nav).toContainText('Page 1 of 2')
-  await page.getByRole('button', { name: 'Retry configurations' }).click()
   await expect(nav).toContainText('Page 2 of 2')
   await page.getByRole('link', { name: 'New configuration' }).click()
   await page.getByLabel('Principal', { exact: true }).selectOption('604')
@@ -282,4 +279,30 @@ test('descriptions persist and separators stay at gaps through reorder, add and 
   expect(content.segments[0].name).toBeNull()
   expect(content.segments[0].description).toBeNull()
   expect(content.separators).toEqual(['', '-', '-'])
+})
+
+test('reload after a concurrent version change fetches the latest configuration', async ({ page }) => {
+  await editor(page)
+  await page.evaluate(async () => {
+    const app = (document.querySelector('#__nuxt') as any).__vue_app__.config.globalProperties.$nuxt
+    const { taxonomy } = await app.$identity.request('/organizations/10/taxonomies/100')
+    const content = taxonomy.version.content
+    await app.$identity.request('/organizations/10/taxonomies/100/versions', {
+      method: 'POST', body: {
+        principalId: taxonomy.principalId, expectedVersionId: taxonomy.currentVersionId,
+        content: { ...content, productFamilyName: 'Changed by teammate', segments: content.segments.map((segment: any) => ({
+          ...segment, defaultOptionIndex: segment.defaultOptionId === null ? null : segment.options.findIndex((option: any) => option.id === segment.defaultOptionId),
+        })) },
+      },
+    })
+  })
+  await page.getByLabel('Product name', { exact: true }).fill('My edit')
+  await save(page).click()
+  await expect(page.getByRole('alert')).toContainText('configuration changed')
+  page.once('dialog', dialog => dialog.accept())
+  await page.getByRole('button', { name: 'Reload configuration' }).click()
+  await expect(page.getByLabel('Product name', { exact: true })).toHaveValue('Changed by teammate')
+  await page.getByLabel('Product name', { exact: true }).fill('My edit')
+  await save(page).click()
+  await expect(page.locator('p[role="status"]')).toContainText('Configuration saved.')
 })

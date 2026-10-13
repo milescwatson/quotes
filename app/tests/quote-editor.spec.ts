@@ -4,7 +4,12 @@ const org = `/organizations/${createHash('sha256').update('10').digest('hex').sl
 async function login(page: Page,scenario = 'admin') {
   await page.goto(`/login?returnTo=${encodeURIComponent(`${org}/quotes/new`)}`)
   await page.getByRole('button',{name:'Open demo workspace'}).click()
-  if (scenario !== 'admin') await page.getByLabel('Demo scenario').selectOption(scenario)
+  if (scenario !== 'admin') {
+    await page.getByLabel('Demo scenario').selectOption(scenario)
+    await expect(page.getByRole('heading', { name: 'Organizations', exact: true })).toBeVisible()
+    await page.locator('.org-card').filter({ hasText: 'Northstar Industries' }).click()
+    await page.goto(`${org}/quotes/new`)
+  }
   await expect(page.getByLabel('Customer',{exact:true})).toBeVisible()
   await expect(page.getByRole('button',{name:'+ Add line'})).toBeEnabled()
 }
@@ -122,4 +127,46 @@ test('desktop and mobile quote editor visual review',async({page})=>{
   expect(bounds!.x).toBeGreaterThanOrEqual(0); expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390)
   await page.evaluate(() => window.scrollTo(0,0))
   await page.screenshot({path:'../tasks/5000/screenshots/editor-mobile.png',fullPage:true})
+})
+
+test('reload after a concurrent change fetches the latest quote and token', async ({ page }) => {
+  await login(page)
+  await page.getByRole('link', { name: 'Quotes', exact: true }).last().click()
+  await page.getByRole('link', { name: 'Acme - Office Renovation', exact: true }).click()
+  await expect(page.getByLabel('Project', { exact: true })).toHaveValue('Office Renovation')
+  await page.evaluate(async () => {
+    const app = (document.querySelector('#__nuxt') as any).__vue_app__.config.globalProperties.$nuxt
+    const { quote } = await app.$identity.request(`/organizations/10/quotes/${location.pathname.split('/').pop()}`)
+    await app.$identity.request(`/organizations/10/quotes/${location.pathname.split('/').pop()}`, {
+      method: 'PUT', body: { customerName: quote.customerName, projectName: 'Changed by teammate', ownerId: quote.ownerId, lines: [], expectedToken: quote.token },
+    })
+  })
+  await page.getByLabel('Project', { exact: true }).fill('My edit')
+  await save(page).click()
+  await expect(page.getByRole('alert')).toContainText('This quote changed')
+  page.once('dialog', dialog => dialog.accept())
+  await page.getByRole('button', { name: 'Reload quote and catalog' }).click()
+  await expect(page.getByLabel('Project', { exact: true })).toHaveValue('Changed by teammate')
+  await page.getByLabel('Project', { exact: true }).fill('My edit')
+  await save(page).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Quote saved.' })).toBeVisible()
+})
+
+test('removing one line leaves a shared product request usable by another line', async ({ page }) => {
+  await login(page)
+  await page.getByRole('button', { name: '+ Add line' }).click()
+  await page.getByRole('button', { name: '+ Add line' }).click()
+  await page.evaluate(() => sessionStorage.setItem('quotes:fixture:delay', '1500'))
+  for (const index of [0, 1]) {
+    const line = page.getByRole('article').nth(index)
+    await line.getByRole('combobox', { name: 'Product', exact: true }).fill('F Series')
+    await line.getByRole('option').filter({ hasText: 'F Series' }).first().click()
+  }
+  await expect(page.getByRole('article').first()).toHaveAttribute('aria-busy', 'true')
+  await expect(page.getByRole('article').last()).toHaveAttribute('aria-busy', 'true')
+  page.once('dialog', dialog => dialog.accept())
+  await page.getByRole('button', { name: 'Remove line 1', exact: true }).click()
+  await expect(page.getByRole('article')).toHaveCount(1)
+  await expect(page.getByRole('region', { name: 'Part number segments' })).toBeVisible()
+  await expect(page.getByRole('article').getByRole('alert')).toHaveCount(0)
 })

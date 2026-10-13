@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { Combobox, ComboboxLabel, ComboboxInput, ComboboxButton, ComboboxOptions, ComboboxOption } from '@headlessui/vue'
 import type { LocalQuoteLine, QuoteProduct } from '~/types/quotes'
-import type { Taxonomy } from '~/types/taxonomy'
 import { quoteAmount, quoteNumber } from '~/utils/quote'
 import { displayPrice } from '~/utils/configuration'
+import { useQueryClient } from '@tanstack/vue-query'
+import { queryKeys } from '~/utils/query-keys'
 const props = defineProps<{ modelValue: LocalQuoteLine | null; lineKey: string; index: number; products: QuoteProduct[]; organization: string; disabled: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [value: LocalQuoteLine]; pending: [value: boolean]; remove: []; accessLost: [] }>()
-const controller = new AbortController()
-onBeforeUnmount(() => controller.abort())
-const identity = useIdentity(), editor = ref(!props.modelValue), draft = ref<LocalQuoteLine | null>(null), query = ref(''), codeText = ref<Record<number,string>>({}), failure = ref(''), loading = ref(false), active = ref(-1)
+let disposed = false
+const identity = useIdentity(), queryClient = useQueryClient(), editor = ref(!props.modelValue), draft = ref<LocalQuoteLine | null>(null), query = ref(''), codeText = ref<Record<number,string>>({}), failure = ref(''), loading = ref(false), active = ref(-1)
+onBeforeUnmount(() => { disposed = true })
 const picker = ref<InstanceType<typeof ComboboxInput>>(), editButton = ref<HTMLButtonElement>(), root = ref<HTMLElement>(), segments = ref<({ focus: () => void; validate: () => boolean } | null)[]>([]), valid = ref<Record<number,boolean>>({})
 const copy = (value: LocalQuoteLine | null) => value ? JSON.parse(JSON.stringify(value)) as LocalQuoteLine : null
 watch(() => props.modelValue, value => { draft.value = copy(value); valid.value = {}; codeText.value = {} }, { immediate: true })
@@ -20,8 +21,11 @@ async function choose(p: QuoteProduct | null) {
   if (draft.value && !window.confirm('Switch products and discard this line’s selections?')) { query.value = ''; return }
   loading.value = true; failure.value = ''; query.value = ''
   try {
-    const { taxonomy: t } = await identity.request<{ taxonomy: Taxonomy }>(`/organizations/${props.organization}/taxonomies/${p.id}`, { signal: controller.signal })
-    if (controller.signal.aborted) return
+    const { taxonomy: t } = await queryClient.fetchQuery({
+      queryKey: queryKeys.taxonomy(identity.organizationId(props.organization), p.id),
+      queryFn: ({ signal }) => identity.request<{ taxonomy: Taxonomy }>(`/organizations/${props.organization}/taxonomies/${p.id}`, { signal }),
+    })
+    if (disposed) return
     if (t.archivedAt) throw Error('This product is archived. Choose another configuration.')
     const content = t.version.content
     draft.value = { id: props.modelValue?.id ?? null, key: props.lineKey, taxonomyId: t.id, versionId: t.version.id,
@@ -29,7 +33,7 @@ async function choose(p: QuoteProduct | null) {
       selections: content.segments.map(s => s.options.length === 1 ? s.options[0]!.id : s.defaultOptionId), quantity: 1,
       partNumber: '', complete: false, unitPrice: '0.00', lineTotal: '0.00' }
     valid.value = {}; codeText.value = {}; active.value = -1; emit('pending',true)
-  } catch (e) { if (controller.signal.aborted) return; failure.value = (e as Error).message; if ('status' in (e as object) && [401,403,404].includes((e as { status: number }).status)) emit('accessLost') }
+  } catch (e) { if (disposed) return; failure.value = (e as Error).message; if ('status' in (e as object) && [401,403,404].includes((e as { status: number }).status)) emit('accessLost') }
   finally { loading.value = false }
 }
 function start() { draft.value = copy(props.modelValue); editor.value = true; failure.value = ''; emit('pending',true) }

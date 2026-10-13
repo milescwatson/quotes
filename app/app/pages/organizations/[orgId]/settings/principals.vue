@@ -1,20 +1,30 @@
 <script setup lang="ts">
+import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import type { PrincipalPage, FieldError } from '~/types/taxonomy'
 import { ApiError } from '~/types/identity'
+import { queryKeys } from '~/utils/query-keys'
 const props = defineProps<{ organization: string }>()
 const identity = useIdentity()
+const queryClient = useQueryClient()
 const principals = useConfigurationList<PrincipalPage>(() => props.organization, 'principals')
-const adding = ref(false), name = ref(''), website = ref(''), busy = ref(false), failure = ref(''), fields = ref<FieldError[]>([]), success = ref('')
+const adding = ref(false), name = ref(''), website = ref(''), failure = ref(''), fields = ref<FieldError[]>([]), success = ref('')
+const createMutation = useMutation({
+  mutationFn: (input: { organization: string; name: string; websiteUrl: string }) => identity.request(`/organizations/${input.organization}/principals`, { method: 'POST', body: { name: input.name, websiteUrl: input.websiteUrl } }),
+  onSuccess: (_data, input) => queryClient.invalidateQueries({
+    queryKey: queryKeys.principals(identity.organizationId(input.organization)), refetchType: 'none',
+  }),
+})
+
+const busy = createMutation.isPending
 async function add() {
-  busy.value = true; failure.value = ''; fields.value = []; success.value = ''
+  failure.value = ''; fields.value = []; success.value = ''
   const org = props.organization
   try {
-    await identity.request(`/organizations/${org}/principals`, { method: 'POST', body: { name: name.value, websiteUrl: website.value } })
+    await createMutation.mutateAsync({ organization: org, name: name.value, websiteUrl: website.value })
     if (props.organization !== org) return
     adding.value = false; name.value = ''; website.value = ''; success.value = 'Principal added.'
     await principals.load(1)
   } catch (e) { if (props.organization === org) { failure.value = (e as Error).message; fields.value = e instanceof ApiError ? e.fieldErrors || [] : [] } }
-  finally { busy.value = false }
 }
 const message = (path: string) => fields.value.find(f => f.path === path)?.message
 </script>

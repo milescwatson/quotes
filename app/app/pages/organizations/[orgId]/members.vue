@@ -1,36 +1,52 @@
 <script setup lang="ts">
+import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import type { Member, Page, Role } from '~/types/identity'
+import { queryKeys } from '~/utils/query-keys'
 const route = useRoute(),
   identity = useIdentity(),
+  queryClient = useQueryClient(),
   cursor = ref('')
 const { data, loading, error, load } = useResource<Page<Member>>(
   () =>
     `/organizations/${route.params.orgId}/members${cursor.value ? `?cursor=${encodeURIComponent(cursor.value)}` : ''}`,
+  () => true,
+  () => queryKeys.memberPage(identity.organizationId(route.params.orgId), cursor.value),
 )
 const selected = ref<Member | null>(null),
   action = ref<'remove' | 'role'>('remove'),
   role = ref<Role>('member'),
-  busy = ref(false),
   failure = ref(''),
   success = ref('')
 const email = ref(''),
   newRole = ref<Role>('member'),
-  adding = ref(false),
   addError = ref('')
 const isAdmin = computed(
   () =>
     identity.state.organizations.find((o) => o.id === identity.organizationId(route.params.orgId))
       ?.role === 'admin',
 )
+const memberMutation = useMutation({
+  mutationFn: (input: { organization: string; operation: 'add' | 'remove' | 'role'; memberId?: string; role?: Role; email?: string }) => {
+    if (input.operation === 'add') return identity.request(`/organizations/${input.organization}/members`, {
+      method: 'POST', body: { email: input.email, role: input.role },
+    })
+    return identity.request(`/organizations/${input.organization}/members/${input.memberId}`, {
+      method: input.operation === 'remove' ? 'DELETE' : 'PATCH',
+      body: input.operation === 'role' ? { role: input.role } : undefined,
+    })
+  },
+  onSuccess: (_data, input) => Promise.all([
+    queryClient.invalidateQueries({ queryKey: queryKeys.members(identity.organizationId(input.organization)), refetchType: 'none' }),
+    queryClient.invalidateQueries({ queryKey: queryKeys.quoteOwners(identity.organizationId(input.organization)) }),
+  ]),
+})
+const adding = computed(() => memberMutation.isPending.value && memberMutation.variables.value?.operation === 'add')
+const busy = computed(() => memberMutation.isPending.value && memberMutation.variables.value?.operation !== 'add')
 async function addMember() {
-  adding.value = true
   addError.value = ''
   success.value = ''
   try {
-    await identity.request(`/organizations/${route.params.orgId}/members`, {
-      method: 'POST',
-      body: { email: email.value.trim(), role: newRole.value },
-    })
+    await memberMutation.mutateAsync({ organization: String(route.params.orgId), operation: 'add', email: email.value.trim(), role: newRole.value })
     success.value = `${email.value.trim()} now has access to this organization.`
     email.value = ''
     newRole.value = 'member'
@@ -38,8 +54,6 @@ async function addMember() {
     await load()
   } catch (e) {
     addError.value = (e as Error).message
-  } finally {
-    adding.value = false
   }
 }
 function open(member: Member, operation: 'remove' | 'role') {
@@ -49,16 +63,9 @@ function open(member: Member, operation: 'remove' | 'role') {
   failure.value = ''
 }
 async function confirm() {
-  busy.value = true
   failure.value = ''
   try {
-    await identity.request(
-      `/organizations/${route.params.orgId}/members/${selected.value!.id}`,
-      {
-        method: action.value === 'remove' ? 'DELETE' : 'PATCH',
-        body: action.value === 'role' ? { role: role.value } : undefined,
-      },
-    )
+    await memberMutation.mutateAsync({ organization: String(route.params.orgId), operation: action.value, memberId: selected.value!.id, role: role.value })
     selected.value = null
     success.value = 'Team membership updated.'
     await identity.refresh()
@@ -70,8 +77,6 @@ async function confirm() {
     else await load()
   } catch (e) {
     failure.value = (e as Error).message
-  } finally {
-    busy.value = false
   }
 }
 </script>

@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import type { Organization } from '~/types/identity'
+import { queryKeys } from '~/utils/query-keys'
 const route = useRoute(), identity = useIdentity()
 const { data, loading, error, load } = useResource<{ organization: Organization }>(
   () => `/organizations/${route.params.orgId}`,
+  () => true,
+  () => queryKeys.organization(identity.organizationId(route.params.orgId)),
 )
 const settingsPath = computed(() => `${identity.organizationPath(identity.organizationId(String(route.params.orgId)))}/settings`)
 const sections = computed(() => [

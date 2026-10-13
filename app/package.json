@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@headlessui/vue": "^1.7.23",
+    "@tanstack/vue-query": "^5.104.2",
     "nuxt": "^4.6.0",
     "oidc-client-ts": "^3.5.0",
     "tldts": "^7.4.18",

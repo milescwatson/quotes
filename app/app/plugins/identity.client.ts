@@ -43,6 +43,7 @@ export default defineNuxtPlugin(async () => {
   let initializing: Promise<void> | null = null
   const clear = () => {
     sessionEpoch++
+    window.dispatchEvent(new Event('quotes:clear-query-cache'))
     state.user = null
     state.organizations = []
     for (const id of Object.keys(routeIds)) delete routeIds[id]

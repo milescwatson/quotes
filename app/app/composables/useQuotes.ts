@@ -1,75 +1,54 @@
+import { useQuery, useQueryClient } from '@tanstack/vue-query'
 import { ApiError } from '~/types/identity'
 import type { QuotePage, QuoteFilters } from '~/types/quotes'
+import { queryKeys } from '~/utils/query-keys'
 
 export function useQuotes(organization: () => string) {
-  const identity = useIdentity()
-  const data = shallowRef<QuotePage | null>(null)
-  const loading = ref(true)
-  const error = ref('')
+  const identity = useIdentity(), client = useQueryClient()
   const filters = ref<QuoteFilters>({ customer: '', project: '', ownerId: '' })
-  let controller: AbortController | undefined
-  let requestedPage = 1
-  let mounted = false
-
-  async function load(page = requestedPage) {
-    controller?.abort()
-    const current = new AbortController()
-    controller = current
-    requestedPage = page
-    loading.value = true
-    error.value = ''
-    const path = `/organizations/${organization()}/quotes`
-    const query = new URLSearchParams()
-    for (const [key, value] of Object.entries(filters.value)) if (value) query.set(key, value)
-    const url = (page: number) => `${path}?page=${page}&pageSize=50&${query}`
-    try {
-      let result = await identity.request<QuotePage>(url(page), {
-        signal: current.signal,
-      })
-      if (current.signal.aborted) return
-      // Recover if writes removed the last page between requests.
-      while (!current.signal.aborted && result.totalPages > 0 && result.page > result.totalPages) {
-        requestedPage = result.totalPages
-        result = await identity.request<QuotePage>(url(result.totalPages), {
-          signal: current.signal,
-        })
+  const page = ref(1)
+  const org = computed(() => identity.organizationId(organization()))
+  const params = computed(() => ({ page: page.value, pageSize: 50, ...filters.value }))
+  const query = useQuery<QuotePage | null>({
+    queryKey: computed(() => queryKeys.quoteList(org.value, params.value)),
+    placeholderData: previous => previous,
+    enabled: computed(() => import.meta.client && !!org.value && identity.state.organizations.some(item => item.id === identity.organizationId(org.value))),
+    queryFn: async ({ signal }) => {
+      const path = `/organizations/${org.value}/quotes`
+      const queryString = new URLSearchParams()
+      for (const [key, value] of Object.entries(filters.value)) if (value) queryString.set(key, value)
+      const url = (requested: number) => `${path}?page=${requested}&pageSize=50&${queryString}`
+      try {
+        let result = await identity.request<QuotePage>(url(page.value), { signal })
+        while (!signal.aborted && result.totalPages > 0 && result.page > result.totalPages) {
+          page.value = result.totalPages
+          result = await identity.request<QuotePage>(url(result.totalPages), { signal })
+        }
+        return result
+      } catch (error) {
+        if (error instanceof ApiError && [401, 403, 404].includes(error.status)) {
+          client.setQueryData(queryKeys.quoteList(org.value, params.value), null)
+        }
+        throw error
       }
-      if (!current.signal.aborted) data.value = result
-    } catch (cause) {
-      if (!current.signal.aborted) {
-        // Retain rows only for retryable failures, never for lost access.
-        if (cause instanceof ApiError && [401, 403, 404].includes(cause.status)) data.value = null
-        error.value = (cause as Error).message
-      }
-    } finally {
-      if (!current.signal.aborted) loading.value = false
-    }
-  }
-
-  watch([
-    organization,
-    () => identity.state.organizations.some(org => org.id === identity.organizationId(organization())),
-    () => identity.state.user?.id,
-  ], () => {
-    if (!mounted) return
-    controller?.abort()
-    data.value = null
-    requestedPage = 1
+    },
+  })
+  watch([org, () => identity.state.user?.id, () => identity.state.organizations.some(item => item.id === identity.organizationId(org.value))], () => {
+    page.value = 1
     filters.value = { customer: '', project: '', ownerId: '' }
-    void load(1)
   }, { flush: 'sync' })
-  onMounted(() => {
-    mounted = true
-    void load(1)
-  })
-  onBeforeUnmount(() => {
-    mounted = false
-    controller?.abort()
-  })
-  function applyFilters(value: QuoteFilters) {
-    filters.value = { ...value }
-    data.value = null
-    void load(1)
+  async function load(nextPage = page.value) {
+    if (nextPage === page.value) await query.refetch()
+    else page.value = nextPage
   }
-  return { data, loading, error, load, filters, applyFilters }
+  function applyFilters(value: QuoteFilters) { filters.value = { ...value }; page.value = 1 }
+  return {
+    data: computed(() => query.data.value ?? null),
+    loading: query.isFetching,
+    error: computed(() => query.error.value ? (query.error.value as Error).message : ''),
+    load,
+    filters,
+    applyFilters,
+    query,
+  }
 }

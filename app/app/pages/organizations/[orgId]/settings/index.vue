@@ -1,30 +1,24 @@
 <script setup lang="ts">
+import { useMutation, useQueryClient } from '@tanstack/vue-query'
+import { queryKeys } from '~/utils/query-keys'
 import type { Organization } from '~/types/identity'
 const props = defineProps<{ organization: string; details: Organization }>()
 const route = useRoute(),
   identity = useIdentity()
-const name = ref(''),
-  busy = ref(false),
-  failure = ref(''),
-  saved = ref(false)
-watch(() => props.details, (value) => { name.value = value.name }, { immediate: true })
-async function save() {
-  busy.value = true
-  failure.value = ''
-  saved.value = false
-  try {
-    await identity.request(`/organizations/${route.params.orgId}`, {
-      method: 'PATCH',
-      body: { name: name.value.trim() },
-    })
+const queryClient = useQueryClient()
+const name = ref('')
+const { mutate, isPending: busy, isSuccess: saved, error } = useMutation({
+  mutationFn: (value: { organization: string; name: string }) => identity.request(`/organizations/${value.organization}`, {
+    method: 'PATCH', body: { name: value.name },
+  }),
+  onSuccess: async (_data, input) => {
     await identity.refresh()
-    saved.value = true
-  } catch (e) {
-    failure.value = (e as Error).message
-  } finally {
-    busy.value = false
-  }
-}
+    await queryClient.invalidateQueries({ queryKey: queryKeys.organization(identity.organizationId(input.organization)) })
+  },
+})
+const failure = computed(() => error.value?.message || '')
+watch(() => props.details, (value) => { name.value = value.name }, { immediate: true })
+const save = () => mutate({ organization: String(route.params.orgId), name: name.value.trim() })
 </script>
 <template>
   <section

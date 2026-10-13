@@ -104,7 +104,7 @@ test('empty organization and member-only views', async ({ page }) => {
     page.getByRole('link', { name: 'Members', exact: true }),
   ).toHaveCount(0)
 })
-test('loading errors can be retried and expired sessions clear workspace data', async ({
+test('transient loading errors retry once and expired sessions clear workspace data', async ({
   page,
 }) => {
   await login(page, `/organizations/${org}`)
@@ -116,10 +116,6 @@ test('loading errors can be retried and expired sessions clear workspace data', 
     sessionStorage.setItem('quotes:fixture:failure', '503'),
   )
   await page.getByRole('link', { name: 'Members', exact: true }).click()
-  await expect(page.getByRole('alert')).toContainText(
-    'could not reach the service',
-  )
-  await page.getByRole('button', { name: 'Try again' }).click()
   await expect(
     page.getByText('jamie@example.com', { exact: true }),
   ).toBeVisible()

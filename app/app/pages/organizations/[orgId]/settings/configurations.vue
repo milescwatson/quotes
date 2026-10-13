@@ -1,24 +1,19 @@
 <script setup lang="ts">
-import type { Principal, TaxonomyPage } from '~/types/taxonomy'
+import type { TaxonomyPage } from '~/types/taxonomy'
 const props = defineProps<{ organization: string }>()
-const identity = useIdentity(), filter = ref(''), choices = ref<Principal[]>([]), choicesError = ref('')
+const identity = useIdentity(), filter = ref('')
 const configs = useConfigurationList<TaxonomyPage>(() => props.organization, 'taxonomies', () => filter.value)
-let controller: AbortController | undefined
-async function loadChoices() {
-  controller?.abort(); const c = new AbortController(); controller = c; choicesError.value = ''
-  try { const rows = await loadPrincipalChoices(props.organization, c.signal); if (!c.signal.aborted) choices.value = rows }
-  catch (e) { if (!c.signal.aborted) choicesError.value = (e as Error).message }
-}
-onMounted(loadChoices)
-watch(() => props.organization, () => { filter.value = ''; choices.value = []; void loadChoices() })
-onBeforeUnmount(() => controller?.abort())
+const choices = usePrincipalChoices(() => props.organization)
+const choicesError = computed(() => choices.error.value ? (choices.error.value as Error).message : '')
+const loadChoices = () => choices.refetch()
+watch(() => props.organization, () => { filter.value = '' })
 const editor = (id: string) => `${identity.organizationPath(identity.organizationId(props.organization))}/taxonomies/${id}`
 const date = (value: string) => new Date(value).toLocaleString()
 </script>
 <template>
   <section id="configurations" class="panel p-4 sm:p-6" aria-labelledby="configurations-title">
     <div class="section-heading"><h2 id="configurations-title">Product Configurations</h2><NuxtLink :to="editor('new')" class="button primary">New configuration</NuxtLink></div>
-    <label for="principal-filter">Principal</label><select id="principal-filter" v-model="filter" class="mb-4 w-full sm:max-w-sm"><option value="">All principals</option><option v-for="p in choices" :key="p.id" :value="p.id">{{ p.name }}</option></select>
+    <label for="principal-filter">Principal</label><select id="principal-filter" v-model="filter" class="mb-4 w-full sm:max-w-sm"><option value="">All principals</option><option v-for="p in choices.data.value || []" :key="p.id" :value="p.id">{{ p.name }}</option></select>
     <p v-if="choicesError" class="error" role="alert">{{ choicesError }} <button class="text-button" @click="loadChoices">Retry principals</button></p>
     <p v-if="configs.error.value" class="error" role="alert">{{ configs.error.value }} <button class="text-button" @click="configs.load()">Retry configurations</button></p>
     <p v-if="configs.loading.value && !configs.data.value" role="status">Loading configurations…</p>

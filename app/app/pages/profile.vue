@@ -1,28 +1,14 @@
 <script setup lang="ts">
+import { useMutation } from '@tanstack/vue-query'
 const identity = useIdentity()
-const name = ref(identity.state.user?.displayName || ''),
-  busy = ref(false),
-  error = ref(''),
-  saved = ref(false)
-async function save() {
-  busy.value = true
-  error.value = ''
-  saved.value = false
-  try {
-    const result = await identity.request<{
-      user: import('~/types/identity').Profile
-    }>('/me', {
-      method: 'PATCH',
-      body: { displayName: name.value.trim() || null },
-    })
-    identity.state.user = result.user
-    saved.value = true
-  } catch (e) {
-    error.value = (e as Error).message
-  } finally {
-    busy.value = false
-  }
-}
+const name = ref(identity.state.user?.displayName || '')
+const { mutate: save, isPending: busy, isSuccess: saved, error: failure } = useMutation({
+  mutationFn: () => identity.request<{ user: import('~/types/identity').Profile }>('/me', {
+    method: 'PATCH', body: { displayName: name.value.trim() || null },
+  }),
+  onSuccess: result => { identity.state.user = result.user },
+})
+const error = computed(() => failure.value?.message || '')
 </script>
 <template>
   <PageHeading
@@ -32,7 +18,7 @@ async function save() {
   />
   <section class="panel form-panel">
     <h2>Personal information</h2>
-    <form @submit.prevent="save">
+    <form @submit.prevent="save()">
       <label for="display-name">Display name</label
       ><input
         id="display-name"

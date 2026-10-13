@@ -30,15 +30,11 @@ test('quotes list shows fields and page boundaries with keyboard-accessible cont
   await expect(rows(page)).toHaveCount(50)
 })
 
-test('pagination errors preserve rows and page label, retry succeeds', async ({ page }) => {
+test('pagination retries one transient failure and loads the requested page', async ({ page }) => {
   await login(page)
   await expect(rows(page)).toHaveCount(50)
   await page.evaluate(() => sessionStorage.setItem('quotes:fixture:failure', '503'))
   await page.getByRole('button', { name: 'Next', exact: true }).click()
-  await expect(page.getByRole('alert')).toContainText('could not reach the service')
-  await expect(rows(page)).toHaveCount(50)
-  await expect(page.getByRole('navigation', { name: 'Quotes pagination' })).toContainText('Page 1 of 2')
-  await page.getByRole('button', { name: 'Try again' }).click()
   await expect(rows(page)).toHaveCount(5)
   await expect(page.getByRole('navigation', { name: 'Quotes pagination' })).toContainText('Page 2 of 2')
 })
@@ -159,4 +155,13 @@ test('owners can be changed, unassigned, filtered, and persisted', async ({ page
   await expect(owner).toHaveValue('')
   await owner.selectOption('2')
   await expect(owner).toHaveValue('2')
+})
+
+test('revocation during an owner update clears all visible quote rows', async ({ page }) => {
+  await login(page)
+  await expect(rows(page)).toHaveCount(50)
+  await page.evaluate(() => sessionStorage.setItem('quotes:fixture:revoke-org', '10'))
+  await rows(page).first().getByRole('combobox').selectOption('')
+  await expect(page.getByRole('alert').filter({ hasText: 'no longer have access' }).first()).toBeVisible()
+  await expect(rows(page)).toHaveCount(0)
 })

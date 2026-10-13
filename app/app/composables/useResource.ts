@@ -1,33 +1,29 @@
-export function useResource<T>(path: () => string, enabled: () => boolean = () => true) {
+import { ApiError } from '~/types/identity'
+import { useQuery, useQueryClient, type QueryKey } from '@tanstack/vue-query'
+
+export function useResource<T>(path: () => string, enabled: () => boolean = () => true, queryKey?: () => QueryKey) {
   const identity = useIdentity()
-  const data = shallowRef<T | null>(null),
-    error = ref(''),
-    loading = ref(true)
-  let controller: AbortController | undefined
-  async function load() {
-    controller?.abort()
-    const current = new AbortController()
-    controller = current
-    data.value = null
-    error.value = ''
-    if (!enabled()) {
-      loading.value = false
-      return
-    }
-    loading.value = true
-    try {
-      const result = await identity.request<T>(path(), {
-        signal: current.signal,
-      })
-      if (!current.signal.aborted) data.value = result
-    } catch (e) {
-      if (!current.signal.aborted) error.value = (e as Error).message
-    } finally {
-      if (!current.signal.aborted) loading.value = false
-    }
+  const client = useQueryClient()
+  const resourcePath = computed(path)
+  const query = useQuery<T | null>({
+    queryKey: computed(() => queryKey?.() ?? ['resource', resourcePath.value]),
+    enabled: computed(() => import.meta.client && enabled()),
+    queryFn: async ({ signal }) => {
+      try {
+        return await identity.request<T>(resourcePath.value, { signal })
+      } catch (error) {
+        if (error instanceof ApiError && [401, 403, 404].includes(error.status)) {
+          client.setQueryData(queryKey?.() ?? ['resource', resourcePath.value], null)
+        }
+        throw error
+      }
+    },
+  })
+  return {
+    data: computed(() => query.data.value ?? null),
+    error: computed(() => query.error.value ? (query.error.value as Error).message : ''),
+    loading: computed(() => query.isLoading.value),
+    load: async () => { await query.refetch() },
+    query,
   }
-  onMounted(load)
-  watch([path, enabled], load)
-  onBeforeUnmount(() => controller?.abort())
-  return { data, error, loading, load }
 }

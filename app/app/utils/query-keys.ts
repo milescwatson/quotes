@@ -1,0 +1,17 @@
+export const queryKeys = {
+  organizations: ['organizations'] as const,
+  organization: (org: string) => ['organizations', org] as const,
+  quotes: (org: string) => ['organizations', org, 'quotes'] as const,
+  quoteList: (org: string, params: { page: number; pageSize: number; customer: string; project: string; ownerId: string }) => ['organizations', org, 'quotes', 'list', params] as const,
+  quote: (org: string, id: string) => ['organizations', org, 'quotes', 'detail', id] as const,
+  quoteOwners: (org: string) => ['organizations', org, 'quote-owners'] as const,
+  members: (org: string) => ['organizations', org, 'members'] as const,
+  memberPage: (org: string, cursor: string) => ['organizations', org, 'members', cursor] as const,
+  principals: (org: string) => ['organizations', org, 'principals'] as const,
+  principalList: (org: string, page: number) => ['organizations', org, 'principals', 'list', page] as const,
+  principalChoices: (org: string) => ['organizations', org, 'principals', 'choices'] as const,
+  taxonomies: (org: string) => ['organizations', org, 'taxonomies'] as const,
+  taxonomyList: (org: string, page: number, principalId: string) => ['organizations', org, 'taxonomies', 'list', page, principalId] as const,
+  taxonomy: (org: string, id: string) => ['organizations', org, 'taxonomies', 'detail', id] as const,
+  taxonomyCatalog: (org: string) => ['organizations', org, 'taxonomies', 'catalog'] as const,
+}

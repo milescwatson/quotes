@@ -1,18 +1,24 @@
 <script setup lang="ts">
 import type { QuoteOwners } from '~/types/quotes'
+import { queryKeys } from '~/utils/query-keys'
+import { useQueryClient } from '@tanstack/vue-query'
 const route = useRoute()
 const identity = useIdentity()
+const queryClient = useQueryClient()
 const { data, loading, error, load, filters, applyFilters } = useQuotes(() => String(route.params.orgId))
-const owners = useResource<QuoteOwners>(() => `/organizations/${route.params.orgId}/quote-owners`)
+const owners = useResource<QuoteOwners>(() => `/organizations/${route.params.orgId}/quote-owners`, () => true, () => queryKeys.quoteOwners(identity.organizationId(route.params.orgId)))
 const success = ref('')
 const filtered = computed(() => Object.values(filters.value).some(Boolean))
 async function ownerSaved() {
   success.value = 'Quote owner updated.'
-  await load()
 }
 async function accessLost() {
-  data.value = null
+  const queryKey = queryKeys.quotes(identity.organizationId(route.params.orgId))
+  await queryClient.cancelQueries({ queryKey })
+  queryClient.setQueriesData({ queryKey }, null)
+  queryClient.removeQueries({ queryKey })
   await load()
+  await owners.load()
 }
 const dateFormat = new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' })
 const dateLabel = (value: string) => dateFormat.format(new Date(value))

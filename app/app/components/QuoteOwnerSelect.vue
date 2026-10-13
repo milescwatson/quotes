@@ -1,24 +1,31 @@
 <script setup lang="ts">
+import { useMutation, useQueryClient } from '@tanstack/vue-query'
 import { ApiError } from '~/types/identity'
 import type { Quote, QuoteOwner } from '~/types/quotes'
+import { queryKeys } from '~/utils/query-keys'
 const props = defineProps<{ quote: Quote; owners: QuoteOwner[]; organizationId: string; disabled?: boolean }>()
 const emit = defineEmits<{ saved: []; accessLost: [] }>()
 const identity = useIdentity()
+const queryClient = useQueryClient()
 const selected = ref(props.quote.ownerId ?? '')
-const saving = ref(false)
 const error = ref('')
 let controller: AbortController | undefined
+const ownerMutation = useMutation({
+  mutationFn: (input: { ownerId: string | null; signal: AbortSignal }) => identity.request(`/organizations/${props.organizationId}/quotes/${props.quote.id}`, {
+    method: 'PATCH', body: { ownerId: input.ownerId }, signal: input.signal,
+  }),
+  onSuccess: () => queryClient.invalidateQueries({ queryKey: queryKeys.quotes(identity.organizationId(props.organizationId)) }),
+})
+const saving = ownerMutation.isPending
+
 watch(() => props.quote.ownerId, value => { selected.value = value ?? '' })
 const unavailableOwner = computed(() => props.quote.ownerId && !props.owners.some(owner => owner.id === props.quote.ownerId))
 async function save() {
   if (selected.value === (props.quote.ownerId ?? '')) return
-  saving.value = true
   error.value = ''
   controller = new AbortController()
   try {
-    await identity.request(`/organizations/${props.organizationId}/quotes/${props.quote.id}`, {
-      method: 'PATCH', body: { ownerId: selected.value || null }, signal: controller.signal,
-    })
+    await ownerMutation.mutateAsync({ ownerId: selected.value || null, signal: controller.signal })
     if (!controller.signal.aborted) emit('saved')
   } catch (cause) {
     if (!controller.signal.aborted) {
@@ -26,8 +33,6 @@ async function save() {
       error.value = (cause as Error).message
       if (cause instanceof ApiError && [401, 403, 404].includes(cause.status)) emit('accessLost')
     }
-  } finally {
-    if (!controller.signal.aborted) saving.value = false
   }
 }
 onBeforeUnmount(() => controller?.abort())
