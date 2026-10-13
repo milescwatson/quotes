@@ -1,0 +1,24 @@
+{
+  "environment": "development",
+  "startedAt": "2026-10-13T23:49:02.773Z",
+  "invocation": {
+    "StatusCode": 200,
+    "ExecutedVersion": "$LATEST"
+  },
+  "smoke": {
+    "status": "passed",
+    "runId": "5e8a9667-65d9-4b75-9f48-eb8f337273fd",
+    "checks": [
+      "IAM-authenticated restricted runtime connection",
+      "Sales Team reads and Administrator-only company writes",
+      "Exact-domain enrollment and Sales restoration",
+      "Owned editing, shared read-only access and shared quote pricing",
+      "Revocation blocks new use and retains snapshots",
+      "Exact email allowlist determines global privileges"
+    ],
+    "fixturesRolledBack": true
+  },
+  "status": "passed",
+  "temporaryFunctionDeleted": true,
+  "completedAt": "2026-10-13T23:49:12.733Z"
+}

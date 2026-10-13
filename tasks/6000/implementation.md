@@ -1,6 +1,6 @@
 # Implementation and verification
 
-Implemented October 13, 2026. Source, migration package, OpenAPI/generated types, fixtures, and browser/API coverage are complete locally. Live development migration/release is pending.
+Implemented October 13, 2026. Source, migration package, OpenAPI/generated types, fixtures, and browser/API coverage are complete locally. Live development migration and coordinated release completed October 13, 2026; authenticated Cognito browser verification remains unrun.
 
 ## Delivered
 
@@ -26,7 +26,8 @@ Implemented October 13, 2026. Source, migration package, OpenAPI/generated types
 | Terraform development validation | Passed with installed providers outside the filesystem sandbox |
 | Browser suite | 52 passed, including six new organization scenarios and updated historical-quote authorization |
 | Desktop/mobile visual inspection | Sharing panel and company settings inspected; mobile checks assert no page overflow |
-| Live development AWS/DSQL/Cognito | Pending: existing AWS session expired; no live migration or release performed |
+| Live development AWS/DSQL | Migration 0005, Lambda 11, Gateway, Amplify job 20, runtime-role checks and public health/auth/CORS checks passed; Terraform reports no changes |
+| Real Cognito user browser check | Not run: no development user access token/session available |
 
 The service suite loads 0005 into its local database fixtures; historical database suites continue to verify earlier schemas. A dedicated migration test starts with old admin/editor/member rows and checks exact mappings, defaults, retained membership identities, and constraints. Enrollment tests exercise simultaneous in-process bootstrap requests with a serialized PGlite connection; existing transaction tests cover bounded retry handling. The deployment smoke handler also passed locally using restricted runtime grants, with every fixture rolled back. Actual Aurora concurrency/runtime verification is reserved for the live validation script.
 
@@ -36,9 +37,13 @@ Screenshots: [desktop sharing](screenshots/sharing-desktop.png) and [mobile comp
 
 ## Release status
 
-The development AWS connection returned `Your session has expired. Please reauthenticate using 'aws login'.` The user supplied no existing domain mapping or designated seed account. No membership-domain inference or initial privilege grant was performed.
+Development release completed October 13, 2026. Integration commit `31c8e4b` and pagination/auth-regression fix `f68defd` are pushed to development. Migration 0005 converted the existing Administrator membership, installed company/domain/sharing schema and grants, and validated asynchronous indexes/constraints. The initial domain mapping is empty. The three verified allowlisted accounts receive Super Administrator access without seeding.
 
-After `aws login --profile quotes-development`, follow [database-design.md](database-design.md): run the checkpointed migration, release the matching Lambda/Gateway/frontend with API concurrency held at zero, restore the journaled concurrency, and run the restricted-role/public authenticated checks. The three verified allowlisted accounts receive Super Administrator access without seeding. These steps remain pending and are not represented as verified live behavior.
+The reviewed API plan changed only Lambda, its alias, and Gateway (0 added, 3 changed, 0 destroyed). Lambda version 11 is Active/Successful and its code hash matches the built archive. All 30 Gateway routes match OpenAPI; business routes use JWT. Gateway metadata was reconciled separately. Amplify job 20 passed BUILD, DEPLOY and VERIFY for `f68defd`. The API stayed paused throughout cutover and its original unreserved concurrency was restored through a reviewed concurrency-only plan. The final Terraform plan reports no changes.
+
+Live checks through the actual restricted IAM/database role passed enrollment/restoration, company authorization, shared read-only configuration access, quote pricing, revocation/snapshot retention, and exact email privilege rules. Every fixture was rolled back and the temporary Lambda deleted. Public checks passed frontend/login and API health (200), anonymous business routes (401), and configured-origin PUT preflight (204). No real Cognito user token was available, so the signed-in public browser check was not run.
+
+Evidence: [migration journal](../../database/deployments/development-0005.json), [runtime-role validation](../../database/deployments/development-0005-validation.json), and [release verification](development-verification.json). Staging and production were not modified. The prior API version must not receive traffic with the new membership-role constraint.
 
 ## Email allowlist revision
 

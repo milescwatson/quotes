@@ -9,6 +9,7 @@ This is the environment ledger for database schema and grants. Update it after e
 | 0002 JSON taxonomy | Applied — 2026-10-10 | Not applied | Not applied |
 | 0003 shared principals | Applied — 2026-10-12 | Not applied | Not applied |
 | 0004 quote editor | Applied — 2026-10-12 | Not applied | Not applied |
+| 0005 organization roles and sharing | Applied — 2026-10-13 | Not applied | Not applied |
 | 0001 legacy relational taxonomy | Excluded — never install on DSQL | Excluded | Excluded |
 
 “Applied” means every schema statement and associated permission grant completed, asynchronous jobs succeeded, and catalog verification passed. “Partial” means some changes exist but the module is not ready. “Not applied” means no deployment has been performed by this project; it is not a claim that an independently managed database was inspected.
@@ -77,3 +78,9 @@ The API package and deployment scripts moved from `AWS/api/` to `server/` in Oct
 Migration 0004 was applied to development with API writes paused and in-flight requests drained, then concurrency restored. The lines column/default, validated array/100-line constraint, and insert/update/sequence grants are installed. Runtime DELETE remains denied. The database had zero quote rows; no data backfill was required, and the original metadata digest was preserved. Statement and async-job evidence is [development-0004.json](deployments/development-0004.json). Staging and production remain unchanged.
 
 Live runtime-role quote verification passed all eleven checks (member writes, persistence, no-op token, partial options, owner conflict, stale catalog, archived snapshots, rollback, empty quotes, isolation and denied deletion). Dedicated fixtures and the temporary Lambda were removed. Evidence: [development-0004-validation.json](deployments/development-0004-validation.json).
+
+## Organization roles and sharing (0005) — October 13, 2026
+
+Migration 0005 is applied and verified in development. The existing admin membership became `administrator`; new memberships default to `sales`. Company contact fields, exact enrollment domains, configuration sharing, authorization guards/revisions, validated constraints/indexes, and restricted grants are installed. Initial enrollment-domain mappings are empty. The development API remained paused during migration and the coordinated API/frontend release, then its original unreserved concurrency was restored.
+
+Statement hashes, asynchronous jobs, constraints, roles, and traffic-restoration evidence are in [development-0005.json](deployments/development-0005.json). Live restricted runtime-role validation passed all six checks; fixtures were rolled back and the temporary Lambda deleted: [development-0005-validation.json](deployments/development-0005-validation.json). Lambda version 11 and Amplify job 20 are released; see [task 6000 verification](../tasks/6000/development-verification.json). Real Cognito user browser verification remains unrun. Staging and production are unchanged.

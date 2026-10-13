@@ -1,0 +1,57 @@
+{
+  "status": "passed",
+  "verifiedAt": "2026-10-13T23:52:05.441Z",
+  "routeCount": 30,
+  "lambda": {
+    "version": "11",
+    "codeSha256": "n0KfrEivUQXs3WCtFDzg34uEhhG5mPQNrJEdFz4kV4k=",
+    "state": "Active",
+    "update": "Successful"
+  },
+  "authorization": "All business routes use JWT",
+  "concurrency": {},
+  "authenticatedCognitoCheck": "Not run: no development user access token available",
+  "apiTraffic": "restored",
+  "checks": [
+    {
+      "url": "https://development.d8i1ve5prnr7w.amplifyapp.com",
+      "status": 200
+    },
+    {
+      "url": "https://development.d8i1ve5prnr7w.amplifyapp.com/login",
+      "status": 200
+    },
+    {
+      "url": "https://um0ix9fu4i.execute-api.us-west-2.amazonaws.com/health",
+      "status": 200
+    },
+    {
+      "url": "https://um0ix9fu4i.execute-api.us-west-2.amazonaws.com/organizations/1/domains",
+      "status": 401
+    },
+    {
+      "url": "https://um0ix9fu4i.execute-api.us-west-2.amazonaws.com/organizations/1/taxonomies/1/sharing",
+      "status": 401
+    },
+    {
+      "url": "https://um0ix9fu4i.execute-api.us-west-2.amazonaws.com/organizations/1/quotes",
+      "status": 401
+    },
+    {
+      "url": "https://um0ix9fu4i.execute-api.us-west-2.amazonaws.com/organizations/1/domains",
+      "method": "OPTIONS",
+      "status": 204
+    }
+  ],
+  "frontend": {
+    "jobArn": "arn:aws:amplify:us-west-2:415221799122:apps/d8i1ve5prnr7w/branches/development/jobs/0000000020",
+    "jobId": "20",
+    "commitId": "f68defdb3c992acc39505be7c13365f54f08be55",
+    "commitMessage": "Fix quote pagination recovery and update identity auth regressions",
+    "commitTime": "2026-10-13T16:46:59-07:00",
+    "startTime": "2026-10-13T16:49:29.820000-07:00",
+    "status": "SUCCEED",
+    "endTime": "2026-10-13T16:50:59.779000-07:00"
+  },
+  "terraformPlan": "no_changes"
+}

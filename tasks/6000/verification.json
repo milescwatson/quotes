@@ -11,7 +11,8 @@
     },
     "browserTests": {
       "passed": 52,
-      "failed": 0
+      "failed": 0,
+      "note": "50 passed in the full run; two artifact-cleanup errors passed on isolated rerun. All 10 quote-list regressions passed after the pagination fix."
     },
     "typecheck": "passed",
     "serverBuild": "passed",
@@ -22,14 +23,24 @@
     "visualReview": [
       "sharing-desktop.png",
       "company-mobile.png"
-    ]
+    ],
+    "authTests": {
+      "passed": 3,
+      "failed": 0
+    }
   },
   "development": {
-    "migration": "pending",
-    "release": "pending",
-    "authenticatedVerification": "pending",
-    "reason": "AWS login expired; renew with aws login --profile quotes-development.",
-    "domainMappings": {}
+    "migration": "applied",
+    "release": "passed",
+    "runtimeRoleVerification": "passed",
+    "authenticatedCognitoVerification": "not_run_no_user_access_token",
+    "domainMappings": {},
+    "lambdaVersion": "11",
+    "frontendJob": "20",
+    "sourceCommit": "f68defdb3c992acc39505be7c13365f54f08be55",
+    "apiTraffic": "restored",
+    "terraformPlan": "no_changes",
+    "evidence": "development-verification.json"
   },
   "superAdministratorPolicy": {
     "source": "shared/super-administrators.json",

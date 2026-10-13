@@ -1,0 +1,332 @@
+{
+  "target": {
+    "environment": "development",
+    "account": "415221799122",
+    "region": "us-west-2",
+    "cluster": "3zuetvjhixkp3qeuzxxosvlssq",
+    "profile": "quotes-development"
+  },
+  "events": [
+    {
+      "key": "identity:1",
+      "sha256": "d4a944affb91fb0d6258b1399e0234d8cbb655173c1a725048823a6f03d07667",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:47:25.797Z",
+      "rowsAffected": null,
+      "completedAt": "2026-10-13T23:47:25.999Z"
+    },
+    {
+      "key": "identity:2",
+      "sha256": "12564c91a9c5c71a920ccb39d049391c826c25d2afbc4e70aa4c99c8c610ce8d",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:47:25.999Z",
+      "rowsAffected": null,
+      "completedAt": "2026-10-13T23:47:26.072Z"
+    },
+    {
+      "key": "identity:3",
+      "sha256": "3b52dc0fc2fc436736b5aa396562c8213d57d6706b4b402158ebed1c9e781345",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:47:26.072Z",
+      "rowsAffected": null,
+      "completedAt": "2026-10-13T23:47:26.138Z"
+    },
+    {
+      "key": "identity:4",
+      "sha256": "fdf5038dcdc575958b0ec726f466dae8f40aa64b507b70a4a69ddb2e7574d7a7",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:47:26.139Z",
+      "rowsAffected": null,
+      "completedAt": "2026-10-13T23:47:26.208Z"
+    },
+    {
+      "key": "identity:5",
+      "sha256": "0397cdacdecd9ed84c180ac035489ae9a4505b6e6e983b9ed10efcfca4a2a39a",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:47:26.209Z",
+      "rowsAffected": null,
+      "completedAt": "2026-10-13T23:47:26.335Z"
+    },
+    {
+      "key": "identity:6",
+      "sha256": "c3ea3201926d8e232bf50651eb4dd9070aff2ed7dc1c5e6f67b11a8038c98712",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:47:26.335Z",
+      "rowsAffected": null,
+      "completedAt": "2026-10-13T23:47:26.452Z"
+    },
+    {
+      "key": "identity:7",
+      "sha256": "25cf7fd4827fbb2e7b214e27fcf9a603dabd01b3ae56b03e2ff6dec59e03e808",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:47:26.452Z",
+      "rowsAffected": null,
+      "completedAt": "2026-10-13T23:47:26.700Z"
+    },
+    {
+      "key": "identity:8",
+      "sha256": "b3a179683d46ba63da1c2655285e12fc8ab4a6c14381bb19fccee4177a90963b",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:47:26.700Z",
+      "rowsAffected": null,
+      "jobId": "2o6mdbaj4vb7dii6q5pfajmpka",
+      "job": {
+        "job_id": "2o6mdbaj4vb7dii6q5pfajmpka",
+        "status": "completed",
+        "details": null
+      },
+      "completedAt": "2026-10-13T23:47:41.389Z"
+    },
+    {
+      "key": "identity:9",
+      "sha256": "e738a3bd3d9511b46901894b59f2b7c1a52388e96872cd06cf0f70f22d2d9265",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:47:41.390Z",
+      "rowsAffected": null,
+      "completedAt": "2026-10-13T23:47:41.499Z"
+    },
+    {
+      "key": "identity:10",
+      "sha256": "378e2f24c1c7b045ad3b59b2eb9cc18dac5685e0a1cccb086860ee515ebbb3fe",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:47:41.499Z",
+      "rowsAffected": 1,
+      "completedAt": "2026-10-13T23:47:41.557Z"
+    },
+    {
+      "key": "identity:11",
+      "sha256": "4eef39211d35b1df4890ecd0b632dffbb3e2f416b42b05b1ec208ca230399de1",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:47:41.557Z",
+      "rowsAffected": null,
+      "completedAt": "2026-10-13T23:47:41.657Z"
+    },
+    {
+      "key": "identity:12",
+      "sha256": "a12a9d5c8cf2a415a88ae7a39c3ffea61490cce458736f4f32376f8ce2bd5c18",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:47:41.658Z",
+      "rowsAffected": null,
+      "completedAt": "2026-10-13T23:47:41.713Z"
+    },
+    {
+      "key": "identity:13",
+      "sha256": "751dcfc6001b00afc6ba9242869b63ede51b78e408b2ef9b55066acc0813304e",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:47:41.714Z",
+      "rowsAffected": null,
+      "jobId": "novyoimpqfh6tc5neh54os5giy",
+      "job": {
+        "job_id": "novyoimpqfh6tc5neh54os5giy",
+        "status": "completed",
+        "details": null
+      },
+      "completedAt": "2026-10-13T23:47:45.920Z"
+    },
+    {
+      "key": "backfill:0:1",
+      "sha256": "6cfc5e6bb7964718b528eb54ea76e4dd2cc5f766edd7d6ff617d5c2fa4bf27b0",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:47:45.994Z",
+      "rowsAffected": 1,
+      "completedAt": "2026-10-13T23:47:46.055Z"
+    },
+    {
+      "key": "enforce:1",
+      "sha256": "e10f3b51bc9f16fa6d21133e4eb330ff168230d63c1f1c1747e857387f19aeb6",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:47:46.086Z",
+      "rowsAffected": null,
+      "completedAt": "2026-10-13T23:47:46.131Z"
+    },
+    {
+      "key": "enforce:2",
+      "sha256": "64bf6d86c02f42ff3a23c687970947d6120895ba5f66295f66256bcf978d5fb1",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:47:46.132Z",
+      "rowsAffected": null,
+      "jobId": "jmsvol24efabbejhmnnzxvgu2a",
+      "job": {
+        "job_id": "jmsvol24efabbejhmnnzxvgu2a",
+        "status": "completed",
+        "details": null
+      },
+      "completedAt": "2026-10-13T23:48:07.946Z"
+    },
+    {
+      "key": "enforce:3",
+      "sha256": "f9e29af0dda9fda5c584e1b5b8ce5e043eee9ddb7d21640d978ebfb0313fc1d6",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:48:07.947Z",
+      "rowsAffected": null,
+      "completedAt": "2026-10-13T23:48:08.023Z"
+    },
+    {
+      "key": "enforce:4",
+      "sha256": "686a055d34395c8937bd4ead7efe22f8f6e0e3896a5498b53562035e9859180d",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:48:08.024Z",
+      "rowsAffected": null,
+      "jobId": "zurmo4f2ijc6tcchbyetrg7rii",
+      "job": {
+        "job_id": "zurmo4f2ijc6tcchbyetrg7rii",
+        "status": "completed",
+        "details": null
+      },
+      "completedAt": "2026-10-13T23:48:11.226Z"
+    },
+    {
+      "key": "sharing:1",
+      "sha256": "7dc86a46d258deb5027cfd46ed136454dc4dd0f8a4d596a5b0c6f618f58286f6",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:48:11.227Z",
+      "rowsAffected": null,
+      "completedAt": "2026-10-13T23:48:11.417Z"
+    },
+    {
+      "key": "sharing:2",
+      "sha256": "0a5db459382a52adee1f092d7d47b32faa25de9f6d8e70e84d278828ede018ae",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:48:11.418Z",
+      "rowsAffected": null,
+      "jobId": "hkf6u4chifcs5kehnx4sniqgve",
+      "job": {
+        "job_id": "hkf6u4chifcs5kehnx4sniqgve",
+        "status": "completed",
+        "details": null
+      },
+      "completedAt": "2026-10-13T23:48:40.931Z"
+    },
+    {
+      "key": "sharing:3",
+      "sha256": "4c3ae3fcd76931458cec0b33ea442def8466e63584a2fa7b44574120a1120ac2",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:48:40.933Z",
+      "rowsAffected": null,
+      "completedAt": "2026-10-13T23:48:41.000Z"
+    },
+    {
+      "key": "sharing:4",
+      "sha256": "3508d374783d485b9d82b9c540a9c10571d38f03ba199a4095c2739ee2623d1c",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:48:41.000Z",
+      "rowsAffected": null,
+      "completedAt": "2026-10-13T23:48:41.059Z"
+    },
+    {
+      "key": "sharing:5",
+      "sha256": "4869bb432c3346c7440e43e92c704412f1977f9ae42617f83c51ff0cf42ff98c",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:48:41.059Z",
+      "rowsAffected": null,
+      "completedAt": "2026-10-13T23:48:41.124Z"
+    },
+    {
+      "key": "sharing:6",
+      "sha256": "88263e468b54ff3f2514b59e4f36076345655b7e190b7e305a17132a2149ddc6",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:48:41.125Z",
+      "rowsAffected": null,
+      "completedAt": "2026-10-13T23:48:41.183Z"
+    },
+    {
+      "key": "permissions:1",
+      "sha256": "cbc450faddf966c2aca9efd3790f02d1eb7b6449a619a963811efafe63b11e81",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:48:41.184Z",
+      "rowsAffected": null,
+      "completedAt": "2026-10-13T23:48:41.281Z"
+    },
+    {
+      "key": "permissions:2",
+      "sha256": "53fe8d6a3dfc8cdf01a23ea038f587daa15f07602675df0361874df6ed0f5418",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:48:41.282Z",
+      "rowsAffected": null,
+      "completedAt": "2026-10-13T23:48:41.327Z"
+    },
+    {
+      "key": "permissions:3",
+      "sha256": "cd8a90ab246685a0bf975cb951a7bf17373fab1824e36bb5398bd17087be9c3c",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:48:41.328Z",
+      "rowsAffected": null,
+      "completedAt": "2026-10-13T23:48:41.427Z"
+    },
+    {
+      "key": "permissions:4",
+      "sha256": "25042beb80a7b94ade394d3094165ae0d61de6c77fbc6dd344e5d5b81b5b6da5",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:48:41.427Z",
+      "rowsAffected": null,
+      "completedAt": "2026-10-13T23:48:41.464Z"
+    },
+    {
+      "key": "permissions:5",
+      "sha256": "2eb0bc73613c01737c62750292d31d485bb447b820a6d02cabd0f4f0a5cdc679",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:48:41.465Z",
+      "rowsAffected": null,
+      "completedAt": "2026-10-13T23:48:41.529Z"
+    },
+    {
+      "key": "permissions:6",
+      "sha256": "50921d1677258478f6d3c788edcb686ed8d775f0623d171013a7a2ab57601646",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:48:41.529Z",
+      "rowsAffected": null,
+      "completedAt": "2026-10-13T23:48:41.599Z"
+    },
+    {
+      "key": "permissions:7",
+      "sha256": "71ed8e54e588233e61259bcdda9d67d58bbd0a7fddc4bf3e3da8c5f44488ec1d",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:48:41.600Z",
+      "rowsAffected": null,
+      "completedAt": "2026-10-13T23:48:41.638Z"
+    },
+    {
+      "key": "permissions:8",
+      "sha256": "f9887dc515999aece59e608f6281e9fa715fd86f2bd87c82b80e26728496b4bf",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:48:41.639Z",
+      "rowsAffected": null,
+      "completedAt": "2026-10-13T23:48:41.680Z"
+    },
+    {
+      "key": "permissions:9",
+      "sha256": "ad95ddfb9dad62db87f88e04a248c92e75666eab32012467604cf31d17bb9c0a",
+      "status": "completed",
+      "startedAt": "2026-10-13T23:48:41.681Z",
+      "rowsAffected": null,
+      "completedAt": "2026-10-13T23:48:41.721Z"
+    }
+  ],
+  "startedAt": "2026-10-13T23:47:05.188Z",
+  "apiPause": {
+    "previousConcurrency": null,
+    "startedAt": "2026-10-13T23:47:07.673Z",
+    "restoredAt": "2026-10-13T23:52:02.343Z"
+  },
+  "status": "applied",
+  "verification": {
+    "constraints": [
+      {
+        "conname": "identity_audit_events_entity_type_check",
+        "convalidated": true
+      },
+      {
+        "conname": "organization_memberships_role_check",
+        "convalidated": true
+      }
+    ],
+    "roles": [
+      {
+        "role": "administrator",
+        "n": "1"
+      }
+    ],
+    "domains": []
+  },
+  "appliedAt": "2026-10-13T23:52:02.343Z"
+}

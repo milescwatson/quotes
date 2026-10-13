@@ -114,3 +114,13 @@ Quote release verification is recorded in [2026-10-12-quotes-verification.json](
 Commit `cf4b0e8f8f70a6b7d004ab68db106de1c969597b` allows hyphens inside option codes while continuing to reject whitespace. The change is validation-only; no database migration or API contract route change was needed. The API bundle and development alias deployed through Terraform with **0 added, 2 changed, 0 destroyed**. Lambda version **10** is Active/Successful with code SHA-256 `KI7pu00WBwMVAUw0iqlUqRYN8ZqDmZPVGmcpQ6DqRGE=`; the post-apply Terraform plan reported no changes.
 
 Amplify development job **14** for this commit passed BUILD, DEPLOY, and VERIFY. The development root, login, and new-quote routes returned HTTP 200. API verification returned HTTP 200 for health, HTTP 401 for anonymous quote reads/writes, and HTTP 204 for configured-origin PUT preflight. Staging and production were not modified.
+
+## Administrator roles and sharing — October 13, 2026
+
+Integration `31c8e4b` and pagination/auth regression fix `f68defd` are pushed to development. Migration 0005 completed with API traffic paused. The reviewed Terraform release updated Lambda, its development alias, and Gateway (0 added, 3 changed, 0 destroyed). Lambda version **11** is Active/Successful with archive-matching SHA-256 `n0KfrEivUQXs3WCtFDzg34uEhhG5mPQNrJEdFz4kV4k=`. All **30** routes match OpenAPI and require JWT except health. Gateway description/version/tags were reconciled after import.
+
+Amplify development job **20** for `f68defd` passed BUILD, DEPLOY and VERIFY. The original unreserved API concurrency was restored through a reviewed concurrency-only plan after frontend verification. The final Terraform plan reports **no changes**. Live frontend/login and API health returned 200, anonymous business reads returned 401, and configured-origin PUT preflight returned 204.
+
+Validation passed: 92 API tests, 12 database tests, all 52 browser cases (two artifact cleanup errors passed on isolated rerun), 10 quote-list regressions after the pagination fix, three HTTP/OIDC auth regressions, typecheck, production builds, and actual bundled Lambda invocation. Six live checks through the restricted runtime IAM/SQL role passed; all fixtures were rolled back and the temporary function removed. A real signed-in Cognito browser check was not run because no user session/token was available.
+
+Evidence: [task 6000 release verification](../tasks/6000/development-verification.json), [0005 migration journal](../database/deployments/development-0005.json), and [restricted-role validation](../database/deployments/development-0005-validation.json). Staging and production are unchanged. Retain 0005 data and roles; version 10 is incompatible with the migrated membership-role constraint.
