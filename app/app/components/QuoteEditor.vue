@@ -25,9 +25,21 @@ async function removeLine(i: number) { remove(i); await nextTick(); addButton.va
 <template>
   <ResourceState :loading="loading" :error="ready ? '' : error" @retry="load">
     <template v-if="ready">
+      <nav aria-label="Breadcrumb" class="mb-4 text-sm text-gray-500">
+        <ol class="flex flex-wrap items-center gap-2">
+          <li><NuxtLink :to="back" class="inline-flex min-h-10 items-center gap-2 rounded-md pr-2 font-medium text-blue-700 hover:text-blue-900 hover:underline">
+            <svg aria-hidden="true" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6M9 12h12" /></svg>
+            Back to quotes
+          </NuxtLink></li>
+          <li aria-hidden="true" class="text-gray-400">/</li>
+          <li aria-current="page" class="font-medium text-gray-700">{{ saved ? 'Edit quote' : 'New quote' }}</li>
+        </ol>
+      </nav>
       <PageHeading :title="saved ? 'Edit quote' : 'New quote'" :description="saved ? `Last modified by ${saved.modifiedByName} · ${new Date(saved.modifiedWhen).toLocaleString()}` : 'Choose products and options for your customer project.'">
-        <NuxtLink :to="back" class="button secondary">Quotes</NuxtLink>
-        <button type="button" class="button secondary" disabled title="Coming soon">Copy View Only Quote Link</button>
+        <button type="button" class="button secondary" disabled title="Coming soon">
+          <svg aria-hidden="true" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
+          Copy View Only Quote Link
+        </button>
         <span class="text-xs text-gray-500" role="status">{{ dirty ? 'Unsaved changes' : saved ? 'Saved' : 'New quote' }}</span>
         <button class="button primary" :disabled="busy || submitting || conflicted" @click="submit">{{ busy ? 'Saving…' : 'Save' }}</button>
       </PageHeading>
