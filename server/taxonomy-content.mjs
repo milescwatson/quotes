@@ -83,7 +83,7 @@ export function normalizeContent(input, previous = null) {
       object(o, ['id', 'code', 'description', 'price'], op);
       const optionId = entityId(o.id, oldOptions, optionIds, `${op}/id`);
       const code = text(o.code, 64, `${op}/code`);
-      if (/[\s-]/u.test(code)) invalid(`${op}/code`, 'Codes cannot contain whitespace or hyphens.');
+      if (/\s/u.test(code)) invalid(`${op}/code`, 'Codes cannot contain whitespace.');
       unique(code, codes, `${op}/code`);
       return { id: optionId, code, description: text(o.description, 1000, `${op}/description`, true), price: money(o.price, `${op}/price`) };
     });

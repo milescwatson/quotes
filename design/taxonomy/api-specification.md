@@ -36,7 +36,7 @@ A save is valid only when:
 - The family has a valid name, currency, and base price, and at least one segment.
 - Every segment has a valid placeholder and at least one valid option.
 - Placeholders and nonblank segment names are each case-insensitively unique within the taxonomy.
-- Option codes are case-insensitively unique within their segment. Codes preserve casing and leading zeros and cannot contain whitespace or `-`.
+- Option codes are case-insensitively unique within their segment. Codes preserve casing and leading zeros, cannot contain whitespace, and may contain `-`.
 - Each default is null or belongs to its own segment. Retained IDs are valid and unique within their documented scope.
 - All prices are nonnegative USD amounts with at most two decimal places, and all text/count/size limits pass.
 - Base price plus the highest option price in each segment fits the supported unit-price range. With independent nonnegative choices, this ensures every permitted combination can be priced without overflow.
@@ -144,7 +144,7 @@ Trim surrounding whitespace; turn blank optional text into null; reject control 
 | Product-family name | 1–120 Unicode code points |
 | Segment placeholder | 1–32 code points |
 | Segment name | Null or 1–120 code points |
-| Option code | 1–64 code points, with no whitespace or `-` |
+| Option code | 1–64 code points, with no whitespace |
 | Option description | Null or up to 1,000 code points |
 | Change summary | Null or up to 500 code points |
 | Segment count | 1–50 |

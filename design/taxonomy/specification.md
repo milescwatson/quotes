@@ -68,7 +68,7 @@ The existing [relational schema](../../database/versions/0001/taxonomy/schema.sq
 
 A fixed prefix is a segment with one option. Automatically select a segment's only option. Otherwise use an explicit choice, then its saved default if no explicit choice exists. A multi-option segment does not require a default to be a valid taxonomy, but it requires a selection before a configuration is complete.
 
-Placeholders and nonblank segment names are each case-insensitively unique within the taxonomy. Option codes are case-insensitively unique within their segment. Preserve entered casing and leading zeros; trim surrounding text whitespace and reject whitespace or hyphens inside codes. The API specification defines the exact normalization rules and bounds.
+Placeholders and nonblank segment names are each case-insensitively unique within the taxonomy. Option codes are case-insensitively unique within their segment. Preserve entered casing and leading zeros; trim surrounding text whitespace and reject whitespace inside codes. Codes may contain hyphens, including when a hyphen is part of the code. The API specification defines the exact normalization rules and bounds.
 
 Generate the part number by joining selected codes in segment order with `-`. Calculate unit price as base price plus selected option prices, using exact decimal arithmetic. Base price defaults to zero in the editor; currency is USD. Negative adjustments, fractional cents, manual-price options, quantity breaks, and combination-specific prices are outside the MVP.
 

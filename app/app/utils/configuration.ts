@@ -61,7 +61,7 @@ export function configurationInput(draft: ConfigurationDraft): { content: Taxono
       if (!s.options.length || s.options.length > 500) error(`${path}/options`, 'Add 1–500 options.')
       return { id: s.id, placeholder, name, description: text(s.description, 1000, `${path}/description`, true, true) || null, defaultOptionIndex: s.defaultKey === null ? null : s.options.findIndex(o => o.key === s.defaultKey), options: s.options.map((o, j) => {
         const op = `${path}/options/${j}`, code = text(o.code, 64, `${op}/code`)
-        if (/[\s-]/u.test(code)) error(`${op}/code`, 'Codes cannot contain whitespace or hyphens.')
+        if (/\s/u.test(code)) error(`${op}/code`, 'Codes cannot contain whitespace.')
         seen(code, codes, `${op}/code`)
         return { id: o.id, code, description: text(o.description, 1000, `${op}/description`, true) || null, price: price(o.price, `${op}/price`) }
       }) }

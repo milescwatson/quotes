@@ -38,7 +38,7 @@ Updated October 10, 2026. These are consolidated answers from the initial requir
 
 The following details make the contract concrete; they are implementation assumptions rather than verbatim user answers. Full rules and initial limits are in the API specification.
 
-- Preserve leading zeros and entered code casing; join codes with `-`. Reject whitespace and `-` inside option codes.
+- Preserve leading zeros and entered code casing; join codes with configured separators (default `-`). Codes may contain `-`; selections are stored by segment rather than parsed from the assembled part number. Reject whitespace inside option codes.
 - Use nonnegative exact USD amounts with at most two decimals. Validate that all possible configurations fit the supported total range.
 - Require at least one segment and one option per segment; a default is optional when the segment has multiple options.
 - Remove segments/options only from the next snapshot; retain prior snapshots. Archive entire taxonomies without deleting history or adding an unarchive workflow.
