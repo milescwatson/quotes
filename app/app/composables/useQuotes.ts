@@ -11,6 +11,7 @@ export function useQuotes(organization: () => string) {
   const params = computed(() => ({ page: page.value, pageSize: 50, ...filters.value }))
   const query = useQuery<QuotePage | null>({
     queryKey: computed(() => queryKeys.quoteList(org.value, params.value)),
+    staleTime: 0,
     placeholderData: previous => previous,
     enabled: computed(() => import.meta.client && !!org.value && identity.state.organizations.some(item => item.id === identity.organizationId(org.value))),
     queryFn: async ({ signal }) => {
@@ -19,12 +20,7 @@ export function useQuotes(organization: () => string) {
       for (const [key, value] of Object.entries(filters.value)) if (value) queryString.set(key, value)
       const url = (requested: number) => `${path}?page=${requested}&pageSize=50&${queryString}`
       try {
-        let result = await identity.request<QuotePage>(url(page.value), { signal })
-        while (!signal.aborted && result.totalPages > 0 && result.page > result.totalPages) {
-          page.value = result.totalPages
-          result = await identity.request<QuotePage>(url(result.totalPages), { signal })
-        }
-        return result
+        return await identity.request<QuotePage>(url(page.value), { signal })
       } catch (error) {
         if (error instanceof ApiError && [401, 403, 404].includes(error.status)) {
           client.setQueryData(queryKeys.quoteList(org.value, params.value), null)
@@ -32,6 +28,11 @@ export function useQuotes(organization: () => string) {
         throw error
       }
     },
+  })
+  watch(query.data, result => {
+    if (!query.isPlaceholderData.value && result && result.totalPages > 0 && result.page > result.totalPages) {
+      page.value = result.totalPages
+    }
   })
   watch([org, () => identity.state.user?.id, () => identity.state.organizations.some(item => item.id === identity.organizationId(org.value))], () => {
     page.value = 1

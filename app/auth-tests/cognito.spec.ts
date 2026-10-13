@@ -83,7 +83,7 @@ test('real OIDC adapter uses PKCE and restores the persisted session after reloa
     authenticatedCalls++
     const path = new URL(route.request().url()).pathname
     const data =
-      path === '/me/bootstrap'
+      (path === '/me/bootstrap' || path === '/me')
         ? {
             user: {
               id: '1',
@@ -94,13 +94,13 @@ test('real OIDC adapter uses PKCE and restores the persisted session after reloa
         : path === '/me/organizations'
           ? {
               items: [
-                { id: organizationId, name: 'Quotes', role: 'member' },
+                { id: organizationId, name: 'Quotes', role: 'sales' },
                 ...(addedOrganization
                   ? [
                       {
                         id: '11',
                         name: 'New team',
-                        role: 'editor',
+                        role: 'sales',
                       },
                     ]
                   : []),
@@ -116,7 +116,7 @@ test('real OIDC adapter uses PKCE and restores the persisted session after reloa
                 organization: {
                   id: organizationId,
                   name: 'Quotes',
-                  role: 'member',
+                  role: 'sales',
                 },
               }
             : null
