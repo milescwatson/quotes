@@ -1,0 +1,38 @@
+{
+  "target": {
+    "environment": "development",
+    "account": "415221799122",
+    "region": "us-west-2",
+    "cluster": "3zuetvjhixkp3qeuzxxosvlssq",
+    "profile": "quotes-development"
+  },
+  "startedAt": "2026-10-15T21:04:27.163Z",
+  "events": [
+    {
+      "file": "schema",
+      "sha256": "c81e4fa2ca107e9e2bed58b3211d187467b9b20a2b45694adc1f3240cfa2ce7c",
+      "status": "completed",
+      "startedAt": "2026-10-15T21:04:27.502Z",
+      "completedAt": "2026-10-15T21:04:27.710Z"
+    },
+    {
+      "file": "permissions",
+      "sha256": "a0e19e55f03c047623d557ac638600e5eae29f7796d4b134a7c089fe4f9dd936",
+      "status": "completed",
+      "startedAt": "2026-10-15T21:04:27.711Z",
+      "completedAt": "2026-10-15T21:04:27.778Z"
+    }
+  ],
+  "verification": {
+    "column": {
+      "data_type": "uuid",
+      "is_nullable": "YES"
+    },
+    "grants": {
+      "read": true,
+      "update": true
+    }
+  },
+  "status": "verified",
+  "verifiedAt": "2026-10-15T21:04:28.043Z"
+}

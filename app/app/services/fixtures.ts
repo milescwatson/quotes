@@ -35,9 +35,10 @@ export function createFixtures() {
               id: north,
               name: 'Northstar Industries',
               role: scenario === 'sales' ? 'sales' : 'administrator',
+              logoVersion: null,
             },
-            { id: studio, name: 'Forma Studio', role: 'sales' },
-            { id: id(12), name: 'Harbor Workshop', role: 'sales' },
+            { id: studio, name: 'Forma Studio', role: 'sales', logoVersion: null },
+            { id: id(12), name: 'Harbor Workshop', role: 'sales', logoVersion: null },
           ]
     const members: Record<string, Member[]> = {
       [north]: [
@@ -103,7 +104,7 @@ export function createFixtures() {
       [studio]: [{ ...makeQuote(studio, 0), customerName: 'Forma', title: 'Forma - Office Renovation' }],
       [id(12)]: [],
     }
-    return { user, organizations, members, accounts, quotes, domains: {} as Record<string,string[]> }
+    return { user, organizations, members, accounts, quotes, logos: {} as Record<string,string>, domains: {} as Record<string,string[]> }
   }
   let state = seed()
   try {
@@ -112,6 +113,8 @@ export function createFixtures() {
   } catch {
     /* Reset invalid preview data. */
   }
+  state.logos ??= {}
+  for (const org of state.organizations) org.logoVersion ??= null
   state.user.isSuperAdministrator=isSuperAdministratorEmail(state.user.email)
   for (const member of Object.values(state.members).flat()) member.isSuperAdministrator=isSuperAdministratorEmail(member.email)
   // Upgrade existing demo sessions without resetting the user's data.
@@ -186,6 +189,17 @@ export function createFixtures() {
             'NOT_FOUND',
             'You no longer have access to this organization.',
           )
+        if (parts[2] === 'logo') {
+          if (method === 'GET') {
+            if (!state.logos[orgId]) fail(404, 'NOT_FOUND', 'No organization logo has been uploaded.')
+            const data = atob(state.logos[orgId]!)
+            return new Blob([Uint8Array.from(data, ch => ch.charCodeAt(0))], { type: 'image/png' }) as T
+          }
+          if (org!.role !== 'administrator' && !state.user.isSuperAdministrator) fail(403, 'FORBIDDEN', 'Administrator access required.')
+          if (method === 'PUT') { state.logos[orgId] = body.imageBase64; org!.logoVersion = crypto.randomUUID() }
+          else if (method === 'DELETE') { delete state.logos[orgId]; org!.logoVersion = null }
+          save(); return structuredClone({ organization: org }) as T
+        }
         if (parts[2]==='domains') {
           if (!state.user.isSuperAdministrator) fail(403,'FORBIDDEN','Super Administrator access required.')
           if (method==='PUT') {

@@ -1,7 +1,9 @@
+import { randomUUID } from 'node:crypto';
 import { isSuperAdministratorEmail } from './super-administrators.mjs';
 import { createOrganizationAdminService } from './organization-admin.mjs';
 import { workDomain } from './organization-domains.mjs';
 import { createQuoteService } from './quotes.mjs';
+import { createLogoStorage, normalizeLogo } from './organization-logo.mjs';
 import {
   fail,
   identifier,
@@ -42,7 +44,7 @@ const profile = (u, identity) => ({
   displayName: u.display_name,
   isSuperAdministrator: isSuperAdministratorEmail(identity?.email ?? u.email),
 });
-const organization = (o) => ({ id: String(o.id), name: o.name, role: o.role, address: o.address ?? null, websiteUrl: o.website_url ?? null, email: o.email ?? null, phone: o.phone ?? null });
+const organization = (o) => ({ id: String(o.id), name: o.name, role: o.role, address: o.address ?? null, websiteUrl: o.website_url ?? null, email: o.email ?? null, phone: o.phone ?? null, logoVersion: o.logo_id ?? null });
 const member = (m) => ({
   id: String(m.id),
   userId: String(m.user_id),
@@ -191,7 +193,7 @@ async function quotePage(db, organizationId, query) {
     totalPages: Math.ceil(totalItems / pageSize),
   };
 }
-export function createIdentityService(withTransaction) {
+export function createIdentityService(withTransaction, { logoStorage = createLogoStorage() } = {}) {
   // Reads validate current access without writes. Mutations guard participants
   // in numeric order before the organization to serialize authorization changes.
   async function account(db, identity) {
@@ -355,8 +357,23 @@ export function createIdentityService(withTransaction) {
       return { success: true };
     });
   }
+  async function changeLogo(input, version) {
+    const result = await withTransaction(async db => {
+      const { u } = await participants(db, input.identity);
+      const { org, access } = await organizationAccess(db, u, input.orgId, true);
+      const previous = org.logo_id ?? null;
+      await db.query('UPDATE public.organizations SET logo_id=$1,updated_at=now() WHERE id=$2', [version, org.id]);
+      if (previous !== version) await audit(db, u, org.id, version ? 'organization.logo_uploaded' : 'organization.logo_removed', 'organization', org.id, input.requestId, { before: previous, after: version });
+      return { previous, organization: organization({ ...org, logo_id: version, role: access.role }) };
+    });
+    if (result.previous) {
+      try { await logoStorage.remove(input.orgId, result.previous); }
+      catch { console.error(JSON.stringify({ requestId: input.requestId, errorCode: 'LOGO_CLEANUP_FAILED', organizationId: input.orgId, logoVersion: result.previous })); }
+    }
+    return { organization: result.organization };
+  }
   return {
-    ...createQuoteService(withTransaction),
+    ...createQuoteService(withTransaction, { logoStorage }),
     ...createOrganizationAdminService(withTransaction),
     async bootstrapProfile({ body = {}, identity, requestId }) {
       return withTransaction(async (db) => {
@@ -447,6 +464,36 @@ export function createIdentityService(withTransaction) {
         );
       });
     },
+    async readOrganizationLogo({ orgId, identity }) {
+      const version = await withTransaction(async db => {
+        const u = await readUser(db, identity);
+        const { org } = await organizationAccess(db, u, orgId, false, true);
+        if (!org.logo_id) fail(404, 'NOT_FOUND', 'No organization logo has been uploaded.');
+        return org.logo_id;
+      });
+      return logoStorage.get(orgId, version);
+    },
+    async updateOrganizationLogo(input) {
+      // Authorize before decoding or storing, then recheck under the mutation guards.
+      await withTransaction(async db => {
+        const u = await readUser(db, input.identity);
+        await organizationAccess(db, u, input.orgId, true, true);
+      });
+      fields(input.body, ['imageBase64']);
+      const bytes = await normalizeLogo(input.body.imageBase64);
+      const version = randomUUID();
+      await logoStorage.put(input.orgId, version, bytes);
+      let result;
+      try { result = await changeLogo(input, version); }
+      catch (error) {
+        // A lost commit acknowledgement is ambiguous; retain the object rather
+        // than risk deleting an image the database now references.
+        console.error(JSON.stringify({ requestId: input.requestId, errorCode: 'LOGO_COMMIT_FAILED', organizationId: input.orgId, logoVersion: version }));
+        throw error;
+      }
+      return result;
+    },
+    removeOrganizationLogo: input => changeLogo(input, null),
     async readOrganization({ orgId, identity }) {
       return withTransaction(async (db) => {
         const u = await readUser(db, identity);

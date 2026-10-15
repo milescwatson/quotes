@@ -52,6 +52,7 @@ function services(operation = () => ({ ok: true })) {
   for (const [, , group, name] of mappings)
     result[group][name] = (args) => {
       const body = operation(name, args);
+      if (name === 'readOrganizationLogo') return Buffer.from(JSON.stringify(body));
       if (name === 'readQuotePdf') return { pdf: Buffer.from(JSON.stringify(body)), disposition: 'inline', filename: 'quote.pdf' };
       return ['identity', 'regularProducts'].includes(group)
         ? body

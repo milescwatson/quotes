@@ -30,6 +30,11 @@ export function createHttp(base: string, token: () => Promise<string>) {
         'We could not reach the service. Check your connection and try again.',
       )
     }
+    if (response.ok && options.responseType === 'image') {
+      if (response.headers.get('content-type')?.split(';')[0] !== 'image/png')
+        throw new ApiError(502, 'INVALID_LOGO', 'The service did not return a logo image. Please try again.')
+      return await response.blob() as T
+    }
     if (response.ok && options.responseType === 'blob') {
       if (!response.headers.get('content-type')?.startsWith('application/pdf'))
         throw new ApiError(502, 'INVALID_PDF', 'The service did not return a PDF. Please try again.')

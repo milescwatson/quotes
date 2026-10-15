@@ -9,7 +9,9 @@ const { mutate, isPending: busy, isSuccess: saved, error } = useMutation({
   mutationFn: () => identity.request(`/organizations/${props.organization}`, { method: 'PATCH', body: Object.fromEntries(Object.entries(form).map(([key,value]) => [key,value.trim() || null])) }),
   onSuccess: async () => { await identity.refresh(); await queryClient.invalidateQueries({ queryKey: queryKeys.organization(identity.organizationId(props.organization)) }) },
 })
-watch(() => props.details, value => { Object.assign(form, { name:value.name,address:value.address || '',websiteUrl:value.websiteUrl || '',email:value.email || '',phone:value.phone || '' }) }, { immediate:true })
+watch(() => props.details, (value, previous) => {
+  if (previous && (['name', 'address', 'websiteUrl', 'email', 'phone'] as const).every(key => value[key] === previous[key])) return
+  Object.assign(form, { name:value.name,address:value.address || '',websiteUrl:value.websiteUrl || '',email:value.email || '',phone:value.phone || '' }) }, { immediate:true })
 const domains = ref(''), domainFailure = ref(''), domainNotice = ref(''), domainBusy = ref(false), domainLoading = ref(!!identity.state.user?.isSuperAdministrator)
 async function loadDomains() {
   if (!identity.state.user?.isSuperAdministrator) return
@@ -42,6 +44,7 @@ watch(() => props.organization,loadDomains)
       <div class="form-actions"><button class="button primary" :disabled="busy || !form.name.trim()">{{ busy ? 'Saving…' : 'Save changes' }}</button></div>
     </form>
   </section>
+  <OrganizationLogo :organization="organization" :version="details.logoVersion ?? null" />
   <section v-if="identity.state.user?.isSuperAdministrator" class="panel form-panel mt-6">
     <h2>Automatic enrollment domains</h2><p>Verified users with these exact email domains join as Sales when they sign in. Removed users regain Sales access at their next sign-in. Website changes do not change enrollment.</p>
     <form @submit.prevent="saveDomains"><label for="organization-domains">Email domains (one per line)</label><textarea id="organization-domains" v-model="domains" :disabled="domainBusy || domainLoading" rows="4" class="w-full rounded border border-gray-300 p-2" />

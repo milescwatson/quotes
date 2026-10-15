@@ -103,7 +103,8 @@ resource "aws_iam_role_policy" "api" {
   role = aws_iam_role.api.id
   policy = jsonencode({ Version = "2012-10-17", Statement = [
     { Effect = "Allow", Action = ["logs:CreateLogStream", "logs:PutLogEvents"], Resource = "${aws_cloudwatch_log_group.api.arn}:*" },
-    { Effect = "Allow", Action = ["dsql:DbConnect"], Resource = aws_dsql_cluster.app.arn }
+    { Effect = "Allow", Action = ["dsql:DbConnect"], Resource = aws_dsql_cluster.app.arn },
+    { Effect = "Allow", Action = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"], Resource = "${aws_s3_bucket.organization_logos.arn}/organizations/*/logos/*" }
   ] })
 }
 data "archive_file" "api" {
@@ -124,13 +125,14 @@ resource "aws_lambda_function" "api" {
   reserved_concurrent_executions = var.api_reserved_concurrent_executions
   publish                        = true
   environment { variables = {
-    ENVIRONMENT       = var.environment
-    DSQL_CLUSTER_ID   = aws_dsql_cluster.app.identifier
-    DSQL_ENDPOINT     = "${aws_dsql_cluster.app.identifier}.dsql.${var.region}.on.aws"
-    DSQL_USER         = "quotes_api"
-    COGNITO_ISSUER    = "https://cognito-idp.${var.region}.amazonaws.com/${aws_cognito_user_pool.app.id}"
-    COGNITO_CLIENT_ID = aws_cognito_user_pool_client.web.id
-    COGNITO_DOMAIN    = local.cognito_url
+    ENVIRONMENT              = var.environment
+    DSQL_CLUSTER_ID          = aws_dsql_cluster.app.identifier
+    DSQL_ENDPOINT            = "${aws_dsql_cluster.app.identifier}.dsql.${var.region}.on.aws"
+    ORGANIZATION_LOGO_BUCKET = aws_s3_bucket.organization_logos.id
+    DSQL_USER                = "quotes_api"
+    COGNITO_ISSUER           = "https://cognito-idp.${var.region}.amazonaws.com/${aws_cognito_user_pool.app.id}"
+    COGNITO_CLIENT_ID        = aws_cognito_user_pool_client.web.id
+    COGNITO_DOMAIN           = local.cognito_url
   } }
   depends_on = [aws_iam_role_policy.api]
 }
@@ -182,15 +184,16 @@ resource "aws_apigatewayv2_stage" "api" {
 }
 output "deployment" {
   value = {
-    frontend_url         = local.frontend_url
-    amplify_app_id       = aws_amplify_app.frontend.id
-    amplify_branch       = aws_amplify_branch.frontend.branch_name
-    api_url              = aws_apigatewayv2_api.api.api_endpoint
-    dsql_cluster_id      = aws_dsql_cluster.app.identifier
-    dsql_cluster_arn     = aws_dsql_cluster.app.arn
-    api_role_arn         = aws_iam_role.api.arn
-    cognito_user_pool_id = aws_cognito_user_pool.app.id
-    cognito_client_id    = aws_cognito_user_pool_client.web.id
+    organization_logo_bucket = aws_s3_bucket.organization_logos.id
+    frontend_url             = local.frontend_url
+    amplify_app_id           = aws_amplify_app.frontend.id
+    amplify_branch           = aws_amplify_branch.frontend.branch_name
+    api_url                  = aws_apigatewayv2_api.api.api_endpoint
+    dsql_cluster_id          = aws_dsql_cluster.app.identifier
+    dsql_cluster_arn         = aws_dsql_cluster.app.arn
+    api_role_arn             = aws_iam_role.api.arn
+    cognito_user_pool_id     = aws_cognito_user_pool.app.id
+    cognito_client_id        = aws_cognito_user_pool_client.web.id
   }
 }
 

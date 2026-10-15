@@ -101,3 +101,18 @@ DejaVu Sans regular/bold fonts and their license are tracked under `assets/fonts
 Current membership roles are `sales` and `administrator`; Super Administrator is a read-only global privilege derived from the exact verified email allowlist in `shared/super-administrators.json` (`mc.watson415@gmail.com`, `miles@baysideio.com`, `miles@milescwatson.com`). Sales can manage owned configurations and add existing Sales accounts. Shared configurations are read-only in recipient organizations and usable in quotes. Reconfigured lines require current active source access, while unchanged snapshots/quantity edits retain saved prices. Company PATCH includes optional address/website/email/phone, Team PATCH supports shared display-name updates, and Super Administrators manage enrollment domains and configuration recipients. Global privilege grant/revoke endpoints, UI controls, and seed commands are not available.
 
 Verified bootstrap enrolls exact work domains, preserving active roles and restoring removed memberships as Sales. Personal-provider domains are excluded through the version-controlled list in `organization-domains.mjs`. Background UI refresh uses profile reads, not bootstrap. [Task 6000](../tasks/6000/implementation.md) and the [0005 release procedure](../tasks/6000/database-design.md) supersede the older role/sharing restrictions described above. Apply 0005 before releasing the API; do not resume the old API after role migration.
+
+## Organization logos
+
+`GET|PUT|DELETE /organizations/{orgId}/logo` reads, uploads/replaces, or removes the
+current organization logo. Reads require organization access; mutations require
+administrator access. PUT accepts `{imageBase64}` JSON, bounded to 3 MiB, with a
+PNG/JPEG decoded size up to 2 MiB and at most 16 megapixels. Images are normalized
+to PNG within 1024 × 1024 pixels, below 1 MiB, preserving transparency. SVG and
+animated images are rejected. Organization responses include nullable
+`logoVersion`; GET returns authenticated, noncached PNG bytes or 404 when absent.
+
+`ORGANIZATION_LOGO_BUCKET` configures private storage. PDF downloads use the
+current logo; storage failure for an associated logo returns 503. See the
+[0009 migration guide](../database/versions/0009/organizations/README.md) for
+ARM64 packaging and orphan cleanup.

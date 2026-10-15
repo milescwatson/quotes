@@ -18,5 +18,7 @@ export async function readTestFile(url, encoding = 'utf8') {
   if (url.pathname.endsWith('/0004/quotes/schema.sql')) text += '\n'+(await readFile(new URL('../../database/versions/0007/products/schema.sql',import.meta.url),'utf8')).replaceAll('ALTER TABLE ASYNC','ALTER TABLE');
   if (url.pathname.endsWith('/0004/quotes/schema.sql')) text += '\n'+await readFile(new URL('../../database/versions/0008/quotes/schema.sql',import.meta.url),'utf8');
   if (url.pathname.endsWith('/0004/quotes/permissions.sql')) text += '\n'+await readFile(new URL('../../database/versions/0006/products/permissions.sql',import.meta.url),'utf8');
+  if (url.pathname.endsWith('/0001/identity/schema.sql')) text += '\n'+(await readFile(new URL('../../database/versions/0009/organizations/schema.sql',import.meta.url),'utf8')).replaceAll('ALTER TABLE ASYNC','ALTER TABLE');
+  if (url.pathname.endsWith('/0001/identity/permissions.sql')) text += '\nGRANT UPDATE(logo_id) ON organizations TO :"api_role";';
   return text;
 }

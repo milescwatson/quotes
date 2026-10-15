@@ -11,7 +11,7 @@ export interface ApiOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   body?: unknown
   signal?: AbortSignal
-  responseType?: 'blob'
+  responseType?: 'blob' | 'image'
 }
 export class ApiError extends Error {
   constructor(

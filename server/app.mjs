@@ -1,3 +1,4 @@
+import { LOGO_REQUEST_LIMIT } from './organization-logo.mjs';
 import Fastify from 'fastify';
 import { HttpError } from './shared.mjs';
 import { MAX_BYTES } from './taxonomy-content.mjs';
@@ -57,6 +58,8 @@ export function createApp({
         return done(
           new HttpError(413, 'PAYLOAD_TOO_LARGE', 'Request exceeds 512 KiB.'),
         );
+      if (request.routeOptions.config.logoBody && Buffer.byteLength(body, 'utf8') > LOGO_REQUEST_LIMIT)
+        return done(new HttpError(413, 'PAYLOAD_TOO_LARGE', 'Logo request exceeds 3 MiB.'));
       try {
         done(null, body ? JSON.parse(body) : {});
       } catch {
@@ -108,12 +111,14 @@ export function createApp({
         errorCode: error.code || 'INTERNAL_ERROR',
       });
     const status =
+      error.code === 'FST_ERR_CTP_BODY_TOO_LARGE' ? 413 :
       error instanceof HttpError
         ? error.status
         : error.code === '23505'
           ? 409
           : 503;
     const body =
+      error.code === 'FST_ERR_CTP_BODY_TOO_LARGE' ? { code: 'PAYLOAD_TOO_LARGE', message: 'Logo request exceeds 3 MiB.' } :
       error instanceof HttpError
         ? {
             code: error.code,

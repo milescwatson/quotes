@@ -57,3 +57,14 @@ Set `notification_email` to provision an email alarm subscription and a $25 mont
 The new account currently has a total Lambda concurrency quota of 10. The API uses unreserved concurrency (`-1`) because AWS requires an unreserved pool when configuring reservations. Revisit an explicit reservation after a quota increase. API Gateway throttles are still configured.
 
 Current notifications are configured for `mc.watson415@gmail.com`, and the SNS subscription is confirmed. The $25 monthly budget sends an actual-cost alert above 80% ($20); it is not a spending cap. Deployment verification is recorded in [DEPLOYMENT.md](DEPLOYMENT.md).
+
+## Organization logo storage
+
+Terraform provisions a private, encrypted, TLS-only organization logo bucket.
+Lambda receives its name via `ORGANIZATION_LOGO_BUCKET` and object-only
+read/write/delete access under `organizations/*/logos/*`. Browsers use the
+authenticated API; the bucket has no public access or browser CORS policy.
+
+Build the release with Sharp's Linux ARM64 runtime as described in the
+[0009 migration guide](../database/versions/0009/organizations/README.md). Apply
+the additive migration before deploying the bucket/API and frontend.

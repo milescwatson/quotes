@@ -47,10 +47,13 @@ assert.equal((await handler(event('/unknown'), {})).statusCode, 404);
 const directory = await mkdtemp(join(tmpdir(), 'quotes-bundle-'));
 try {
   const source = await readFile(new URL('../dist/index.mjs', import.meta.url), 'utf8');
-  await writeFile(join(directory, 'index.mjs'), `${source}\nexport { renderQuotePdf as verifyRenderQuotePdf };\n`);
+  await writeFile(join(directory, 'index.mjs'), `${source}\nexport { renderQuotePdf as verifyRenderQuotePdf, normalizeLogo as verifyNormalizeLogo };\n`);
+  await cp(new URL('../dist/node_modules', import.meta.url), join(directory, 'node_modules'), { recursive: true });
   await cp(new URL('../dist/assets', import.meta.url), join(directory, 'assets'), { recursive: true });
-  const { verifyRenderQuotePdf } = await import(pathToFileURL(join(directory, 'index.mjs')).href);
-  const pdf = await verifyRenderQuotePdf({ id: '1', customer: 'Café', project: 'Bundle check', organization: { name: 'Company', contact: [] }, draft: true, total: '0.00', lines: [] });
+  const { verifyRenderQuotePdf, verifyNormalizeLogo } = await import(pathToFileURL(join(directory, 'index.mjs')).href);
+  const png = 'iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAEUlEQVQImWNQSX79H4QZYAwAUcQJxZw+vakAAAAASUVORK5CYII=';
+  const logo = await verifyNormalizeLogo(png);
+  const pdf = await verifyRenderQuotePdf({ id: '1', customer: 'Café', project: 'Bundle check', organization: { name: 'Company', contact: [], logo }, draft: true, total: '0.00', lines: [] });
   assert.equal(pdf.subarray(0, 5).toString(), '%PDF-');
   assert.match(pdf.toString('latin1'), /\/FontFile2/);
 } finally { await rm(directory, { recursive: true, force: true }); }

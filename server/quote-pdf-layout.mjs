@@ -66,6 +66,10 @@ export function renderQuotePdf(model) {
         text('QUOTE', LEFT, y, 300, 24, 'Bold', 'left', ACCENT);
         text('QUOTE NUMBER', 390, y, 180, 8, 'Bold', 'right', MUTED);
         text(`#${model.id}`, 390, y + 15, 180, 16, 'Bold', 'right', ACCENT); y += 50;
+        if (model.organization.logo) {
+          doc.image(model.organization.logo, LEFT, y, { fit: [160, 72], align: 'left', valign: 'top' });
+          y += 84;
+        }
         const address = (model.organization.address || '').split(/\r?\n/).map(line => line.trim()).filter(Boolean);
         const contact = model.organization.contact;
         const addressHeight = height(model.organization.name, 310, 12, 'Bold') + 6

@@ -3,6 +3,7 @@ import { productFields } from './regular-products.mjs';
 import { randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { prepareQuotePdf } from './quote-pdf-data.mjs';
+import { createLogoStorage } from './organization-logo.mjs';
 import { renderQuotePdf } from './quote-pdf-layout.mjs';
 import { fail, identifier, one, readUser, readOrganization, guardUser, guardOrganization, authorize, configurationAccessPredicate } from './shared.mjs';
 import { object, invalid, checkedSnapshot, cents, dollars } from './taxonomy-content.mjs';
@@ -22,7 +23,7 @@ async function detail(db, orgId, id) {
     modifiedBy: String(q.modified_by), modifiedByName: q.modifier_name, modifiedWhen: new Date(q.modified_when).toISOString(), archivedAt: q.archived_at ? new Date(q.archived_at).toISOString() : null,
     token: q.token, multiple: Number(q.multiple ?? 1), lines, currency: 'USD', listTotal: dollars(lines.reduce((sum,l) => sum + cents(l.lineTotal),0n)), total: dollars(lines.reduce((sum,l) => sum + cents(netAmount(l.lineTotal,Number(q.multiple ?? 1))),0n)) };
 }
-export function createQuoteService(withTransaction) {
+export function createQuoteService(withTransaction, { logoStorage = createLogoStorage() } = {}) {
   async function transaction(input, write, work) {
     identifier(input.orgId);
     try {
@@ -150,8 +151,9 @@ export function createQuoteService(withTransaction) {
       const model = await transaction(input, false, async (db, _user, org) => {
         const quote = await detail(db, org.id, input.quoteId);
         if (quote.token !== input.query.expectedToken) fail(409, 'QUOTE_CONFLICT', 'This quote changed. Reload the page before exporting a PDF.');
-        return prepareQuotePdf(quote, org);
+        return { ...prepareQuotePdf(quote, org), logoVersion: org.logo_id ?? null };
       });
+      if (model.logoVersion) model.organization.logo = await logoStorage.get(input.orgId, model.logoVersion);
       return { pdf: await renderQuotePdf(model), disposition, filename: `quote-${input.quoteId}.pdf` };
     },
     readQuote: input => { identifier(input.quoteId); return transaction(input,false,async (db,_user,org) => ({ quote: await detail(db,org.id,input.quoteId) })); },

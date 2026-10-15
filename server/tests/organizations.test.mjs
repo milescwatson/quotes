@@ -38,6 +38,7 @@ test('0005 migration, enrollment, role boundaries, sharing and email-based globa
     await t.test('migration maps roles, defaults Sales, preserves membership identity and validates constraints',async()=>{
       const before=await q('SELECT id,organization_id,user_id,joined_at FROM organization_memberships ORDER BY id');
       for(const file of ['identity','backfill','enforce','sharing']) await db.exec(await read(`0005/organizations/${file}.sql`));
+      await db.exec(await read('0009/organizations/schema.sql'));
       assert.deepEqual(await q('SELECT id,organization_id,user_id,joined_at FROM organization_memberships ORDER BY id'),before);
       assert.deepEqual((await q('SELECT role FROM organization_memberships ORDER BY id')).map(r=>r.role),['administrator','sales','sales','administrator']);
       await assert.rejects(()=>q("INSERT INTO organization_memberships(organization_id,user_id,role) VALUES($1,$2,'super')",[owner.id,people.super.id]),e=>e.code==='23514');

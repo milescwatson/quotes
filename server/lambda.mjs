@@ -4,7 +4,7 @@ export function createLambdaHandler(app) {
     decorateRequest: true,
     serializeLambdaArguments: false,
     parseCommaSeparatedQueryParams: false,
-    binaryMimeTypes: ['application/pdf'],
+    binaryMimeTypes: ['application/pdf', 'image/png'],
   });
   const ready = app.ready();
   return async (event, context) => {

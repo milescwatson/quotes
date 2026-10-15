@@ -3,6 +3,9 @@ import { createLambdaHandler } from '../lambda.mjs';
 import { verifiedIdentityLookup } from '../authentication.mjs';
 // Independent expected mappings for route injection tests.
 export const mappings = [
+  ['GET', '/organizations/:orgId/logo', 'identity', 'readOrganizationLogo'],
+  ['PUT', '/organizations/:orgId/logo', 'identity', 'updateOrganizationLogo'],
+  ['DELETE', '/organizations/:orgId/logo', 'identity', 'removeOrganizationLogo'],
   ['GET', '/organizations/:orgId/regular-products', 'regularProducts', 'list'],
   ['POST', '/organizations/:orgId/regular-products', 'regularProducts', 'save'],
   ['PUT', '/organizations/:orgId/regular-products/:productId', 'regularProducts', 'save'],

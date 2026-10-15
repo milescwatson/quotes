@@ -91,3 +91,9 @@ The additive [0006 migration and coordinated release procedure](versions/0006/pr
 ## Owner quote archiving (0008)
 
 [0008](versions/0008/quotes/README.md) adds an archive timestamp and grants the runtime API role permission to update it. Apply the additive migration after deploying owner-checked archive and restore behavior, then verify owner and non-owner cases using the actual runtime role.
+
+## Organization logos (0009)
+
+[0009](versions/0009/organizations/README.md) adds an optional logo reference and
+runtime column permissions. Deploy its additive migration and private S3 storage
+before releasing the logo settings UI.
