@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useQueryClient } from '@tanstack/vue-query'
+import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue'
 import { adjustedAmount } from '~/utils/quote'
 import { displayPrice } from '~/utils/configuration'
 import { queryKeys } from '~/utils/query-keys'
@@ -69,47 +70,74 @@ async function changeArchiveState(archive: boolean) {
 <template>
   <ResourceState :loading="loading" :error="ready ? '' : error" @retry="load">
     <template v-if="ready">
-      <nav aria-label="Breadcrumb" class="mb-4 text-sm text-gray-500">
-        <ol class="flex flex-wrap items-center gap-2">
-          <li><NuxtLink :to="back" class="inline-flex min-h-10 items-center gap-2 rounded-md pr-2 font-medium text-blue-700 hover:text-blue-900 hover:underline">
-            <svg aria-hidden="true" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6M9 12h12" /></svg>
-            Back to quotes
-          </NuxtLink></li>
-          <li aria-hidden="true" class="text-gray-400">/</li>
-          <li aria-current="page" class="font-medium text-gray-700">{{ saved ? 'Edit quote' : 'New quote' }}</li>
-        </ol>
+      <nav aria-label="Quote navigation" class="mb-4 text-sm">
+        <NuxtLink :to="back" class="inline-flex min-h-10 items-center gap-2 rounded-md font-medium text-blue-700 hover:text-blue-900 hover:underline">
+          <svg aria-hidden="true" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6M9 12h12" /></svg>
+          Back to quotes
+        </NuxtLink>
       </nav>
-      <PageHeading :title="saved ? 'Edit quote' : 'New quote'" :description="saved ? `Last modified by ${saved.modifiedByName} · ${new Date(saved.modifiedWhen).toLocaleString()}` : 'Choose products and options for your customer project.'">
-        <div v-if="saved" class="flex items-center gap-2">
-          <span class="text-sm text-gray-500">Quote #</span>
-          <form v-if="editingQuoteNumber" class="flex items-center gap-1" @submit.prevent="goToQuoteNumber">
-            <input v-model="quoteNumberDraft" aria-label="Quote number" class="w-28" inputmode="numeric" autocomplete="off" autofocus @keydown.esc="editingQuoteNumber = false" />
-            <button class="button secondary" type="submit">Go</button>
-            <button class="text-button" type="button" @click="editingQuoteNumber = false">Cancel</button>
-          </form>
-          <button v-else type="button" class="rounded px-1 font-semibold text-gray-800 hover:bg-gray-100 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600" :aria-label="`Quote number ${saved.id}. Edit quote number`" title="Click to jump to a quote number" @click="editQuoteNumber">{{ saved.id }} <span aria-hidden="true" class="text-xs text-gray-400">✎</span></button>
-          <p v-if="quoteNumberError" class="text-sm text-red-700" role="alert">{{ quoteNumberError }}</p>
+      <header class="mb-6">
+        <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+          <div class="min-w-0">
+            <h1 class="flex flex-wrap items-center gap-2">
+              {{ saved ? `Quote #${saved.id}` : 'New quote' }}
+              <button v-if="saved && !editingQuoteNumber" type="button" class="inline-flex size-9 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-blue-700" :aria-label="`Quote number ${saved.id}. Edit quote number`" title="Jump to a quote number" @click="editQuoteNumber">
+                <svg aria-hidden="true" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m16 4 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15l-1 6Z" /></svg>
+              </button>
+            </h1>
+            <form v-if="editingQuoteNumber" class="mt-2 flex flex-wrap items-center gap-2" @submit.prevent="goToQuoteNumber">
+              <input v-model="quoteNumberDraft" aria-label="Quote number" class="w-28" inputmode="numeric" autocomplete="off" autofocus @keydown.esc="editingQuoteNumber = false; quoteNumberError = ''" />
+              <button class="button secondary" type="submit">Go</button>
+              <button class="text-button" type="button" @click="editingQuoteNumber = false; quoteNumberError = ''">Cancel</button>
+            </form>
+            <p v-if="quoteNumberError" class="mt-2 text-sm text-red-700" role="alert">{{ quoteNumberError }}</p>
+            <p class="mt-1 break-words text-sm text-gray-600">{{ customer.trim() || 'Customer' }} · {{ project.trim() || 'Project' }}</p>
+            <p v-if="saved" class="mt-1 text-xs text-gray-500">Last edited by {{ saved.modifiedByName }} · {{ new Date(saved.modifiedWhen).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) }}</p>
+            <p v-else class="mt-1 text-xs text-gray-500">Choose products and options for your customer project.</p>
+          </div>
+          <div class="flex shrink-0 flex-wrap items-center gap-3 sm:pt-1">
+            <span
+              class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium"
+              :class="busy ? 'bg-gray-100 text-gray-600' : dirty ? 'bg-amber-50 text-amber-800' : saved ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'"
+              role="status"
+            >
+              <svg v-if="busy" aria-hidden="true" class="size-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle class="opacity-25" cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 9 9"/></svg>
+              <svg v-else-if="saved && !dirty" aria-hidden="true" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>
+              <span v-else aria-hidden="true" class="size-1.5 rounded-full bg-current" />
+              {{ busy ? 'Saving…' : dirty ? 'Unsaved changes' : saved ? 'Saved' : 'New quote' }}
+            </span>
+            <button class="button primary whitespace-nowrap" :disabled="busy || submitting || conflicted || !!saved?.archivedAt || (!!saved && !dirty)" @click="submit">{{ busy || submitting ? 'Saving…' : 'Save changes' }}</button>
+          </div>
         </div>
-        <button v-if="saved && saved.ownerId === identity.state.user?.id && !saved.archivedAt" type="button" class="button danger" :disabled="busy || submitting" @click="archiveOpen = true">Archive quote</button>
-        <button v-else-if="saved && saved.ownerId === identity.state.user?.id && saved.archivedAt" type="button" class="button secondary" :disabled="archiveBusy" @click="changeArchiveState(false)">Restore quote</button>
-        <button type="button" class="button secondary" title="Coming soon">
-          <svg aria-hidden="true" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
-          Copy View Only Quote Link
-        </button>
-        <span
-          class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-medium"
-          :class="busy ? 'bg-gray-100 text-gray-600' : dirty ? 'bg-amber-50 text-amber-800' : saved ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'"
-          role="status"
-        >
-          <svg v-if="busy" aria-hidden="true" class="size-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle class="opacity-25" cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 9 9"/></svg>
-          <svg v-else-if="saved && !dirty" aria-hidden="true" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg>
-          <span v-else aria-hidden="true" class="size-1.5 rounded-full bg-current" />
-          {{ busy ? 'Saving…' : dirty ? 'Unsaved changes' : saved ? 'Saved' : 'New quote' }}
-        </span>
-        <button type="button" class="button secondary" title="Coming soon" disabled>View PDF</button>
-        <button type="button" class="button secondary" title="Coming soon" disabled>Download PDF</button>
-        <button class="button primary" :disabled="busy || submitting || conflicted || !!saved?.archivedAt" @click="submit">{{ busy ? 'Saving…' : 'Save' }}</button>
-      </PageHeading>
+        <div class="mt-5 flex flex-wrap items-center gap-2 border-b border-gray-200 pb-4" aria-label="Quote actions" role="group">
+          <Menu as="div" class="relative">
+            <MenuButton class="button secondary">
+              <svg aria-hidden="true" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V3m-4 4 4-4 4 4M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" /></svg>
+              Share quote
+            </MenuButton>
+            <MenuItems class="absolute left-0 z-10 mt-2 w-60 rounded-md border border-gray-200 bg-white p-1 shadow-lg focus:outline-none">
+              <MenuItem disabled><button type="button" disabled class="w-full rounded px-3 py-2 text-left text-sm text-gray-500">Copy view-only link <span class="block text-xs">Coming soon</span></button></MenuItem>
+            </MenuItems>
+          </Menu>
+          <button type="button" class="button secondary" title="Coming soon" disabled>
+            <svg aria-hidden="true" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>
+            Preview PDF
+          </button>
+          <button type="button" class="button secondary" title="Coming soon" disabled>
+            <svg aria-hidden="true" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-4-4 4 4 4-4M5 16v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/></svg>
+            Download PDF
+          </button>
+          <Menu v-if="saved && saved.ownerId === identity.state.user?.id" as="div" class="relative ml-auto">
+            <MenuButton class="button secondary min-w-10 px-2" aria-label="More quote actions">
+              <svg aria-hidden="true" class="size-5" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+            </MenuButton>
+            <MenuItems class="absolute right-0 z-10 mt-2 w-44 rounded-md border border-gray-200 bg-white p-1 shadow-lg focus:outline-none">
+              <MenuItem v-if="!saved.archivedAt" v-slot="{ active }" :disabled="busy || submitting"><button type="button" class="w-full rounded px-3 py-2 text-left text-sm text-red-700" :class="{ 'bg-red-50': active }" :disabled="busy || submitting" @click="archiveOpen = true">Archive quote</button></MenuItem>
+              <MenuItem v-else v-slot="{ active }" :disabled="archiveBusy"><button type="button" class="w-full rounded px-3 py-2 text-left text-sm text-gray-700" :class="{ 'bg-gray-100': active }" :disabled="archiveBusy" @click="changeArchiveState(false)">Restore quote</button></MenuItem>
+            </MenuItems>
+          </Menu>
+        </div>
+      </header>
       <p v-if="notice" class="success" role="status">{{ notice }}</p>
       <p v-if="saved?.archivedAt" class="panel mb-4 p-4 text-gray-700" role="status">This quote is archived. Restore it before making changes.</p>
       <p v-if="saved?.archivedAt && archiveError" class="error mb-4" role="alert">{{ archiveError }}</p>
@@ -119,7 +147,6 @@ async function changeArchiveState(archive: boolean) {
           <div><label for="quote-customer" class="mt-0">Customer</label><input id="quote-customer" v-model="customer" maxlength="120" required :aria-invalid="!!fieldError('/customerName')" aria-describedby="customer-error" /><p v-if="fieldError('/customerName')" id="customer-error" class="mt-2 text-red-700" role="alert">{{ fieldError('/customerName') }}</p></div>
           <div><label for="quote-project" class="sm:mt-0">Project</label><input id="quote-project" v-model="project" maxlength="120" required :aria-invalid="!!fieldError('/projectName')" aria-describedby="project-error" /><p v-if="fieldError('/projectName')" id="project-error" class="mt-2 text-red-700" role="alert">{{ fieldError('/projectName') }}</p></div>
           <div><label for="quote-owner" class="sm:mt-0">Owner</label><select id="quote-owner" v-model="owner" class="w-full" :aria-invalid="!!fieldError('/ownerId')"><option :value="null">Unassigned</option><option v-if="owner && !owners.some(o => o.id === owner)" :value="owner" disabled>{{ saved?.ownerName || 'Unavailable owner' }}</option><option v-for="o in owners" :key="o.id" :value="o.id">{{ o.name }}</option></select><p v-if="fieldError('/ownerId')" class="text-red-700" role="alert">{{ fieldError('/ownerId') }}</p></div>
-          <p class="mt-4 break-words text-gray-500 sm:col-span-3">{{ customer.trim() || 'Customer' }} - {{ project.trim() || 'Project' }}</p>
         </fieldset>
         <div v-if="catalogLoading" class="mb-4 text-gray-600" role="status">Loading product configurations…</div>
         <div v-else-if="catalogError" class="error" role="alert">{{ catalogError }} <button type="button" class="button secondary" @click="catalog()">Retry products</button></div>
