@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Combobox, ComboboxLabel, ComboboxInput, ComboboxButton, ComboboxOptions, ComboboxOption } from '@headlessui/vue'
 import type { LocalQuoteLine, QuoteProduct, RegularProduct } from '~/types/quotes'
-import { quoteAmount, quoteNumber, adjustedAmount, validMultiple } from '~/utils/quote'
+import { quoteAmount, quoteNumber, adjustedAmount } from '~/utils/quote'
 import { displayPrice } from '~/utils/configuration'
 import { useQueryClient } from '@tanstack/vue-query'
 import { queryKeys } from '~/utils/query-keys'
@@ -11,7 +11,7 @@ let disposed = false
 const identity = useIdentity(), queryClient = useQueryClient(), editor = ref(!props.modelValue), draft = ref<LocalQuoteLine | null>(null), query = ref(''), codeText = ref<Record<number,string>>({}), failure = ref(''), loading = ref(false), active = ref(-1)
 onBeforeUnmount(() => { disposed = true })
 const picker = ref<InstanceType<typeof ComboboxInput>>(), editButton = ref<HTMLButtonElement>(), root = ref<HTMLElement>(), segments = ref<({ focus: () => void; validate: () => boolean } | null)[]>([]), valid = ref<Record<number,boolean>>({})
-const copy = (value: LocalQuoteLine | null) => value ? { ...JSON.parse(JSON.stringify(value)), multiple: value.multiple ?? 1 } as LocalQuoteLine : null
+const copy = (value: LocalQuoteLine | null) => value ? JSON.parse(JSON.stringify(value)) as LocalQuoteLine : null
 watch(() => props.modelValue, value => { draft.value = copy(value); valid.value = {}; codeText.value = {} }, { immediate: true })
 const filtered = computed(() => props.products.filter(p => `${p.productFamilyName} ${p.principalName} ${p.modelCode || ''}`.toLowerCase().includes(query.value.toLowerCase())))
 const regularFiltered = computed(() => [...props.regularProducts].filter(p => `${p.partNumber} ${p.description} ${p.principalName ?? ''} ${parentName(p)}`.toLowerCase().includes(query.value.toLowerCase())).sort((a,b) => parentName(a).localeCompare(parentName(b)) || a.partNumber.localeCompare(b.partNumber)))
@@ -25,7 +25,7 @@ function chooseFlat(p: RegularProduct | null) {
   const partNumber = p?.partNumber ?? '', price = p?.listPrice ?? '0.00'
   draft.value = { id: props.modelValue?.id ?? null, key: props.lineKey, kind: p ? 'regular' : 'freeform', regularProductId: p?.id ?? null, parentTaxonomyId: p?.parentTaxonomyId ?? null, taxonomyId: null, versionId: null,
     snapshot: { content: { schemaVersion: 1, productFamilyName: partNumber, productDescription: p?.description ?? '', currency: 'USD', basePrice: price, separators: [], segments: [] }, principalId: p?.principalId ?? null, principalName: p?.principalName ?? null },
-    selections: [], quantity: 1, multiple: 1, partNumber, complete: true, unitPrice: price, lineTotal: price }
+    selections: [], quantity: 1, partNumber, complete: true, unitPrice: price, lineTotal: price }
   valid.value = {}; codeText.value = {}; query.value = ''; emit('pending', true)
 }
 const product = computed(() => props.products.find(p => p.id === draft.value?.taxonomyId) ?? null)
@@ -48,7 +48,7 @@ async function choose(p: QuoteProduct | null) {
     const content = t.version.content
     draft.value = { id: props.modelValue?.id ?? null, key: props.lineKey, taxonomyId: t.id, versionId: t.version.id,
       snapshot: { content, principalId: t.version.principalId, principalName: t.principalName },
-      selections: content.segments.map(s => s.options.length === 1 ? s.options[0]!.id : s.defaultOptionId), quantity: 1, multiple: 1,
+      selections: content.segments.map(s => s.options.length === 1 ? s.options[0]!.id : s.defaultOptionId), quantity: 1,
       partNumber: '', complete: false, unitPrice: '0.00', lineTotal: '0.00' }
     valid.value = {}; codeText.value = {}; active.value = -1; emit('pending',true)
   } catch (e) { if (disposed) return; failure.value = (e as Error).message; if ('status' in (e as object) && [401,403,404].includes((e as { status: number }).status)) emit('accessLost') }
@@ -59,7 +59,6 @@ function validate() {
   if (!editor.value) return true
   if (loading.value) { failure.value = 'Wait for the product to load.'; return false }
   if (!draft.value) { failure.value = 'Choose a product, or remove this empty line.'; picker.value?.$el?.focus(); return false }
-  if (!validMultiple(draft.value.multiple ?? 1)) { failure.value = 'Use a multiple from 0 to 1,000 with at most four decimal places.'; return false }
   if (draft.value.kind === 'freeform') {
     const c = draft.value.snapshot.content
     if (!c.productFamilyName.trim() || c.productFamilyName.trim().length > 120 || /[\p{Cc}\p{Cs}]/u.test(c.productFamilyName) || (c.productDescription ?? '').length > 500 || /[\p{Cc}\p{Cs}]/u.test(c.productDescription ?? '') || !/^(0|[1-9][0-9]{0,11})(\.[0-9]{1,2})?$/.test(c.basePrice)) { failure.value = 'Enter a part number, a description up to 500 characters, and a nonnegative List Price with at most two decimals.'; return false }
@@ -138,10 +137,6 @@ defineExpose({ validate, done })
                 <label :for="`qty-${lineKey}`" class="quote-pricing-label">Quantity</label>
                 <input :id="`qty-${lineKey}`" v-model.number="draft.quantity" class="text-right tabular-nums" type="number" min="1" max="1000000" step="1" :aria-invalid="!Number.isInteger(draft.quantity) || draft.quantity < 1 || draft.quantity > 1000000" @input="change" />
               </div>
-              <div>
-                <label :for="`multiple-${lineKey}`" class="quote-pricing-label">Line multiple</label>
-                <input :id="`multiple-${lineKey}`" v-model.number="draft.multiple" class="text-right tabular-nums" type="number" min="0" max="1000" step="0.1" :aria-invalid="!validMultiple(draft.multiple ?? 1)" @input="change" />
-              </div>
             </div>
           </div>
           <p v-if="modelValue" class="mt-1 text-xs text-gray-500">Quote total keeps the previous amount until Done.</p>
@@ -159,9 +154,8 @@ defineExpose({ validate, done })
           <dl class="quote-pricing-grid border-t border-gray-200 pt-4 xl:border-t-0 xl:pt-0">
             <div><dt class="quote-pricing-label">List Price</dt><dd class="quote-pricing-value">{{ displayPrice(modelValue.unitPrice) }}</dd></div>
             <div><dt class="quote-pricing-label">Quantity</dt><dd class="quote-pricing-value">{{ modelValue.quantity }}</dd></div>
-            <div><dt class="quote-pricing-label">Line multiple</dt><dd class="quote-pricing-value">{{ modelValue.multiple ?? 1 }}</dd></div>
             <div><dt class="quote-pricing-label">List Line Total</dt><dd class="quote-pricing-value">{{ displayPrice(modelValue.lineTotal) }}</dd></div>
-            <div class="quote-pricing-final"><dt class="quote-pricing-label">After Multiple</dt><dd class="quote-pricing-value font-semibold">{{ displayPrice(adjustedAmount(modelValue.lineTotal, quoteMultiple, modelValue.multiple ?? 1)) }}</dd></div>
+            <div class="quote-pricing-final"><dt class="quote-pricing-label">After Multiple</dt><dd class="quote-pricing-value font-semibold">{{ displayPrice(adjustedAmount(modelValue.lineTotal, quoteMultiple)) }}</dd></div>
           </dl>
         </div>
         <details v-if="!flat" class="group mt-4 rounded-md border border-gray-200 bg-gray-50">

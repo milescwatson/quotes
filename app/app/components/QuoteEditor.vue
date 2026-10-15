@@ -6,8 +6,39 @@ import { displayPrice } from '~/utils/configuration'
 import { queryKeys } from '~/utils/query-keys'
 const { multiple, regularProducts, saved, customer, project, owner, lines, keys, pending, owners, products, back, organization, ready, loading, busy, error, catalogError, catalogLoading, notice, conflicted, errors, dirty, load, catalog, save, add, remove, reload, invalidate, discardChanges } = useQuoteEditor()
 const identity = useIdentity(), queryClient = useQueryClient()
+const pdfBusy = ref(false), pdfError = ref(''), pdfFallback = ref('')
+const pdfDisabled = computed(() => !saved.value || dirty.value || pending.value.size > 0 || busy.value || submitting.value || conflicted.value || pdfBusy.value)
+const pdfUrls = new Set<string>()
+function clearPdfUrls() { for (const url of pdfUrls) URL.revokeObjectURL(url); pdfUrls.clear(); pdfFallback.value = '' }
+watch(organization, clearPdfUrls)
+watch(() => saved.value?.token, () => { pdfFallback.value = ''; pdfError.value = '' })
+onMounted(() => window.addEventListener('quotes:clear-query-cache', clearPdfUrls))
+onBeforeUnmount(() => { clearPdfUrls(); window.removeEventListener('quotes:clear-query-cache', clearPdfUrls) })
+async function exportPdf(download: boolean) {
+  if (pdfDisabled.value || !saved.value) return
+  // Open during the user gesture so async authentication does not block it.
+  const preview = download ? null : window.open('about:blank', '_blank')
+  if (preview) { preview.opener = null; preview.document.title = 'Loading quote PDF…' }
+  const orgId = organization.value, quote = saved.value
+  pdfBusy.value = true; pdfError.value = ''; pdfFallback.value = ''
+  try {
+    const query = new URLSearchParams({ disposition: download ? 'attachment' : 'inline', expectedToken: quote.token })
+    const blob = await identity.request<Blob>(`/organizations/${orgId}/quotes/${quote.id}/pdf?${query}`, { responseType: 'blob' })
+    if (orgId !== organization.value || quote.id !== saved.value?.id || quote.token !== saved.value?.token) { preview?.close(); return }
+    const url = URL.createObjectURL(blob); pdfUrls.add(url)
+    if (download) {
+      const link = document.createElement('a'); link.href = url; link.download = `quote-${quote.id}.pdf`
+      document.body.appendChild(link); link.click(); link.remove()
+      setTimeout(() => { URL.revokeObjectURL(url); pdfUrls.delete(url) }, 60000)
+    } else if (preview && !preview.closed) preview.location.replace(url)
+    else pdfFallback.value = url
+  } catch (error) {
+    preview?.close(); pdfError.value = (error as Error).message
+  } finally { pdfBusy.value = false }
+}
 const archiveOpen = ref(false), archiveBusy = ref(false), archiveError = ref('')
-const editingQuoteNumber = ref(false), quoteNumberDraft = ref(''), quoteNumberError = ref('')
+const quoteNumberDraft = ref(''), quoteNumberError = ref('')
+watch(() => saved.value?.id, id => { quoteNumberDraft.value = id ?? ''; quoteNumberError.value = '' }, { immediate: true })
 type LineEditor = { validate: () => boolean; done: () => Promise<boolean> }
 const editors = ref<Record<string, LineEditor | null>>({}), submitting = ref(false), addButton = ref<HTMLButtonElement>()
 const listTotal = computed(() => {
@@ -15,7 +46,7 @@ const listTotal = computed(() => {
   return displayPrice(`${amount / 100n}.${String(amount % 100n).padStart(2,'0')}`)
 })
 const total = computed(() => {
-  const amount = lines.value.reduce((sum, line) => sum + BigInt(adjustedAmount(line?.lineTotal ?? '0.00', multiple.value, line?.multiple ?? 1).replace('.', '')), 0n)
+  const amount = lines.value.reduce((sum, line) => sum + BigInt(adjustedAmount(line?.lineTotal ?? '0.00', multiple.value).replace('.', '')), 0n)
   return displayPrice(`${amount / 100n}.${String(amount % 100n).padStart(2, '0')}`)
 })
 const partial = computed(() => lines.value.some(l => !l?.complete))
@@ -32,22 +63,16 @@ async function submit() {
   } finally { submitting.value = false }
 }
 async function removeLine(i: number) { remove(i); await nextTick(); addButton.value?.focus() }
-function editQuoteNumber() {
-  if (!saved.value) return
-  quoteNumberDraft.value = saved.value.id
-  quoteNumberError.value = ''
-  editingQuoteNumber.value = true
-}
 async function goToQuoteNumber() {
+  quoteNumberError.value = ''
   const quoteNumber = quoteNumberDraft.value.trim()
   if (!/^[1-9]\d{0,18}$/.test(quoteNumber) || BigInt(quoteNumber) > 9223372036854775807n) {
     quoteNumberError.value = 'Enter a valid quote number.'
     return
   }
-  if (quoteNumber === saved.value?.id) { editingQuoteNumber.value = false; return }
+  if (quoteNumber === saved.value?.id) return
   try {
     await identity.request(`/organizations/${organization.value}/quotes/${quoteNumber}`)
-    editingQuoteNumber.value = false
     quoteNumberError.value = ''
     await navigateTo(`${back.value}/${quoteNumber}`)
   } catch {
@@ -79,18 +104,14 @@ async function changeArchiveState(archive: boolean) {
       <header class="mb-6">
         <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
           <div class="min-w-0">
-            <h1 class="flex flex-wrap items-center gap-2">
-              {{ saved ? `Quote #${saved.id}` : 'New quote' }}
-              <button v-if="saved && !editingQuoteNumber" type="button" class="inline-flex size-9 items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-blue-700" :aria-label="`Quote number ${saved.id}. Edit quote number`" title="Jump to a quote number" @click="editQuoteNumber">
-                <svg aria-hidden="true" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m16 4 4 4M4 20l4-1L20 7a2.8 2.8 0 0 0-4-4L4 15l-1 6Z" /></svg>
-              </button>
-            </h1>
-            <form v-if="editingQuoteNumber" class="mt-2 flex flex-wrap items-center gap-2" @submit.prevent="goToQuoteNumber">
-              <input v-model="quoteNumberDraft" aria-label="Quote number" class="w-28" inputmode="numeric" autocomplete="off" autofocus @keydown.esc="editingQuoteNumber = false; quoteNumberError = ''" />
-              <button class="button secondary" type="submit">Go</button>
-              <button class="text-button" type="button" @click="editingQuoteNumber = false; quoteNumberError = ''">Cancel</button>
+            <form v-if="saved" class="flex flex-wrap items-center gap-2" @submit.prevent="goToQuoteNumber">
+              <h1>Quote #<span class="sr-only">{{ saved.id }}</span></h1>
+              <input v-model="quoteNumberDraft" aria-label="Quote number" aria-describedby="quote-number-help" :aria-invalid="!!quoteNumberError" :aria-errormessage="quoteNumberError ? 'quote-number-error' : undefined" class="w-24 min-h-8 border-gray-200 bg-transparent px-2 py-1 text-sm font-normal text-gray-600 tabular-nums hover:border-gray-300 focus:border-blue-500 focus:bg-white" inputmode="numeric" autocomplete="off" @input="quoteNumberError = ''" @keydown.esc="quoteNumberDraft = saved.id; quoteNumberError = ''" />
+              <button v-if="quoteNumberDraft.trim() !== saved.id" class="button secondary" type="submit">Go</button>
             </form>
-            <p v-if="quoteNumberError" class="mt-2 text-sm text-red-700" role="alert">{{ quoteNumberError }}</p>
+            <h1 v-else>New quote</h1>
+            <p v-if="saved" id="quote-number-help" class="sr-only">Enter a quote number and press Go to open it.</p>
+            <p v-if="quoteNumberError" id="quote-number-error" class="mt-2 text-sm text-red-700" role="alert">{{ quoteNumberError }}</p>
             <p class="mt-1 break-words text-sm text-gray-600">{{ customer.trim() || 'Customer' }} · {{ project.trim() || 'Project' }}</p>
             <p v-if="saved" class="mt-1 text-xs text-gray-500">Last edited by {{ saved.modifiedByName }} · {{ new Date(saved.modifiedWhen).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) }}</p>
             <p v-else class="mt-1 text-xs text-gray-500">Choose products and options for your customer project.</p>
@@ -119,11 +140,11 @@ async function changeArchiveState(archive: boolean) {
               <MenuItem disabled><button type="button" disabled class="w-full rounded px-3 py-2 text-left text-sm text-gray-500">Copy view-only link <span class="block text-xs">Coming soon</span></button></MenuItem>
             </MenuItems>
           </Menu>
-          <button type="button" class="button secondary" title="Coming soon" disabled>
+          <button type="button" class="button secondary" :title="dirty || !saved ? 'Save changes to export a PDF' : undefined" :disabled="pdfDisabled" @click="exportPdf(false)">
             <svg aria-hidden="true" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>
             Preview PDF
           </button>
-          <button type="button" class="button secondary" title="Coming soon" disabled>
+          <button type="button" class="button secondary" :title="dirty || !saved ? 'Save changes to export a PDF' : undefined" :disabled="pdfDisabled" @click="exportPdf(true)">
             <svg aria-hidden="true" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m-4-4 4 4 4-4M5 16v3a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-3"/></svg>
             Download PDF
           </button>
@@ -138,6 +159,9 @@ async function changeArchiveState(archive: boolean) {
           </Menu>
         </div>
       </header>
+      <p v-if="pdfBusy" class="mb-4 text-sm text-gray-600" role="status">Preparing PDF…</p>
+      <p v-if="pdfError" class="error mb-4" role="alert">{{ pdfError }}</p>
+      <p v-if="pdfFallback" class="mb-4 text-sm" role="status">Your preview is ready. <a :href="pdfFallback" target="_blank" rel="noopener" class="text-blue-700 underline">Open PDF preview</a></p>
       <p v-if="notice" class="success" role="status">{{ notice }}</p>
       <p v-if="saved?.archivedAt" class="panel mb-4 p-4 text-gray-700" role="status">This quote is archived. Restore it before making changes.</p>
       <p v-if="saved?.archivedAt && archiveError" class="error mb-4" role="alert">{{ archiveError }}</p>

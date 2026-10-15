@@ -38,6 +38,23 @@ test('quote creation, partial options, snapshots, authorization, atomic validati
       assert.equal((await call(quotes.listQuotes)).totalItems,2);
     });
     const write = (value=q) => ({customerName:value.customerName,projectName:value.projectName,ownerId:value.ownerId,expectedToken:value.token,lines:value.lines.map(({id,taxonomyId,versionId,selections,quantity})=>({id,taxonomyId,versionId,selections:structuredClone(selections),quantity}))});
+    await t.test('PDF exports saved snapshots with membership and concurrency checks', async () => {
+      const request = { identity: { issuer: 'test', sub: 'member' }, orgId: '10', quoteId: q.id, query: { expectedToken: q.token } };
+      const result = await quotes.readQuotePdf(request);
+      assert.equal(result.pdf.subarray(0, 5).toString(), '%PDF-');
+      await reject(() => quotes.readQuotePdf({ ...request, query: { expectedToken: 'stale' } }), 'QUOTE_CONFLICT');
+      await reject(() => quotes.readQuotePdf({ ...request, query: { expectedToken: q.token, disposition: 'bad' } }), 'INVALID_INPUT');
+      await reject(() => quotes.readQuotePdf({ ...request, identity: { issuer: 'test', sub: 'outsider' } }), 'NOT_FOUND');
+      await db.exec('UPDATE organization_memberships SET removed_at=now() WHERE organization_id=10 AND user_id=2');
+      await reject(() => quotes.readQuotePdf(request), 'NOT_FOUND');
+      await db.exec('UPDATE organization_memberships SET removed_at=NULL WHERE organization_id=10 AND user_id=2');
+      await db.exec('UPDATE users SET disabled_at=now() WHERE id=2');
+      await reject(() => quotes.readQuotePdf(request), 'ACCOUNT_DISABLED');
+      await db.exec('UPDATE users SET disabled_at=NULL WHERE id=2');
+      await db.exec('UPDATE quotes SET archived_at=now() WHERE id='+q.id);
+      assert.ok((await quotes.readQuotePdf(request)).pdf.length > 0);
+      await db.exec('UPDATE quotes SET archived_at=NULL WHERE id='+q.id);
+    });
     await t.test('no-op leaves metadata intact; empty selections and zero lines are savable',async()=>{
       assert.equal((await call(quotes.updateQuote,write(),q.id)).unchanged,true);
       const b=write(); b.lines[0].selections[1]=null;

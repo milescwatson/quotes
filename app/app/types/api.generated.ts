@@ -132,6 +132,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/organizations/{orgId}/quotes/{quoteId}/pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["readQuotePdf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/organizations/{orgId}/quotes/{quoteId}": {
         parameters: {
             query?: never;
@@ -408,8 +424,6 @@ export interface components {
             versionId?: string | null;
             selections?: (string | null)[];
             quantity: number;
-            /** @default 1 */
-            multiple: number;
             /** @enum {string} */
             kind?: "configured" | "regular" | "freeform";
             regularProductId?: string | null;
@@ -445,8 +459,6 @@ export interface components {
             complete: boolean;
             unitPrice: string;
             lineTotal: string;
-            /** @default 1 */
-            multiple: number;
             /** @enum {string} */
             kind?: "configured" | "regular" | "freeform";
             regularProductId?: string | null;
@@ -1682,6 +1694,95 @@ export interface operations {
                 };
             };
             /** @description Temporarily unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    readQuotePdf: {
+        parameters: {
+            query: {
+                disposition?: "inline" | "attachment";
+                expectedToken: string;
+            };
+            header?: never;
+            path: {
+                orgId: string;
+                quoteId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful operation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+            /** @description Request failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed */
             503: {
                 headers: {
                     [name: string]: unknown;

@@ -7,11 +7,11 @@ import { createQuoteService } from '../quotes.mjs';
 import { createTaxonomyService } from '../taxonomy.mjs';
 import { multiple, netAmount } from '../quote-pricing.mjs';
 
-test('multiples compound with exact half-up rounding and bounded validation', () => {
-  assert.equal(netAmount('0.01', 0.5, { multiple: 1 }), '0.01');
-  assert.equal(netAmount('0.03', 0.5, { multiple: 0.5 }), '0.01');
-  assert.equal(netAmount('100.00', 0.8, { multiple: 0.5 }), '40.00');
-  assert.equal(netAmount('100.00', 0, { multiple: 1000 }), '0.00');
+test('quote multiples use exact half-up rounding and bounded validation', () => {
+  assert.equal(netAmount('0.01', 0.5), '0.01');
+  assert.equal(netAmount('0.03', 0.5), '0.02');
+  assert.equal(netAmount('100.00', 0.8), '80.00');
+  assert.equal(netAmount('100.00', 0), '0.00');
   for (const value of [-1, 1001, NaN, Infinity, 0.00001, '1', null]) assert.throws(() => multiple(value), e => e.status === 422);
 });
 
@@ -40,21 +40,33 @@ test('regular catalog authorization, mixed snapshots, shared parents and restric
       for(const change of [{partNumber:''},{listPrice:'-1'},{listPrice:'1.234'},{description:'\n'},{parentTaxonomyId:'undefined'},{parentTaxonomyId:'null'},{principalId:'999'},{principalId:'bad'}]) await reject(()=>call(products.save,{...fields,...change}),'INVALID_INPUT');
     });
     const body={customerName:'Acme',projectName:'Office',ownerId:null,multiple:0.8,lines:[
-      {id:null,taxonomyId:configured.id,versionId:configured.version.id,selections:[configured.version.content.segments[0].options[0].id],quantity:2,multiple:0.5},
-      {id:null,kind:'regular',regularProductId:product.id,quantity:3,multiple:0.5},
-      {id:null,kind:'freeform',partNumber:' 000-X ',description:'Custom',listPrice:'0.03',quantity:1,multiple:0.5},
+      {id:null,taxonomyId:configured.id,versionId:configured.version.id,selections:[configured.version.content.segments[0].options[0].id],quantity:2},
+      {id:null,kind:'regular',regularProductId:product.id,quantity:3},
+      {id:null,kind:'freeform',partNumber:' 000-X ',description:'Custom',listPrice:'0.03',quantity:1},
     ]};
     let quote;
     const write=()=>({...body,expectedToken:quote.token,lines:body.lines.map((l,i)=>({...l,id:quote.lines[i].id}))});
     await t.test('mixed lines, exact totals, no-op save and historical catalog pricing',async()=>{
       quote=(await call(quotes.createQuote,body,{identity:{issuer:'test',sub:'sales'}})).quote;
       assert.equal(quote.lines[1].snapshot.principalId,'1');assert.equal(quote.lines[1].snapshot.principalName,'Maker');
-      assert.equal(quote.listTotal,'57.53');assert.equal(quote.total,'23.01');assert.equal(quote.lines[2].partNumber,'000-X');
+      assert.equal(quote.listTotal,'57.53');assert.equal(quote.total,'46.02');assert.equal(quote.lines[2].partNumber,'000-X');
       assert.equal((await call(quotes.updateQuote,write(),{quoteId:quote.id})).unchanged,true);
       product=(await call(products.save,{...fields,principalId:null,listPrice:'99.00',expectedToken:product.token},{productId:product.id})).product;
       const b=write();b.lines[1].quantity=4;quote=(await call(quotes.updateQuote,b,{quoteId:quote.id})).quote;
-      assert.equal(quote.lines[1].snapshot.principalName,'Maker');assert.equal(quote.lines[1].unitPrice,'12.50');assert.equal(quote.total,'28.01');
+      assert.equal(quote.lines[1].snapshot.principalName,'Maker');assert.equal(quote.lines[1].unitPrice,'12.50');assert.equal(quote.total,'56.02');
       assert.equal((await call(quotes.createQuote,{...body,lines:[body.lines[1]]})).quote.lines[0].unitPrice,'99.00');
+    });
+    await t.test('historical line multiples are omitted and ignored for every product kind', async () => {
+      const historical = quote.lines.map(line => ({ ...line, multiple: 0.1 }));
+      await db.query('UPDATE quotes SET lines=$1 WHERE id=$2', [JSON.stringify(historical), quote.id]);
+      const read = (await call(quotes.readQuote, {}, { quoteId: quote.id })).quote;
+      assert.equal(read.total, '56.02');
+      assert.ok(read.lines.every(line => !('multiple' in line)));
+      const update = write(); update.projectName = 'Revised office'; update.lines[1].quantity = 4;
+      quote = (await call(quotes.updateQuote, update, { quoteId: quote.id })).quote;
+      const stored = (await db.query('SELECT lines FROM quotes WHERE id=$1', [quote.id])).rows[0].lines;
+      assert.ok(stored.every(line => !('multiple' in line)));
+      assert.equal(quote.total, '56.02');
     });
     await t.test('omitted principal keeps assignments and explicit null clears them', async () => {
       let p=(await call(products.save,{...fields,partNumber:'Principal test',parentTaxonomyId:null})).product;
@@ -72,7 +84,7 @@ test('regular catalog authorization, mixed snapshots, shared parents and restric
       assert.equal((await call(products.save,{...fields,partNumber:'Shared'})).product.parentTaxonomyId,configured.id);
     });
     await t.test('atomic validation, zero factors, overflow and legacy defaults',async()=>{
-      for(const mutate of [b=>b.multiple=-1,b=>b.lines[0].multiple=1.00001,b=>b.lines[0].multipleMode='override',b=>b.lines[1].regularProductId='999',b=>{b.lines[2].listPrice='999999999999.99';b.lines[2].quantity=2},b=>b.lines[2].listPrice='oops']) {
+      for(const mutate of [b=>b.multiple=-1,b=>b.lines[0].multiple=1,b=>b.lines[0].multipleMode='override',b=>b.lines[1].regularProductId='999',b=>{b.lines[2].listPrice='999999999999.99';b.lines[2].quantity=2},b=>b.lines[2].listPrice='oops']) {
         const b=structuredClone(body);mutate(b);await reject(()=>call(quotes.createQuote,b),'INVALID_INPUT');
       }
       assert.equal((await call(quotes.createQuote,{...body,multiple:0})).quote.total,'0.00');

@@ -12,7 +12,7 @@ export interface QuoteFilters {
 export type QuoteDetail = components['schemas']['QuoteDetail']
 export type QuoteLine = components['schemas']['QuoteLine']
 type LineInput = components['schemas']['QuoteLineInput']
-export type QuoteLineInput = Pick<LineInput, 'id' | 'quantity' | 'multiple'> & (
+export type QuoteLineInput = Pick<LineInput, 'id' | 'quantity'> & (
   | { kind?: 'configured'; taxonomyId: string; versionId: string; selections: (string | null)[] }
   | { kind: 'regular'; regularProductId: string }
   | { kind: 'freeform'; partNumber: string; description: string; listPrice: string }

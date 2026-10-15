@@ -14,13 +14,13 @@ export function quoteNumber(line: LocalQuoteLine) {
 export function validMultiple(value: number) {
   return Number.isFinite(value) && value >= 0 && value <= 1000 && Math.abs(value * 10000 - Math.round(value * 10000)) < 0.000001
 }
-export function adjustedAmount(list: string, quoteMultiple = 1, lineMultiple = 1) {
-  if (!validMultiple(quoteMultiple) || !validMultiple(lineMultiple)) return '0.00'
-  const amount = (BigInt(list.replace('.', '')) * BigInt(Math.round(quoteMultiple * 10000)) * BigInt(Math.round(lineMultiple * 10000)) + 50000000n) / 100000000n
+export function adjustedAmount(list: string, quoteMultiple = 1) {
+  if (!validMultiple(quoteMultiple)) return '0.00'
+  const amount = (BigInt(list.replace('.', '')) * BigInt(Math.round(quoteMultiple * 10000)) + 5000n) / 10000n
   return `${amount / 100n}.${String(amount % 100n).padStart(2, '0')}`
 }
 export function lineInput(line: LocalQuoteLine): QuoteLineInput {
-  const common = { id: line.id, quantity: line.quantity, multiple: line.multiple ?? 1 }
+  const common = { id: line.id, quantity: line.quantity }
   if (line.kind === 'regular') return { ...common, kind: 'regular', regularProductId: line.regularProductId! }
   if (line.kind === 'freeform') return { ...common, kind: 'freeform', partNumber: line.snapshot.content.productFamilyName, description: line.snapshot.content.productDescription ?? '', listPrice: line.snapshot.content.basePrice }
   return { ...common, taxonomyId: line.taxonomyId!, versionId: line.versionId!, selections: [...line.selections] }

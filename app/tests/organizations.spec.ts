@@ -109,7 +109,9 @@ test('mobile domain settings, archive warning and keyboard navigation remain usa
 
 test('Super Administrator without organization membership starts with an eligible quote owner',async({page})=>{
   await login(page,'super')
-  await page.evaluate(()=>{
+  // Seed the next document before its fixture service reads storage. Changing
+  // storage in the old document races with its background profile refresh.
+  await page.addInitScript(()=>{
     const key='quotes:fixture:data:v3',state=JSON.parse(sessionStorage.getItem(key)!)
     state.members['11']=state.members['11'].filter((member:any)=>member.userId!==state.user.id)
     sessionStorage.setItem(key,JSON.stringify(state))
@@ -118,7 +120,7 @@ test('Super Administrator without organization membership starts with an eligibl
   await expect(page.getByLabel('Owner',{exact:true})).toHaveValue('Unassigned')
   await page.getByLabel('Customer',{exact:true}).fill('Global admin customer')
   await page.getByLabel('Project',{exact:true}).fill('Global admin project')
-  await page.getByRole('button',{name:'Save',exact:true}).click()
+  await page.getByRole('button',{name:'Save changes',exact:true}).click()
   await expect(page).toHaveURL(/\/quotes\/\d+$/)
   await expect(page.getByLabel('Owner',{exact:true})).toHaveValue('Unassigned')
 })

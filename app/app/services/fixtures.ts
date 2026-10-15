@@ -218,7 +218,7 @@ export function createFixtures() {
           sessionStorage.setItem(regularKey, JSON.stringify(regular)); return structuredClone({ product }) as T
         }
         const sumMoney = (values: string[]) => { const n = values.reduce((sum, v) => sum + BigInt(v.replace('.', '')), 0n); return `${n / 100n}.${String(n % 100n).padStart(2, '0')}` }
-        const quoteDetail = (quote: Quote & Partial<QuoteDetail>): QuoteDetail => ({ ...quote, archivedAt: quote.archivedAt ?? null, token: quote.modifiedWhen, lines: quote.lines ?? [], multiple: quote.multiple ?? 1, currency: 'USD', listTotal: sumMoney((quote.lines ?? []).map(l => l.lineTotal)), total: sumMoney((quote.lines ?? []).map(l => adjustedAmount(l.lineTotal, quote.multiple ?? 1, l.multiple ?? 1))) })
+        const quoteDetail = (quote: Quote & Partial<QuoteDetail>): QuoteDetail => ({ ...quote, archivedAt: quote.archivedAt ?? null, token: quote.modifiedWhen, lines: (quote.lines ?? []).map(({ multiple: _removed, ...line }: any) => line), multiple: quote.multiple ?? 1, currency: 'USD', listTotal: sumMoney((quote.lines ?? []).map(l => l.lineTotal)), total: sumMoney((quote.lines ?? []).map(l => adjustedAmount(l.lineTotal, quote.multiple ?? 1))) })
         if (parts[2] === 'quotes' && parts.length === 5 && ['archive', 'restore'].includes(parts[4]!) && method === 'POST') {
           const quote = state.quotes[orgId]?.find(q => q.id === parts[3])
           if (!quote) fail(404, 'NOT_FOUND', 'Quote not found.')
@@ -245,7 +245,7 @@ export function createFixtures() {
           const lines = body.lines.map((input: any) => {
             const old = previous?.lines?.find(l => l.id === input.id)
             if (!Number.isInteger(input.quantity) || input.quantity < 1 || input.quantity > 1000000) fail(422,'INVALID_INPUT','Use a positive whole quantity.')
-            if (!validMultiple(input.multiple ?? 1)) fail(422, 'INVALID_INPUT', 'Enter a valid line multiple.')
+            if ('multiple' in input) fail(422, 'INVALID_INPUT', 'Unknown line field: multiple.')
             if (input.kind === 'regular' || input.kind === 'freeform') {
               const p = input.kind === 'regular' ? regular.find(p => p.id === input.regularProductId) : { partNumber: input.partNumber, description: input.description, listPrice: input.listPrice, parentTaxonomyId: null, principalId: null, principalName: null }
               const retained = old?.kind === 'regular' && old.regularProductId === input.regularProductId ? old : null

@@ -30,6 +30,11 @@ export function createHttp(base: string, token: () => Promise<string>) {
         'We could not reach the service. Check your connection and try again.',
       )
     }
+    if (response.ok && options.responseType === 'blob') {
+      if (!response.headers.get('content-type')?.startsWith('application/pdf'))
+        throw new ApiError(502, 'INVALID_PDF', 'The service did not return a PDF. Please try again.')
+      return await response.blob() as T
+    }
     const data = await response.json().catch(() => ({}))
     if (!response.ok)
       throw new ApiError(

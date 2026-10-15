@@ -82,7 +82,7 @@ Follow the additive [quote migration](versions/0004/quotes/README.md) after 0003
 
 ## Regular products and quote multiples (0006)
 
-The additive [0006 migration and coordinated release procedure](versions/0006/products/README.md) adds a regular-product catalog and quote-wide price multiples. Legacy quote snapshots remain unchanged; line multiples default to 1 when absent. 0006 is applied and verified in development; see the deployment ledger and migration journal. Staging and production remain unchanged.
+The additive [0006 migration and coordinated release procedure](versions/0006/products/README.md) adds a regular-product catalog and quote-wide price multiples. Legacy quote snapshots remain unchanged. Pricing uses only the quote multiple; historical line multiples are ignored. 0006 is applied and verified in development; see the deployment ledger and migration journal. Staging and production remain unchanged.
 
 ## Regular-product principals (0007)
 

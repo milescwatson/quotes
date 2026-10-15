@@ -81,8 +81,11 @@ test('revocation and session expiry clear quote rows', async ({ page }) => {
   await page.locator('.org-card').filter({ hasText: 'Northstar Industries' }).click()
   await page.getByRole('link', { name: 'Quotes', exact: true }).last().click()
   await expect(rows(page)).toHaveCount(50)
-  await page.evaluate(() => sessionStorage.removeItem('quotes:fixture:signed-in'))
-  await page.getByRole('button', { name: 'Next', exact: true }).click()
+  await page.evaluate(async () => {
+    sessionStorage.removeItem('quotes:fixture:signed-in')
+    const app = (document.querySelector('#__nuxt') as any).__vue_app__.config.globalProperties.$nuxt
+    await app.$identity.request('/me').catch(() => {})
+  })
   await expect(page).toHaveURL(/\/login/)
   await expect(rows(page)).toHaveCount(0)
 })

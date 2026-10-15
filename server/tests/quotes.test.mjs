@@ -416,7 +416,7 @@ test('quotes Gateway route reaches authenticated service with page query and no-
   );
   assert.deepEqual(
     route.parameters.map((p) => p.name),
-    ['orgId', 'page', 'pageSize', 'customer', 'project', 'ownerId'],
+    ['orgId', 'page', 'pageSize', 'customer', 'project', 'ownerId', 'archived'],
   );
   const env = {
     COGNITO_ISSUER: issuer,

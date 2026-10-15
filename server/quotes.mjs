@@ -2,6 +2,8 @@ import { multiple, netAmount, flatSnapshot } from './quote-pricing.mjs';
 import { productFields } from './regular-products.mjs';
 import { randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
+import { prepareQuotePdf } from './quote-pdf-data.mjs';
+import { renderQuotePdf } from './quote-pdf-layout.mjs';
 import { fail, identifier, one, readUser, readOrganization, guardUser, guardOrganization, authorize, configurationAccessPredicate } from './shared.mjs';
 import { object, invalid, checkedSnapshot, cents, dollars } from './taxonomy-content.mjs';
 
@@ -13,11 +15,12 @@ async function detail(db, orgId, id) {
     FROM public.quotes q JOIN public.users u ON u.id=q.modified_by
     LEFT JOIN public.users o ON o.id=q.owner_user_id WHERE q.organization_id=$1 AND q.id=$2`, [orgId,id]);
   if (!q) fail(404, 'NOT_FOUND', 'Quote not found.');
+  const lines = q.lines.map(({ multiple: _removed, ...line }) => line);
   return { id: String(q.id), organizationId: String(q.organization_id), customerId: q.customer_id,
     customerName: q.customer_name, projectName: q.project_name, title: `${q.customer_name} - ${q.project_name}`,
     ownerId: q.owner_user_id == null ? null : String(q.owner_user_id), ownerName: q.owner_name,
     modifiedBy: String(q.modified_by), modifiedByName: q.modifier_name, modifiedWhen: new Date(q.modified_when).toISOString(), archivedAt: q.archived_at ? new Date(q.archived_at).toISOString() : null,
-    token: q.token, multiple: Number(q.multiple ?? 1), lines: q.lines, currency: 'USD', listTotal: dollars(q.lines.reduce((sum,l) => sum + cents(l.lineTotal),0n)), total: dollars(q.lines.reduce((sum,l) => sum + cents(netAmount(l.lineTotal,Number(q.multiple ?? 1),l)),0n)) };
+    token: q.token, multiple: Number(q.multiple ?? 1), lines, currency: 'USD', listTotal: dollars(lines.reduce((sum,l) => sum + cents(l.lineTotal),0n)), total: dollars(lines.reduce((sum,l) => sum + cents(netAmount(l.lineTotal,Number(q.multiple ?? 1))),0n)) };
 }
 export function createQuoteService(withTransaction) {
   async function transaction(input, write, work) {
@@ -60,18 +63,14 @@ export function createQuoteService(withTransaction) {
         if (!line || typeof line !== 'object' || Array.isArray(line)) invalid(path,'Provide a product line.');
         const kind = line.kind ?? 'configured';
         if (!['configured','regular','freeform'].includes(kind)) invalid(`${path}/kind`,'Choose a supported product type.');
-        const common = ['id','quantity','kind','multiple'];
+        const common = ['id','quantity','kind'];
         const fields = kind === 'configured' ? ['taxonomyId','versionId','selections'] : kind === 'regular' ? ['regularProductId'] : ['partNumber','description','listPrice'];
         object(line,[...common,...fields],path,['id','quantity',...fields]);
-        const lineMultiple = multiple(line.multiple,`${path}/multiple`);
         if (kind === 'configured') { identifier(line.taxonomyId); identifier(line.versionId); }
         if (!Number.isInteger(line.quantity) || line.quantity < 1 || line.quantity > 1000000) invalid(`${path}/quantity`,'Use a whole quantity between 1 and 1,000,000.');
         const previous = old?.lines.find(l => l.id === line.id);
         if (line.id !== null && (!previous || used.has(line.id))) invalid(`${path}/id`,'Use a unique saved line identity or null.');
         used.add(line.id);
-        const pricing = {multiple:lineMultiple};
-        // Keep the legacy default representation so saving old quotes is a no-op.
-        const extras = lineMultiple === 1 ? {} : pricing;
         if (kind !== 'configured') {
           let snapshot, partNumber, price, parentTaxonomyId = null;
           if (kind === 'regular') {
@@ -89,9 +88,9 @@ export function createQuoteService(withTransaction) {
             snapshot = flatSnapshot(partNumber,p.description,price,p.principal_id == null ? null : String(p.principal_id),p.principal_name);
           }
           const amount = cents(price) * BigInt(line.quantity);
-          total += amount; netTotal += cents(netAmount(dollars(amount),quoteMultiple,pricing));
+          total += amount; netTotal += cents(netAmount(dollars(amount),quoteMultiple));
           if (total > 99999999999999n || netTotal > 99999999999999n) invalid('/lines','Quote total exceeds the supported USD limit.');
-          lines.push({id:previous?.id ?? randomUUID(),kind,...extras,regularProductId:kind === 'regular' ? line.regularProductId : null,parentTaxonomyId,taxonomyId:null,versionId:null,snapshot,selections:[],quantity:line.quantity,partNumber,complete:true,unitPrice:price,lineTotal:dollars(amount)});
+          lines.push({id:previous?.id ?? randomUUID(),kind,regularProductId:kind === 'regular' ? line.regularProductId : null,parentTaxonomyId,taxonomyId:null,versionId:null,snapshot,selections:[],quantity:line.quantity,partNumber,complete:true,unitPrice:price,lineTotal:dollars(amount)});
           continue;
         }
 
@@ -123,10 +122,10 @@ export function createQuoteService(withTransaction) {
           if (!option) invalid(`${path}/selections/${j}`,'Choose an option from the saved configuration.');
           price += cents(option.price); return option.code;
         });
-        const amount = price * BigInt(line.quantity); total += amount; netTotal += cents(netAmount(dollars(amount),quoteMultiple,pricing));
+        const amount = price * BigInt(line.quantity); total += amount; netTotal += cents(netAmount(dollars(amount),quoteMultiple));
         if (total > 99999999999999n || netTotal > 99999999999999n) invalid('/lines','Quote total exceeds the supported USD limit.');
         const separators = content.separators ?? Array(content.segments.length-1).fill('-');
-        lines.push({ id: previous?.id ?? randomUUID(), ...extras, taxonomyId: line.taxonomyId, versionId: line.versionId, snapshot,
+        lines.push({ id: previous?.id ?? randomUUID(), taxonomyId: line.taxonomyId, versionId: line.versionId, snapshot,
           selections: line.selections, quantity: line.quantity, partNumber: codes.map((code,j) => (j ? separators[j-1] : '')+code).join(''),
           complete: line.selections.every(s => s !== null), unitPrice: dollars(price), lineTotal: dollars(amount) });
       }
@@ -143,6 +142,18 @@ export function createQuoteService(withTransaction) {
     });
   }
   return {
+    async readQuotePdf(input) {
+      identifier(input.quoteId);
+      const disposition = input.query.disposition ?? 'inline';
+      if (!['inline', 'attachment'].includes(disposition) || typeof input.query.expectedToken !== 'string' || !input.query.expectedToken || input.query.expectedToken.length > 100)
+        fail(422, 'INVALID_INPUT', 'Provide a saved quote token and a valid PDF disposition.');
+      const model = await transaction(input, false, async (db, _user, org) => {
+        const quote = await detail(db, org.id, input.quoteId);
+        if (quote.token !== input.query.expectedToken) fail(409, 'QUOTE_CONFLICT', 'This quote changed. Reload the page before exporting a PDF.');
+        return prepareQuotePdf(quote, org);
+      });
+      return { pdf: await renderQuotePdf(model), disposition, filename: `quote-${input.quoteId}.pdf` };
+    },
     readQuote: input => { identifier(input.quoteId); return transaction(input,false,async (db,_user,org) => ({ quote: await detail(db,org.id,input.quoteId) })); },
     createQuote: save,
     updateQuote: save,
