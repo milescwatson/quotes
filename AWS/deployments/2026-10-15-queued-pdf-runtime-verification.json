@@ -1,0 +1,36 @@
+{
+  "environment": "development",
+  "verifiedAt": "2026-10-15T21:41:18.548Z",
+  "apiVersion": "19",
+  "codeSha256": "qeAFq6zLu4vCmkgotOYLzdsbeml98iUDmQwz73XhQhs=",
+  "status": "passed",
+  "architecture": "arm64",
+  "runtime": "v22.23.2",
+  "checks": [
+    "SQS-to-Lambda-generation",
+    "read-only-worker-database-role",
+    "versioned-S3-PDF",
+    "embedded-fonts",
+    "recent-blob-fallback",
+    "five-minute-signed-URL-boundary",
+    "60-second-TTL",
+    "pinned-object-version",
+    "inline-and-attachment-dispositions",
+    "stale-token-conflict",
+    "anonymous-S3-denied"
+  ],
+  "downloads": [
+    {
+      "disposition": "inline",
+      "status": 200,
+      "bytes": 28886
+    },
+    {
+      "disposition": "attachment",
+      "status": 200,
+      "bytes": 28886
+    }
+  ],
+  "databaseWrites": false,
+  "artifact": "PDF retained for the existing quote"
+}

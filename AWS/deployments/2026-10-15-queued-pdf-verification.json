@@ -1,0 +1,95 @@
+{
+  "environment": "development",
+  "verifiedAt": "2026-10-15T21:43:29.389Z",
+  "sourceCommit": "3d235f9f004de2c9c5ed77f3d7c4f710a6d6bf9f",
+  "api": {
+    "version": "19",
+    "codeSha256": "qeAFq6zLu4vCmkgotOYLzdsbeml98iUDmQwz73XhQhs=",
+    "routeCount": 40,
+    "checks": [
+      {
+        "path": "/health",
+        "status": 200
+      },
+      {
+        "path": "/organizations/1/quotes/1/pdf-url?expectedToken=test",
+        "status": 401
+      },
+      {
+        "path": "/organizations/1/quotes/1/pdf?expectedToken=test",
+        "status": 401
+      },
+      {
+        "method": "OPTIONS",
+        "status": 204
+      }
+    ]
+  },
+  "worker": {
+    "functionName": "quotes-development-quote-pdf-worker",
+    "role": "arn:aws:iam::415221799122:role/quotes-development-quote-pdf-worker",
+    "databaseUser": "quotes_pdf_worker",
+    "architecture": "arm64",
+    "timeout": 60,
+    "eventSourceState": "Enabled"
+  },
+  "storage": {
+    "bucket": "quotes-development-quote-pdfs-415221799122-us-west-2",
+    "versioning": "Enabled",
+    "private": true,
+    "encryption": "AES256",
+    "tlsOnly": true
+  },
+  "queue": {
+    "url": "https://sqs.us-west-2.amazonaws.com/415221799122/quotes-development-quote-pdf.fifo",
+    "fifo": true,
+    "visibilityTimeout": 360,
+    "maxReceiveCount": 3,
+    "deadLetterArn": "arn:aws:sqs:us-west-2:415221799122:quotes-development-quote-pdf-dead-letter.fifo",
+    "deadLetterMessagesAtVerification": 0
+  },
+  "frontend": {
+    "jobId": "30",
+    "commitId": "3d235f9f004de2c9c5ed77f3d7c4f710a6d6bf9f",
+    "status": "SUCCEED",
+    "quoteAsset": {
+      "path": "/_nuxt/DJXcpJk_.js",
+      "sha256": "236c58cc481d8cbf19694b3793dc180481cc6dbf787c03a92a3c7efcdf40e325"
+    }
+  },
+  "terraform": {
+    "release": {
+      "added": 15,
+      "changed": 3,
+      "destroyed": 0
+    },
+    "metadataReconciliation": {
+      "added": 0,
+      "changed": 1,
+      "destroyed": 0
+    },
+    "finalPlan": "no changes"
+  },
+  "database": {
+    "migration": "0010",
+    "existingQuoteFieldsUnchanged": true,
+    "workerGrants": {
+      "read_quotes": true,
+      "read_organizations": true,
+      "read_users": true,
+      "insert_quotes": false,
+      "update_quotes": false,
+      "delete_quotes": false
+    }
+  },
+  "localVerification": {
+    "serverTests": 130,
+    "databaseTests": 13,
+    "browserTests": 22,
+    "frontendTypecheck": "passed",
+    "frontendProductionBuild": "passed",
+    "hostBundleVerification": "passed",
+    "linuxArm64RuntimeVerification": "passed"
+  },
+  "runtimeEvidence": "2026-10-15-queued-pdf-runtime-verification.json"
+}

@@ -211,3 +211,45 @@ this release.
 Evidence: [migration journal](../database/deployments/development-0009.json),
 [release verification](deployments/2026-10-15-logo-verification.json), and
 [Lambda runtime verification](deployments/2026-10-15-logo-runtime-verification.json).
+
+## Queue-backed quote PDFs — October 15, 2026
+
+Source commit `3d235f9f004de2c9c5ed77f3d7c4f710a6d6bf9f` is released to
+**development**. The release also includes the pending expanded product browser
+and quote location/author features. Additive migration **0010** and the separate
+read-only worker database role were installed before updating the API. Existing
+quote fields and tokens were preserved; no historical author was inferred.
+
+The reviewed Terraform release created **15** resources and updated **3**, with
+no deletions or replacements. It provisions the private, encrypted, TLS-only,
+versioned PDF bucket, FIFO SQS queue/dead-letter queue, worker Lambda, event
+source mapping, logs, and restricted IAM permissions. Lambda API version **19**
+is Active/Successful. Both ARM64 functions match archive SHA-256
+`qeAFq6zLu4vCmkgotOYLzdsbeml98iUDmQwz73XhQhs=`. All **40** Gateway routes
+match OpenAPI and require JWT except health. Gateway metadata was reconciled
+with a reviewed metadata-only plan; the final Terraform plan reports **no changes**.
+
+Live runtime verification sent an existing quote through the real SQS event
+source and read-only worker role. The worker generated a versioned PDF with
+embedded fonts. Recent quotes returned the blob fallback; the five-minute
+boundary returned version-pinned URLs with a 60-second TTL. Inline and attachment
+S3 downloads returned valid PDFs, stale tokens were rejected, and unsigned S3
+reads returned 403. No quote or user records were changed. The generated PDF was
+retained for its existing quote, the temporary verification Lambda was deleted,
+and the dead-letter queue is empty.
+
+Amplify development job **30** passed BUILD, DEPLOY, and VERIFY for the same
+source commit. Hosted root/login pages return 200, and the released quote-editor
+asset contains the signed-URL export path and Job Location controls. API health,
+anonymous PDF-route rejection, configured-origin CORS, bucket security, queue
+retry/visibility settings, and enabled worker mapping all passed verification.
+
+Local checks passed **130 server tests**, **13 database tests**, **22 relevant
+browser scenarios**, frontend type checking/build, host deployment-bundle checks,
+and actual Linux ARM64 runtime checks. Staging and production were not changed.
+Lambda version 18 remains available; any rollback must coordinate the frontend
+and API while retaining the additive schema and stored PDFs.
+
+Evidence: [release verification](deployments/2026-10-15-queued-pdf-verification.json),
+[runtime verification](deployments/2026-10-15-queued-pdf-runtime-verification.json),
+and [0010 migration journal](../database/deployments/development-0010.json).
