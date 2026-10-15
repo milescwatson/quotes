@@ -1,0 +1,53 @@
+{
+  "target": {
+    "environment": "development",
+    "account": "415221799122",
+    "region": "us-west-2",
+    "cluster": "3zuetvjhixkp3qeuzxxosvlssq",
+    "profile": "quotes-development"
+  },
+  "startedAt": "2026-10-15T02:16:35.470Z",
+  "events": [
+    {
+      "key": "schema:1",
+      "sql": "ALTER TABLE public.quotes ADD COLUMN archived_at timestamptz",
+      "sha256": "aee694d94b67bafa97b3820f73f921a8149cf6fe2caf0af1ffb14e4de0a12933",
+      "status": "completed",
+      "startedAt": "2026-10-15T02:16:56.945Z",
+      "rowsAffected": null,
+      "result": [],
+      "completedAt": "2026-10-15T02:16:57.104Z"
+    },
+    {
+      "key": "permissions:1",
+      "sql": "GRANT UPDATE (archived_at, modified_by, modified_when) ON public.quotes TO \"quotes_api\"",
+      "sha256": "c25eeefed07afa3b09f55923a73afdb50c827343b47c1af267d7d5a1e35e7358",
+      "status": "completed",
+      "startedAt": "2026-10-15T02:16:57.105Z",
+      "rowsAffected": null,
+      "result": [],
+      "completedAt": "2026-10-15T02:16:57.187Z"
+    }
+  ],
+  "apiPause": {
+    "previousConcurrency": -1,
+    "startedAt": "2026-10-15T02:16:37.740Z"
+  },
+  "before": {
+    "quoteCount": 1,
+    "quoteFieldsSha256": "20a07ecf67fc4496930ac87cf10c359fc5c4afad6c978b527a1cda976e033f3e"
+  },
+  "status": "migration_verified_api_paused",
+  "verification": {
+    "quoteCount": 1,
+    "quoteFieldsSha256": "20a07ecf67fc4496930ac87cf10c359fc5c4afad6c978b527a1cda976e033f3e",
+    "column": {
+      "data_type": "timestamp with time zone"
+    },
+    "grant": {
+      "update": true
+    },
+    "archivedQuotes": 0
+  },
+  "verifiedAt": "2026-10-15T02:16:57.451Z"
+}

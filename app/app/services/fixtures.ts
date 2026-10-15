@@ -95,6 +95,7 @@ export function createFixtures() {
         modifiedBy: index % 2 === 0 ? me : id(5),
         modifiedByName: index % 2 === 0 ? user.displayName! : 'Unnamed team member',
         modifiedWhen: new Date(Date.UTC(2026, 9, 10, 12) - index * 3600000).toISOString(),
+        archivedAt: null,
       }
     }
     const quotes: Record<string, (Quote & Partial<QuoteDetail>)[]> = {
@@ -117,6 +118,7 @@ export function createFixtures() {
   for (const quotes of Object.values(state.quotes)) for (const quote of quotes) {
     quote.ownerId ??= null
     quote.ownerName ??= null
+    quote.archivedAt ??= null
   }
   for (const orgId of [studio, id(12)]) if (!state.members[orgId]?.length) state.members[orgId] = seed().members[orgId]!
   const save = () =>
@@ -216,7 +218,20 @@ export function createFixtures() {
           sessionStorage.setItem(regularKey, JSON.stringify(regular)); return structuredClone({ product }) as T
         }
         const sumMoney = (values: string[]) => { const n = values.reduce((sum, v) => sum + BigInt(v.replace('.', '')), 0n); return `${n / 100n}.${String(n % 100n).padStart(2, '0')}` }
-        const quoteDetail = (quote: Quote & Partial<QuoteDetail>): QuoteDetail => ({ ...quote, token: quote.modifiedWhen, lines: quote.lines ?? [], multiple: quote.multiple ?? 1, currency: 'USD', listTotal: sumMoney((quote.lines ?? []).map(l => l.lineTotal)), total: sumMoney((quote.lines ?? []).map(l => adjustedAmount(l.lineTotal, quote.multiple ?? 1, l.multiple ?? 1))) })
+        const quoteDetail = (quote: Quote & Partial<QuoteDetail>): QuoteDetail => ({ ...quote, archivedAt: quote.archivedAt ?? null, token: quote.modifiedWhen, lines: quote.lines ?? [], multiple: quote.multiple ?? 1, currency: 'USD', listTotal: sumMoney((quote.lines ?? []).map(l => l.lineTotal)), total: sumMoney((quote.lines ?? []).map(l => adjustedAmount(l.lineTotal, quote.multiple ?? 1, l.multiple ?? 1))) })
+        if (parts[2] === 'quotes' && parts.length === 5 && ['archive', 'restore'].includes(parts[4]!) && method === 'POST') {
+          const quote = state.quotes[orgId]?.find(q => q.id === parts[3])
+          if (!quote) fail(404, 'NOT_FOUND', 'Quote not found.')
+          if (quote!.ownerId !== state.user.id) fail(403, 'FORBIDDEN', 'Only the quote owner can archive or restore this quote.')
+          const archivedAt = parts[4] === 'archive' ? new Date().toISOString() : null
+          if (!!quote!.archivedAt === !!archivedAt) fail(409, 'QUOTE_CONFLICT', 'This quote has already changed. Reload before trying again.')
+          quote!.archivedAt = archivedAt
+          quote!.modifiedBy = state.user.id
+          quote!.modifiedByName = state.user.displayName?.trim() || 'Unnamed team member'
+          quote!.modifiedWhen = new Date().toISOString()
+          save()
+          return structuredClone({ success: true, quote: quoteDetail(quote!) }) as T
+        }
         if (parts[2] === 'quotes' && ((parts.length === 4 && ['GET','PUT'].includes(method)) || (parts.length === 3 && method === 'POST'))) {
           const previous = state.quotes[orgId]?.find(q => q.id === parts[3])
           if (parts[3] && !previous) fail(404,'NOT_FOUND','Quote not found.')
@@ -251,7 +266,8 @@ export function createFixtures() {
             const line: LocalQuoteLine = { ...input, id: old?.id ?? crypto.randomUUID(), key: '', snapshot, complete: input.selections.every((id: string | null) => id !== null) }
             return { ...line, key: undefined, ...quoteAmount(line), partNumber: quoteNumber(line) }
           })
-          const quote: Quote & Partial<QuoteDetail> = { id: previous?.id ?? String(Math.max(10000,...Object.values(state.quotes).flat().map(q => Number(q.id))) + 1), organizationId: orgId, customerId: previous?.customerId ?? null, customerName: body.customerName.trim(), projectName: body.projectName.trim(), title: `${body.customerName.trim()} - ${body.projectName.trim()}`, ownerId: body.ownerId, ownerName: owner ? owner.displayName?.trim() || 'Unnamed team member' : null, modifiedBy: state.user.id, modifiedByName: state.user.displayName?.trim() || 'Unnamed team member', modifiedWhen: new Date().toISOString(), multiple: body.multiple ?? 1, lines }
+          if (previous?.archivedAt) fail(409, 'QUOTE_ARCHIVED', 'This quote is archived. Restore it before making changes.')
+          const quote: Quote & Partial<QuoteDetail> = { id: previous?.id ?? String(Math.max(10000,...Object.values(state.quotes).flat().map(q => Number(q.id))) + 1), organizationId: orgId, customerId: previous?.customerId ?? null, customerName: body.customerName.trim(), projectName: body.projectName.trim(), title: `${body.customerName.trim()} - ${body.projectName.trim()}`, ownerId: body.ownerId, ownerName: owner ? owner.displayName?.trim() || 'Unnamed team member' : null, modifiedBy: state.user.id, modifiedByName: state.user.displayName?.trim() || 'Unnamed team member', modifiedWhen: new Date().toISOString(), archivedAt: previous?.archivedAt ?? null, multiple: body.multiple ?? 1, lines }
           const unchanged = previous && previous.customerName === quote.customerName && previous.projectName === quote.projectName && previous.ownerId === quote.ownerId && (previous.multiple ?? 1) === quote.multiple && JSON.stringify(previous.lines ?? []) === JSON.stringify(lines)
           if (unchanged) return structuredClone({ quote: quoteDetail(previous), unchanged: true }) as T
           if (previous) state.quotes[orgId]!.splice(state.quotes[orgId]!.indexOf(previous),1,quote); else (state.quotes[orgId] ??= []).push(quote)
@@ -290,8 +306,9 @@ export function createFixtures() {
           const customer = (params.get('customer') || '').trim().toLowerCase()
           const project = (params.get('project') || '').trim().toLowerCase()
           const owner = params.get('ownerId') || ''
+          const archived = params.get('archived') === 'true'
           const items = [...(state.quotes[orgId] || [])].filter(quote =>
-            quote.customerName.toLowerCase().includes(customer) && quote.projectName.toLowerCase().includes(project) &&
+            !!quote.archivedAt === archived && quote.customerName.toLowerCase().includes(customer) && quote.projectName.toLowerCase().includes(project) &&
             (!owner || (owner === 'unassigned' ? quote.ownerId === null : quote.ownerId === owner)),
           ).sort((a, b) =>
             b.modifiedWhen.localeCompare(a.modifiedWhen) || Number(b.id) - Number(a.id),

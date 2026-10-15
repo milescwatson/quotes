@@ -42,6 +42,7 @@ test('page reads validate access without writes; mutations retain authorization 
       const sql = await readFile(new URL(`../../database/versions/${file}`, import.meta.url), 'utf8');
       await db.exec(sql.replaceAll('INDEX ASYNC', 'INDEX').replaceAll('ALTER TABLE ASYNC', 'ALTER TABLE'));
     }
+    await db.exec(await readFile(new URL('../../database/versions/0008/quotes/schema.sql', import.meta.url), 'utf8'));
     await db.exec(`INSERT INTO users(id,cognito_issuer,cognito_subject,email,normalized_email)
       VALUES(1,'test','admin','admin@example.com','admin@example.com');
       INSERT INTO organizations(id,name,status) VALUES(10,'Workspace','active');

@@ -148,6 +148,38 @@ export interface paths {
         patch: operations["updateQuoteOwner"];
         trace?: never;
     };
+    "/organizations/{orgId}/quotes/{quoteId}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["archiveQuote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/organizations/{orgId}/quotes/{quoteId}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["restoreQuote"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/organizations/{orgId}/members": {
         parameters: {
             query?: never;
@@ -452,6 +484,8 @@ export interface components {
             modifiedByName: string;
             /** Format: date-time */
             modifiedWhen: string;
+            /** Format: date-time */
+            archivedAt: string | null;
             /** @description Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807). */
             ownerId: string | null;
             ownerName: string | null;
@@ -483,6 +517,8 @@ export interface components {
             modifiedByName: string;
             /** Format: date-time */
             modifiedWhen: string;
+            /** Format: date-time */
+            archivedAt: string | null;
             /** @description Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807). */
             ownerId: string | null;
             ownerName: string | null;
@@ -1415,6 +1451,8 @@ export interface operations {
                 project?: string;
                 /** @description Team member ID, or unassigned. */
                 ownerId?: string;
+                /** @description Return archived quotes when true; otherwise return active quotes. */
+                archived?: boolean;
             };
             header?: never;
             path: {
@@ -1902,6 +1940,133 @@ export interface operations {
             };
             /** @description Temporarily unavailable */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    archiveQuote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orgId: string;
+                quoteId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Quote archived */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Success"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Access denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Quote not found or not owned by caller */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Quote state changed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Temporarily unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    restoreQuote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orgId: string;
+                quoteId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Quote restored */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Success"];
+                };
+            };
+            /** @description Authentication required */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Access denied */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Quote not found or not owned by caller */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Quote state changed */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

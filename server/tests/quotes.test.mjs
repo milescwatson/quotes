@@ -7,7 +7,7 @@ import { createIdentityService, HttpError } from '../identity.mjs';
 import { createHandler } from './helpers.mjs';
 
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
-const schema = await read('../../database/versions/0001/quotes/schema.sql');
+const schema = (await read('../../database/versions/0001/quotes/schema.sql')) + '\n' + (await read('../../database/versions/0008/quotes/schema.sql'));
 const grants = await read(
   '../../database/versions/0001/quotes/permissions.sql',
 );
@@ -155,6 +155,7 @@ test('quotes schema, list service, and organization access', async (t) => {
           modifiedBy: '3',
           modifiedByName: 'Unnamed team member',
           modifiedWhen: '2026-10-10T12:00:00.000Z',
+          archivedAt: null,
         });
         assert.equal(first.items[1].customerId, null);
         const second = await call('10', { page: '2', pageSize: '2' });

@@ -7,8 +7,9 @@ export function useQuotes(organization: () => string) {
   const identity = useIdentity(), client = useQueryClient()
   const filters = ref<QuoteFilters>({ customer: '', project: '', ownerId: '' })
   const page = ref(1)
+  const showArchived = ref(false)
   const org = computed(() => identity.organizationId(organization()))
-  const params = computed(() => ({ page: page.value, pageSize: 50, ...filters.value }))
+  const params = computed(() => ({ page: page.value, pageSize: 50, ...filters.value, archived: showArchived.value }))
   const query = useQuery<QuotePage | null>({
     queryKey: computed(() => queryKeys.quoteList(org.value, params.value)),
     staleTime: 0,
@@ -18,6 +19,7 @@ export function useQuotes(organization: () => string) {
       const path = `/organizations/${org.value}/quotes`
       const queryString = new URLSearchParams()
       for (const [key, value] of Object.entries(filters.value)) if (value) queryString.set(key, value)
+      queryString.set('archived', String(showArchived.value))
       const url = (requested: number) => `${path}?page=${requested}&pageSize=50&${queryString}`
       try {
         return await identity.request<QuotePage>(url(page.value), { signal })
@@ -36,6 +38,7 @@ export function useQuotes(organization: () => string) {
   })
   watch([org, () => identity.state.user?.id, () => identity.state.organizations.some(item => item.id === identity.organizationId(org.value))], () => {
     page.value = 1
+    showArchived.value = false
     filters.value = { customer: '', project: '', ownerId: '' }
   }, { flush: 'sync' })
   async function load(nextPage = page.value) {
@@ -50,6 +53,7 @@ export function useQuotes(organization: () => string) {
     load,
     filters,
     applyFilters,
+    showArchived,
     query,
   }
 }

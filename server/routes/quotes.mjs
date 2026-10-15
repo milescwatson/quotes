@@ -3,6 +3,8 @@ export function registerQuoteRoutes(app, service) {
   app.get('/organizations/:orgId/quotes/:quoteId', business, request => service.readQuote(operationInput(request)));
   app.post('/organizations/:orgId/quotes', boundedBusiness, request => service.createQuote(operationInput(request)));
   app.put('/organizations/:orgId/quotes/:quoteId', boundedBusiness, request => service.updateQuote(operationInput(request)));
+  app.post('/organizations/:orgId/quotes/:quoteId/archive', business, request => service.archiveQuote(operationInput(request)));
+  app.post('/organizations/:orgId/quotes/:quoteId/restore', business, request => service.restoreQuote(operationInput(request)));
   app.get('/organizations/:orgId/quotes', business, (request) =>
     service.listQuotes(operationInput(request)),
   );

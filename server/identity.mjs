@@ -118,11 +118,13 @@ async function quotePage(db, organizationId, query) {
   };
   const page = integer(query.page, 1, Number.MAX_SAFE_INTEGER);
   const pageSize = integer(query.pageSize, 50, 100);
+  if (query.archived !== undefined && !['true', 'false'].includes(query.archived))
+    fail(422, 'INVALID_INPUT', 'Use true or false for the archived filter.');
   const offset = (page - 1) * pageSize;
   if (!Number.isSafeInteger(offset))
     fail(422, 'INVALID_INPUT', 'The requested page is too large.');
   const args = [organizationId];
-  const predicates = ['q.organization_id=$1'];
+  const predicates = ['q.organization_id=$1', query.archived === 'true' ? 'q.archived_at IS NOT NULL' : 'q.archived_at IS NULL'];
   for (const [key, column] of [
     ['customer', 'customer_name'],
     ['project', 'project_name'],
@@ -181,6 +183,7 @@ async function quotePage(db, organizationId, query) {
       modifiedBy: String(q.modified_by),
       modifiedByName: q.modifier_name,
       modifiedWhen: new Date(q.modified_when).toISOString(),
+      archivedAt: q.archived_at ? new Date(q.archived_at).toISOString() : null,
     })),
     page,
     pageSize,
@@ -327,6 +330,28 @@ export function createIdentityService(withTransaction) {
         requestId,
         { before: m.role, after: nextRole },
       );
+      return { success: true };
+    });
+  }
+  async function setQuoteArchived({ orgId, quoteId, identity }, archived) {
+    identifier(quoteId);
+    return withTransaction(async (db) => {
+      const { u } = await participants(db, identity, { orgId });
+      const { org } = await organizationAccess(db, u, orgId);
+      const quote = await one(
+        db,
+        'SELECT id, owner_user_id FROM public.quotes WHERE id=$1 AND organization_id=$2',
+        [quoteId, org.id],
+      );
+      if (!quote || String(quote.owner_user_id) !== String(u.id))
+        fail(404, 'NOT_FOUND', 'Quote not found.');
+      const result = await one(
+        db,
+        `UPDATE public.quotes SET archived_at=${archived ? 'now()' : 'NULL'}, modified_by=$1, modified_when=now()
+        WHERE id=$2 AND organization_id=$3 AND owner_user_id=$1 AND archived_at IS ${archived ? 'NULL' : 'NOT NULL'} RETURNING id`,
+        [u.id, quoteId, org.id],
+      );
+      if (!result) fail(409, 'QUOTE_STATE_CHANGED', 'This quote changed. Reload before trying again.');
       return { success: true };
     });
   }
@@ -491,7 +516,7 @@ export function createIdentityService(withTransaction) {
         const { org } = await organizationAccess(db, u, orgId);
         const quote = await one(
           db,
-          'SELECT id FROM public.quotes WHERE id=$1 AND organization_id=$2',
+          'SELECT id FROM public.quotes WHERE id=$1 AND organization_id=$2 AND archived_at IS NULL',
           [quoteId, org.id],
         );
         if (!quote) fail(404, 'NOT_FOUND', 'Quote not found.');
@@ -518,6 +543,8 @@ export function createIdentityService(withTransaction) {
         return { success: true };
       });
     },
+    archiveQuote(input) { return setQuoteArchived(input, true); },
+    restoreQuote(input) { return setQuoteArchived(input, false); },
     async listMembers({ orgId, query = {}, identity }) {
       return withTransaction(async (db) => {
         const u = await readUser(db, identity);

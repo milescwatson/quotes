@@ -87,3 +87,7 @@ The additive [0006 migration and coordinated release procedure](versions/0006/pr
 ## Regular-product principals (0007)
 
 [0007](versions/0007/products/README.md) adds optional principal selection to regular products and preserves existing product/quote data. It is applied and verified in development; see the deployment ledger. Staging and production remain unchanged.
+
+## Owner quote archiving (0008)
+
+[0008](versions/0008/quotes/README.md) adds an archive timestamp and grants the runtime API role permission to update it. Apply the additive migration after deploying owner-checked archive and restore behavior, then verify owner and non-owner cases using the actual runtime role.

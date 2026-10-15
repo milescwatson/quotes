@@ -16,7 +16,7 @@ async function detail(db, orgId, id) {
   return { id: String(q.id), organizationId: String(q.organization_id), customerId: q.customer_id,
     customerName: q.customer_name, projectName: q.project_name, title: `${q.customer_name} - ${q.project_name}`,
     ownerId: q.owner_user_id == null ? null : String(q.owner_user_id), ownerName: q.owner_name,
-    modifiedBy: String(q.modified_by), modifiedByName: q.modifier_name, modifiedWhen: new Date(q.modified_when).toISOString(),
+    modifiedBy: String(q.modified_by), modifiedByName: q.modifier_name, modifiedWhen: new Date(q.modified_when).toISOString(), archivedAt: q.archived_at ? new Date(q.archived_at).toISOString() : null,
     token: q.token, multiple: Number(q.multiple ?? 1), lines: q.lines, currency: 'USD', listTotal: dollars(q.lines.reduce((sum,l) => sum + cents(l.lineTotal),0n)), total: dollars(q.lines.reduce((sum,l) => sum + cents(netAmount(l.lineTotal,Number(q.multiple ?? 1),l)),0n)) };
 }
 export function createQuoteService(withTransaction) {
@@ -49,6 +49,7 @@ export function createQuoteService(withTransaction) {
     if (quoteId) { identifier(quoteId); if (typeof body.expectedToken !== 'string' || body.expectedToken.length > 100) invalid('/expectedToken','Provide the saved concurrency token.'); }
     return transaction(input,true,async (db,user,org) => {
       const old = quoteId ? await detail(db,org.id,quoteId) : null;
+      if (old?.archivedAt) fail(409, 'QUOTE_ARCHIVED', 'Restore this quote before editing it.');
       if (old && old.token !== body.expectedToken) conflict();
       if (body.ownerId !== null && !await one(db,`SELECT u.id FROM public.organization_memberships m JOIN public.users u ON u.id=m.user_id
         WHERE m.organization_id=$1 AND m.user_id=$2 AND m.removed_at IS NULL AND u.disabled_at IS NULL`,[org.id,body.ownerId])) invalid('/ownerId','Choose an active team member from this organization.');

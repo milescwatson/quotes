@@ -95,6 +95,7 @@ export function useQuoteEditor() {
   function add() { keys.value.push(crypto.randomUUID()); lines.value.push(null) }
   function remove(index: number) { pending.value.delete(keys.value[index]!); lines.value.splice(index,1); keys.value.splice(index,1) }
   function reload() { if (!dirty.value || window.confirm('Discard your unsaved changes and reload?')) void load() }
+  function discardChanges() { baseline.value = fingerprint() }
   function mayLeave() { return !identity.state.user || !dirty.value || window.confirm('Leave without saving your quote changes?') }
   function unload(e: BeforeUnloadEvent) { if (dirty.value) { e.preventDefault(); e.returnValue = '' } }
   function signOut(e: Event) { if (!mayLeave()) e.preventDefault() }
@@ -104,5 +105,5 @@ export function useQuoteEditor() {
   watch(() => org.value, value => { if (!value) invalidate() })
   watch(() => identity.state.user?.id, () => invalidate('Your session changed. Reload to continue.'))
   onBeforeUnmount(() => { generation++; window.removeEventListener('beforeunload',unload); window.removeEventListener('quotes:before-sign-out',signOut) })
-  return { multiple, regularProducts, saved, customer, project, owner, lines, keys, pending, owners, products, back, organization, ready, loading, busy, error, catalogError, catalogLoading, notice, conflicted, errors, dirty, load, catalog, save, add, remove, reload, invalidate }
+  return { multiple, regularProducts, saved, customer, project, owner, lines, keys, pending, owners, products, back, organization, ready, loading, busy, error, catalogError, catalogLoading, notice, conflicted, errors, dirty, load, catalog, save, add, remove, reload, invalidate, discardChanges }
 }
