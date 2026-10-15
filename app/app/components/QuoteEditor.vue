@@ -6,6 +6,7 @@ import { queryKeys } from '~/utils/query-keys'
 const { multiple, regularProducts, saved, customer, project, owner, lines, keys, pending, owners, products, back, organization, ready, loading, busy, error, catalogError, catalogLoading, notice, conflicted, errors, dirty, load, catalog, save, add, remove, reload, invalidate, discardChanges } = useQuoteEditor()
 const identity = useIdentity(), queryClient = useQueryClient()
 const archiveOpen = ref(false), archiveBusy = ref(false), archiveError = ref('')
+const editingQuoteNumber = ref(false), quoteNumberDraft = ref(''), quoteNumberError = ref('')
 type LineEditor = { validate: () => boolean; done: () => Promise<boolean> }
 const editors = ref<Record<string, LineEditor | null>>({}), submitting = ref(false), addButton = ref<HTMLButtonElement>()
 const listTotal = computed(() => {
@@ -30,6 +31,28 @@ async function submit() {
   } finally { submitting.value = false }
 }
 async function removeLine(i: number) { remove(i); await nextTick(); addButton.value?.focus() }
+function editQuoteNumber() {
+  if (!saved.value) return
+  quoteNumberDraft.value = saved.value.id
+  quoteNumberError.value = ''
+  editingQuoteNumber.value = true
+}
+async function goToQuoteNumber() {
+  const quoteNumber = quoteNumberDraft.value.trim()
+  if (!/^[1-9]\d{0,18}$/.test(quoteNumber) || BigInt(quoteNumber) > 9223372036854775807n) {
+    quoteNumberError.value = 'Enter a valid quote number.'
+    return
+  }
+  if (quoteNumber === saved.value?.id) { editingQuoteNumber.value = false; return }
+  try {
+    await identity.request(`/organizations/${organization.value}/quotes/${quoteNumber}`)
+    editingQuoteNumber.value = false
+    quoteNumberError.value = ''
+    await navigateTo(`${back.value}/${quoteNumber}`)
+  } catch {
+    quoteNumberError.value = 'Quote number not found.'
+  }
+}
 async function changeArchiveState(archive: boolean) {
   if (!saved.value || archiveBusy.value) return
   archiveBusy.value = true; archiveError.value = ''
@@ -57,6 +80,16 @@ async function changeArchiveState(archive: boolean) {
         </ol>
       </nav>
       <PageHeading :title="saved ? 'Edit quote' : 'New quote'" :description="saved ? `Last modified by ${saved.modifiedByName} · ${new Date(saved.modifiedWhen).toLocaleString()}` : 'Choose products and options for your customer project.'">
+        <div v-if="saved" class="flex items-center gap-2">
+          <span class="text-sm text-gray-500">Quote #</span>
+          <form v-if="editingQuoteNumber" class="flex items-center gap-1" @submit.prevent="goToQuoteNumber">
+            <input v-model="quoteNumberDraft" aria-label="Quote number" class="w-28" inputmode="numeric" autocomplete="off" autofocus @keydown.esc="editingQuoteNumber = false" />
+            <button class="button secondary" type="submit">Go</button>
+            <button class="text-button" type="button" @click="editingQuoteNumber = false">Cancel</button>
+          </form>
+          <button v-else type="button" class="rounded px-1 font-semibold text-gray-800 hover:bg-gray-100 hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600" :aria-label="`Quote number ${saved.id}. Edit quote number`" title="Click to jump to a quote number" @click="editQuoteNumber">{{ saved.id }} <span aria-hidden="true" class="text-xs text-gray-400">✎</span></button>
+          <p v-if="quoteNumberError" class="text-sm text-red-700" role="alert">{{ quoteNumberError }}</p>
+        </div>
         <button v-if="saved && saved.ownerId === identity.state.user?.id && !saved.archivedAt" type="button" class="button danger" :disabled="busy || submitting" @click="archiveOpen = true">Archive quote</button>
         <button v-else-if="saved && saved.ownerId === identity.state.user?.id && saved.archivedAt" type="button" class="button secondary" :disabled="archiveBusy" @click="changeArchiveState(false)">Restore quote</button>
         <button type="button" class="button secondary" title="Coming soon">
@@ -73,6 +106,8 @@ async function changeArchiveState(archive: boolean) {
           <span v-else aria-hidden="true" class="size-1.5 rounded-full bg-current" />
           {{ busy ? 'Saving…' : dirty ? 'Unsaved changes' : saved ? 'Saved' : 'New quote' }}
         </span>
+        <button type="button" class="button secondary" title="Coming soon" disabled>View PDF</button>
+        <button type="button" class="button secondary" title="Coming soon" disabled>Download PDF</button>
         <button class="button primary" :disabled="busy || submitting || conflicted || !!saved?.archivedAt" @click="submit">{{ busy ? 'Saving…' : 'Save' }}</button>
       </PageHeading>
       <p v-if="notice" class="success" role="status">{{ notice }}</p>
@@ -98,8 +133,8 @@ async function changeArchiveState(archive: boolean) {
             <dl class="space-y-4 tabular-nums">
               <div class="flex items-baseline justify-between gap-4"><dt class="text-gray-600">{{ partial ? 'Estimated List Quote Total' : 'List Quote Total' }}</dt><dd class="text-right font-medium">{{ listTotal }}</dd></div>
               <div class="flex items-center justify-between gap-4">
-                <dt><label for="quote-multiple" class="m-0">Quote multiple</label><p id="quote-multiple-help" class="text-xs text-gray-500">Applies to every line · increments of 0.1</p></dt>
-                <dd class="w-28 shrink-0"><input id="quote-multiple" v-model.number="multiple" class="text-right tabular-nums" type="number" min="0" max="1000" step="0.1" :disabled="busy || submitting || conflicted || !!saved?.archivedAt" :aria-invalid="!!fieldError('/multiple')" aria-describedby="quote-multiple-help" /></dd>
+                <dt><label for="quote-multiple" class="m-0">Quote multiple</label><p id="quote-multiple-help" class="text-xs text-gray-500">Applies to every line · increments of 0.01</p></dt>
+                <dd class="w-28 shrink-0"><input id="quote-multiple" v-model.number="multiple" class="text-right tabular-nums" type="number" min="0" max="1000" step="0.01" :disabled="busy || submitting || conflicted || !!saved?.archivedAt" :aria-invalid="!!fieldError('/multiple')" aria-describedby="quote-multiple-help" /></dd>
               </div>
               <div class="flex items-baseline justify-between gap-4 border-t border-gray-200 pt-4"><dt class="font-semibold">{{ partial ? 'Estimated After Multiple' : 'After Multiple' }}</dt><dd class="text-right text-2xl font-semibold">{{ total }}</dd></div>
             </dl>
