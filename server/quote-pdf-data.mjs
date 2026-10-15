@@ -8,20 +8,24 @@ export function prepareQuotePdf(quote, organization) {
     id: quote.id, customer: quote.customerName, project: quote.projectName,
     organization: {
       name: organization.name,
-      contact: [organization.address, organization.email, organization.phone, organization.website_url].filter(Boolean),
+      address: organization.address || '',
+      contact: [organization.email, organization.phone, organization.website_url].filter(Boolean),
     },
     draft: !quote.lines.length || quote.lines.some(line => !line.complete),
     total: quote.total,
     lines: quote.lines.map(line => {
       const content = line.snapshot.content;
       return {
+        productName: line.kind !== 'regular' && line.kind !== 'freeform' && content.productFamilyName !== line.partNumber
+          ? content.productFamilyName || '' : '',
         partNumber: line.partNumber, quantity: line.quantity,
         description: content.productDescription || '',
         extendedPrice: netAmount(line.lineTotal, multiple),
         options: line.kind === 'regular' || line.kind === 'freeform' ? [] : content.segments.flatMap((segment, index) => {
           const option = segment.options.find(item => item.id === line.selections[index]);
           return option ? [{
-            description: [segment.name || segment.placeholder, option.code, option.description].filter(Boolean).join(' - '),
+            description: [...new Set([segment.name || segment.placeholder, option.code, option.description]
+              .map(value => value?.trim()).filter(Boolean))].join(' - '),
             addition: netAmount(option.price, multiple),
           }] : [];
         }),

@@ -8,7 +8,7 @@ import { createLambdaHandler } from '../lambda.mjs';
 export const sampleQuote = {
   id: '123', customerName: 'Acme Café', projectName: 'Office', multiple: 0.5, total: '0.05',
   lines: [{ partNumber: 'F-A', quantity: 3, complete: true, unitPrice: '0.03', lineTotal: '0.09',
-    selections: ['a'], snapshot: { content: { productDescription: 'Configured product', segments: [
+    selections: ['a'], snapshot: { content: { productFamilyName: 'F Series', productDescription: 'Configured product', segments: [
       { name: 'Size', placeholder: 'XX', options: [{ id: 'a', code: 'A', description: 'Small', price: '0.01' }] },
     ] } } }],
 };
@@ -19,10 +19,23 @@ test('PDF data uses saved prices, line rounding, and per-unit additions after mu
   assert.equal(result.lines[0].options[0].addition, '0.01');
   assert.equal(result.total, '0.05');
   assert.equal(result.draft, false);
+  assert.equal(result.lines[0].productName, 'F Series');
   const ordinary = structuredClone(sampleQuote);
   ordinary.lines[0].kind = 'freeform';
   assert.deepEqual(prepareQuotePdf(ordinary, {}).lines[0].options, []);
+  assert.equal(prepareQuotePdf(ordinary, {}).lines[0].productName, '');
   assert.equal(prepareQuotePdf({ ...sampleQuote, lines: [] }, {}).draft, true);
+});
+test('repeated segment labels and codes display once while retaining the option price', () => {
+  const quote = structuredClone(sampleQuote);
+  quote.lines[0].snapshot.content.segments[0] = {
+    name: null, placeholder: 'A-CG5000',
+    options: [{ id: 'a', code: 'A-CG5000', description: null, price: '11930.00' }],
+  };
+  const result = prepareQuotePdf(quote, {});
+  assert.deepEqual(result.lines[0].options, [{ description: 'A-CG5000', addition: '5965.00' }]);
+  assert.equal(result.total, quote.total);
+  assert.equal(model().lines[0].options[0].description, 'Size - A - Small');
 });
 test('renderer embeds fonts, uses Letter, and paginates 100 long product lines', async () => {
   const result = model();
