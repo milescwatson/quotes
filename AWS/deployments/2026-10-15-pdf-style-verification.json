@@ -1,0 +1,68 @@
+{
+  "environment": "development",
+  "sourceCommit": "89d6c7ebef990d7efe8c7bcbd3a42afd7ff7a436",
+  "verifiedAt": "2026-10-15T21:04:29.773Z",
+  "api": {
+    "lambdaVersion": "16",
+    "codeSha256": "GZvW/pfYkelY8Po+PwXlAYXjQ/kZyB4PE8qgM+g3Ky4=",
+    "routeCount": 36,
+    "pdfAuthorization": "JWT",
+    "checks": [
+      {
+        "path": "/health",
+        "status": 200,
+        "requestId": "FTbqwhfwPHcESUA="
+      },
+      {
+        "path": "/organizations/1/quotes/1/pdf?expectedToken=test",
+        "status": 401,
+        "requestId": "FTbqxhY9PHcESEw="
+      },
+      {
+        "path": "/organizations/1/quotes/1",
+        "status": 401,
+        "requestId": "FTbqyjwsvHcESiQ="
+      },
+      {
+        "method": "OPTIONS",
+        "status": 204,
+        "origin": "https://development.d8i1ve5prnr7w.amplifyapp.com"
+      },
+      {
+        "method": "OPTIONS",
+        "status": 204,
+        "origin": "http://localhost:3000"
+      }
+    ],
+    "terraform": {
+      "resourcesAdded": 0,
+      "resourcesChanged": 2,
+      "resourcesDestroyed": 0,
+      "finalPlan": "no changes against isolated release configuration"
+    }
+  },
+  "scope": "PDF layout and saved-data presentation only; concurrent logo, storage, database and product-picker work excluded.",
+  "changes": [
+    "muted blue accent",
+    "compact address and contact columns",
+    "customer/project panel",
+    "top-level product names",
+    "deduplicated option labels",
+    "removed explanatory text and / unit suffix",
+    "kept ordinary product groups together where possible"
+  ],
+  "localVerification": {
+    "apiTests": 106,
+    "deploymentBuild": "passed",
+    "bundledPdfAndFonts": "passed",
+    "visualReview": "single-page, long customer/project values, and multipage samples passed",
+    "multipageTextCheck": "100 product names and page footers verified across 34 pages"
+  },
+  "frontend": "No changes; previously deployed Amplify frontend generates PDFs through the updated API.",
+  "databaseMigration": "none in this release",
+  "authenticatedLivePdfCheck": "Not repeated for this formatting-only release; cloud hash, health, authorization and CORS verified.",
+  "environmentsUnchanged": [
+    "staging",
+    "production"
+  ]
+}
