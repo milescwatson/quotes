@@ -156,3 +156,16 @@ The reviewed Terraform release changed only the Lambda bundle, development alias
 Frontend typecheck and Amplify production build passed, as did the server build and bundled Lambda verification. Automated tests and authenticated live owner workflows were not run for this release. Staging and production were not modified.
 
 Evidence: [release verification](deployments/2026-10-14-quote-archive-verification.json) and [migration journal](../database/deployments/development-0008.json).
+
+
+## On-demand quote PDFs and quote editor updates — October 15, 2026
+
+Source commit `58ad06f72d76e0a36e72684a9571f61ffb71cec9` is released to development. It includes the pending quote header/navigation updates, removal of line-level multiples in favor of the quote multiple, and working Preview PDF/Download PDF actions. PDFKit renders saved snapshots on demand in a simple multipage US Letter layout. Customer-visible option additions are after the quote multiple and per unit; main line totals retain the existing quantity-extension and rounding rules. No S3 PDF storage or database migration was introduced.
+
+The reviewed Terraform release changed only the Lambda bundle, development alias, and Gateway contract (0 added, 3 changed, 0 destroyed). Lambda **15** is Active/Successful with archive-matching SHA-256 `9p9DG/2McY9eHk3ofX1iDSitDkqED4jv3+ML9v1HKYU=`. All **36** routes match OpenAPI and use JWT except health. The PDF route rejects anonymous requests with 401, and GET preflight passes for the hosted frontend and localhost. A metadata-only reconciliation restored Gateway description/version/tags after import; the final Terraform plan reports **no changes**.
+
+Amplify development job **28** for the source commit passed BUILD, DEPLOY, and VERIFY. Hosted root/login return 200 and the released client asset includes the PDF actions. An existing saved quote was opened read-only in the local frontend using the deployed API: Preview opened in Chrome's PDF viewer, and Download saved a valid PDF whose total matched the saved quote. No live test users or quote mutations were created for verification. The original editor tab and its unsaved changes were preserved.
+
+Local verification passed 105 API tests, 13 database tests, all 59 browser cases (three cases passed on focused reruns after stale/timing-dependent test interactions were corrected), three HTTP/OIDC regressions, frontend typecheck/build, server build, and isolated deployment-bundle PDF/font checks. Single-page and multipage PDF visual/text checks passed. Staging and production were not modified. Published Lambda version 14 remains available for a coordinated rollback; restoring its writer would require the matching frontend and compound-multiple behavior.
+
+Evidence: [PDF release verification](deployments/2026-10-15-pdf-verification.json). Product-picker edits made locally after the source commit are outside this release.

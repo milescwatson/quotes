@@ -1,0 +1,107 @@
+{
+  "environment": "development",
+  "sourceCommit": "58ad06f72d76e0a36e72684a9571f61ffb71cec9",
+  "verifiedAt": "2026-10-15T20:54:20.203Z",
+  "api": {
+    "lambdaVersion": "15",
+    "codeSha256": "9p9DG/2McY9eHk3ofX1iDSitDkqED4jv3+ML9v1HKYU=",
+    "routeCount": 36,
+    "pdfAuthorization": "JWT",
+    "checks": [
+      {
+        "path": "/health",
+        "status": 200,
+        "requestId": "FTaLgghkvHcEMvA="
+      },
+      {
+        "path": "/organizations/1/quotes/1/pdf?expectedToken=test",
+        "status": 401,
+        "requestId": "FTaLiifNvHcEMBw="
+      },
+      {
+        "path": "/organizations/1/quotes/1",
+        "status": 401,
+        "requestId": "FTaLjhRvvHcEMZg="
+      },
+      {
+        "method": "OPTIONS",
+        "status": 204,
+        "origin": "https://development.d8i1ve5prnr7w.amplifyapp.com"
+      },
+      {
+        "method": "OPTIONS",
+        "status": 204,
+        "origin": "http://localhost:3000"
+      }
+    ],
+    "terraform": {
+      "resourcesAdded": 0,
+      "resourcesChanged": 3,
+      "resourcesDestroyed": 0,
+      "metadataReconciliation": {
+        "resourcesAdded": 0,
+        "resourcesChanged": 1,
+        "resourcesDestroyed": 0
+      },
+      "finalPlan": "no changes"
+    }
+  },
+  "frontend": {
+    "jobId": "28",
+    "commitId": "58ad06f72d76e0a36e72684a9571f61ffb71cec9",
+    "status": "SUCCEED",
+    "steps": [
+      {
+        "name": "BUILD",
+        "status": "SUCCEED"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "SUCCEED"
+      },
+      {
+        "name": "VERIFY",
+        "status": "SUCCEED"
+      }
+    ],
+    "checks": [
+      {
+        "path": "/",
+        "status": 200
+      },
+      {
+        "path": "/login",
+        "status": 200
+      }
+    ],
+    "pdfAsset": {
+      "path": "/_nuxt/D8EryQhl.js",
+      "sha256": "d46fd3aed2bd09d33a3bc66de75bd21f5eb8848a38d715bc98e6a41fe5d8ff2e"
+    }
+  },
+  "databaseMigration": "none",
+  "localVerification": {
+    "apiTests": 105,
+    "databaseTests": 13,
+    "browserCases": 59,
+    "browserNote": "56 initially passed; one stale setup and two timing-dependent interactions were corrected and all three passed on focused reruns.",
+    "authTests": 3,
+    "frontendTypecheck": "passed",
+    "frontendBuild": "passed",
+    "serverBuild": "passed",
+    "deploymentBundleWithFonts": "passed",
+    "pdfVisualReview": "single-page sample and multipage sample checked; all 34 pages passed text and pagination checks"
+  },
+  "authenticatedLiveVerification": {
+    "frontendOrigin": "http://localhost:3000",
+    "api": "deployed development API",
+    "existingSavedQuoteReadOnly": true,
+    "preview": "opened successfully in Chrome PDF viewer",
+    "download": "completed; PDF parsed and total matched saved quote",
+    "liveDataModified": false
+  },
+  "environmentsUnchanged": [
+    "staging",
+    "production"
+  ]
+}
