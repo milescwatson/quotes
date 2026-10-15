@@ -1,0 +1,87 @@
+{
+  "environment": "development",
+  "verifiedAt": "2026-10-15T21:11:31.602Z",
+  "api": {
+    "lambdaVersion": "18",
+    "codeSha256": "BS83Utp0tZ8bW7l909U226Qv/gnhE36pPxxjFr3AIXY=",
+    "routeCount": 39,
+    "checks": [
+      {
+        "method": "GET",
+        "path": "/health",
+        "status": 200
+      },
+      {
+        "method": "GET",
+        "path": "/organizations/1/logo",
+        "status": 401
+      },
+      {
+        "method": "PUT",
+        "path": "/organizations/1/logo",
+        "status": 401
+      },
+      {
+        "method": "DELETE",
+        "path": "/organizations/1/logo",
+        "status": 401
+      },
+      {
+        "method": "OPTIONS",
+        "requestedMethod": "GET",
+        "status": 204
+      },
+      {
+        "method": "OPTIONS",
+        "requestedMethod": "PUT",
+        "status": 204
+      },
+      {
+        "method": "OPTIONS",
+        "requestedMethod": "DELETE",
+        "status": 204
+      }
+    ]
+  },
+  "storage": {
+    "bucket": "quotes-development-organization-logos-415221799122-us-west-2",
+    "block": {
+      "BlockPublicAcls": true,
+      "IgnorePublicAcls": true,
+      "BlockPublicPolicy": true,
+      "RestrictPublicBuckets": true
+    },
+    "ownership": {
+      "Rules": [
+        {
+          "ObjectOwnership": "BucketOwnerEnforced"
+        }
+      ]
+    },
+    "encryption": {
+      "Rules": [
+        {
+          "ApplyServerSideEncryptionByDefault": {
+            "SSEAlgorithm": "AES256"
+          },
+          "BucketKeyEnabled": false,
+          "BlockedEncryptionTypes": {
+            "EncryptionType": [
+              "SSE-C"
+            ]
+          }
+        }
+      ]
+    },
+    "tlsOnly": true
+  },
+  "frontend": {
+    "jobId": "29",
+    "commitId": "ed53dc8a82a59ddb0e11de3459cdc6fd70527bff",
+    "status": "SUCCEED",
+    "logoAsset": {
+      "path": "/_nuxt/BIJstWcN.js",
+      "sha256": "9efb4f6b09d5d10a5eefd1e742230dfb277f0dda3eab8f5aec75fee409f72aba"
+    }
+  }
+}

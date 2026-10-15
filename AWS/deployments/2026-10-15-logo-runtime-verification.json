@@ -1,0 +1,20 @@
+{
+  "environment": "development",
+  "verifiedAt": "2026-10-15T21:11:42.916Z",
+  "deployedLambdaVersion": "18",
+  "codeSha256": "BS83Utp0tZ8bW7l909U226Qv/gnhE36pPxxjFr3AIXY=",
+  "status": "passed",
+  "runtime": "v22.23.2",
+  "architecture": "arm64",
+  "checks": [
+    "native-normalization",
+    "restricted-database-role",
+    "S3-upload-read-replace-remove",
+    "anonymous-S3-read-denied",
+    "Lambda-PNG-binary-response",
+    "PDF-embedded-logo",
+    "Sales-read-and-write-boundaries",
+    "idempotent-removal"
+  ],
+  "fixtures": "rolled-back"
+}

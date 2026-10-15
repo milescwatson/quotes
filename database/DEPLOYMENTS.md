@@ -107,3 +107,15 @@ Evidence: [migration journal](deployments/development-0007.json) and [release ve
 ## Quote archive (0008) — October 14, 2026
 
 Migration 0008 is applied and verified in development. It adds nullable `archived_at` to quotes and grants the runtime role update access only to the archive timestamp and existing modification metadata. The API was paused during the migration and its prior unreserved concurrency was restored after the coordinated release. The one pre-existing quote and its existing fields are unchanged, with matching before/after digests; no quotes were archived by the migration. Statement hashes, API pause details, traffic restoration, and catalog verification are recorded in [the migration journal](deployments/development-0008.json). Staging and production are unchanged.
+
+## Organization logos (0009) — October 15, 2026
+
+Migration 0009 is applied and verified in development. It adds nullable UUID
+`organizations.logo_id` and grants the runtime role column update access. Existing
+organizations start without a logo; no backfill or traffic pause was required.
+Column type/nullability and runtime SELECT/UPDATE permissions passed verification.
+Staging and production were not modified.
+
+Evidence: [migration journal](deployments/development-0009.json),
+[release verification](../AWS/deployments/2026-10-15-logo-verification.json), and
+[rollback-only Lambda smoke checks](../AWS/deployments/2026-10-15-logo-runtime-verification.json).

@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import sharp from 'sharp';
-import { randomUUID } from 'node:crypto';
+import { randomUUID, randomBytes } from 'node:crypto';
+import { crc32 } from 'node:zlib';
 import { PGlite } from '@electric-sql/pglite';
 import { readTestFile } from './schema.mjs';
 import { createIdentityService } from '../identity.mjs';
@@ -21,18 +22,39 @@ test('normalization decodes, limits dimensions, preserves alpha, and rejects uns
   assert.equal((await sharp(small).metadata()).width, 20);
   for (const value of ['', '!', null, Buffer.from('<svg/>').toString('base64'), (await image().webp().toBuffer()).toString('base64'), (await image(4001, 4000).png().toBuffer()).toString('base64')])
     await assert.rejects(() => normalizeLogo(value), { code: 'INVALID_LOGO' });
-  // Two stacked frames produce a genuinely animated PNG.
-  const apng = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACGFjVEwAAAACAAAAAPONk3AAAAAaZmNUTAAAAAAAAAABAAAAAQAAAAAAAAAAAAEAAQAAxL/GcwAAAA1JREFUeJxj+M/A8B8ABQAB/6XZRdQAAAAaZmNUTAAAAAEAAAABAAAAAQAAAAAAAAAAAAEAAQAAX80LjQAAABFmZEFUAAAAAnicY2D4z/AfAAQBAf8VpsvIAAAAAElFTkSuQmCC', 'base64');
+  // Assemble a valid two-frame APNG, including sequence numbers and CRCs.
+  const frame = await image(1, 1).png().toBuffer();
+  const chunks = [];
+  for (let offset = 8; offset < frame.length;) {
+    const size = frame.readUInt32BE(offset);
+    chunks.push([frame.toString('ascii', offset + 4, offset + 8), frame.subarray(offset + 8, offset + 8 + size)]);
+    offset += size + 12;
+  }
+  const chunk = (type, data) => {
+    const body = Buffer.concat([Buffer.from(type), data]), size = Buffer.alloc(4), checksum = Buffer.alloc(4);
+    size.writeUInt32BE(data.length); checksum.writeUInt32BE(crc32(body));
+    return Buffer.concat([size, body, checksum]);
+  };
+  const control = Buffer.alloc(8); control.writeUInt32BE(2);
+  const fc = sequence => { const value = Buffer.alloc(26); value.writeUInt32BE(sequence); value.writeUInt32BE(1, 4); value.writeUInt32BE(1, 8); value.writeUInt16BE(1, 20); value.writeUInt16BE(10, 22); return value; };
+  const idat = Buffer.concat(chunks.filter(([type]) => type === 'IDAT').map(([, data]) => data));
+  const sequence = Buffer.alloc(4); sequence.writeUInt32BE(2);
+  const apng = Buffer.concat([frame.subarray(0, 8), chunk('IHDR', chunks.find(([type]) => type === 'IHDR')[1]), chunk('acTL', control), chunk('fcTL', fc(0)), chunk('IDAT', idat), chunk('fcTL', fc(1)), chunk('fdAT', Buffer.concat([sequence, idat])), chunk('IEND', Buffer.alloc(0))]);
+  assert.equal((await sharp(apng).metadata()).format, 'png');
   await assert.rejects(() => normalizeLogo(apng.toString('base64')), { code: 'INVALID_LOGO' });
+  const noise = await sharp(randomBytes(800 * 800 * 3), { raw: { width: 800, height: 800, channels: 3 } }).jpeg().toBuffer();
+  assert.ok(noise.length < 2 * 1024 * 1024);
+  await assert.rejects(() => normalizeLogo(noise.toString('base64')), { code: 'LOGO_TOO_LARGE' });
   await assert.rejects(() => normalizeLogo(Buffer.alloc(2 * 1024 * 1024 + 1).toString('base64')), { code: 'LOGO_TOO_LARGE' });
 });
 
 test('organization logo access, replacement, rollback, cleanup, audit, and quote branding', async t => {
   const db = new PGlite({ parsers: { 20: value => value } });
-  const tx = async work => { await db.exec('BEGIN'); try { const result = await work(db); await db.exec('COMMIT'); return result; } catch (error) { await db.exec('ROLLBACK'); throw error; } };
-  const objects = new Map(); let failPut = false, failGet = false, failDelete = false, revokeOnPut = false, reads = 0;
+  let failCommit = false;
+  const tx = async work => { await db.exec('BEGIN'); try { const result = await work(db); if (failCommit) { failCommit = false; throw new HttpError(503, 'SERVICE_UNAVAILABLE', 'Commit failed'); } await db.exec('COMMIT'); return result; } catch (error) { await db.exec('ROLLBACK'); throw error; } };
+  const objects = new Map(); let failPut = false, failGet = false, failDelete = false, revokeOnPut = false, failCommitOnPut = false, reads = 0;
   const storage = {
-    async put(org, version, bytes) { if (failPut) throw new HttpError(503, 'LOGO_UNAVAILABLE', 'Unavailable'); objects.set(`${org}/${version}`, bytes); if (revokeOnPut) await db.exec("UPDATE organization_memberships SET role='sales' WHERE user_id=1"); },
+    async put(org, version, bytes) { if (failPut) throw new HttpError(503, 'LOGO_UNAVAILABLE', 'Unavailable'); objects.set(`${org}/${version}`, bytes); if (failCommitOnPut) failCommit = true; if (revokeOnPut) await db.exec("UPDATE organization_memberships SET role='sales' WHERE user_id=1"); },
     async get(org, version) { reads++; if (failGet || !objects.has(`${org}/${version}`)) throw new HttpError(503, 'LOGO_UNAVAILABLE', 'Unavailable'); return objects.get(`${org}/${version}`); },
     async remove(org, version) { if (failDelete) throw Error('Unavailable'); objects.delete(`${org}/${version}`); },
   };
@@ -66,6 +88,13 @@ test('organization logo access, replacement, rollback, cleanup, audit, and quote
       failPut = false;
       const next = (await call(service.updateOrganizationLogo, 'super', body)).organization.logoVersion;
       assert.notEqual(next, version); assert.equal(objects.has(`10/${version}`), false); version = next;
+      assert.equal((await db.query("SELECT * FROM identity_audit_events WHERE action='organization.logo_uploaded'")).rows.length, 2);
+    });
+    await t.test('database failure rolls back the reference and its audit event', async () => {
+      failCommitOnPut = true;
+      await assert.rejects(() => call(service.updateOrganizationLogo, 'admin', body), { code: 'SERVICE_UNAVAILABLE' });
+      failCommitOnPut = false;
+      assert.equal((await call(service.readOrganization)).organization.logoVersion, version);
       assert.equal((await db.query("SELECT * FROM identity_audit_events WHERE action='organization.logo_uploaded'")).rows.length, 2);
     });
     await t.test('authorization revoked during upload prevents publishing the new image', async () => {

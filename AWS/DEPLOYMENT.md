@@ -169,3 +169,45 @@ Amplify development job **28** for the source commit passed BUILD, DEPLOY, and V
 Local verification passed 105 API tests, 13 database tests, all 59 browser cases (three cases passed on focused reruns after stale/timing-dependent test interactions were corrected), three HTTP/OIDC regressions, frontend typecheck/build, server build, and isolated deployment-bundle PDF/font checks. Single-page and multipage PDF visual/text checks passed. Staging and production were not modified. Published Lambda version 14 remains available for a coordinated rollback; restoring its writer would require the matching frontend and compound-multiple behavior.
 
 Evidence: [PDF release verification](deployments/2026-10-15-pdf-verification.json). Product-picker edits made locally after the source commit are outside this release.
+
+## Organization logos — October 15, 2026
+
+Organization logo settings are released to development. Administrators can upload,
+replace, preview, and remove a PNG/JPEG independently of company details. The API
+normalizes still images within 1024 × 1024 pixels, preserves transparency, and
+rejects files over 2 MiB, images over 16 megapixels, APNG/other animated formats,
+and normalized PNGs at or above 1 MiB. Newly generated PDFs use the current logo.
+
+Migration **0009** added the nullable UUID reference and runtime column permission
+without a traffic pause. Terraform created the five private bucket resources and
+updated API/Lambda permissions and routes, with no deletions. A subsequent
+validation release explicitly rejects APNG chunks because Sharp/libvips exposes
+only their still frame. Lambda **18** is Active/Successful with archive-matching
+SHA-256 `BS83Utp0tZ8bW7l909U226Qv/gnhE36pPxxjFr3AIXY=`. All **39** routes match
+OpenAPI and require JWT except health. GET/PUT/DELETE logo routes reject anonymous
+requests; frontend CORS preflights pass. Bucket public-access blocking, owner
+enforcement, AES256 encryption, and TLS-only policy are verified. The final
+Terraform plan reports **no changes**.
+
+Amplify development job **29**, source
+`ed53dc8a82a59ddb0e11de3459cdc6fd70527bff`, passed BUILD, DEPLOY, and VERIFY.
+The hosted client contains the logo upload/removal controls. The server-only APNG
+validation update does not require another frontend build.
+
+Verification passed **118 server tests**, **13 database tests**, the eight
+organization/logo browser cases (plus a focused rerun confirming unsaved company
+details survive logo uploads), frontend typecheck, production builds including a
+clean committed-source build, isolated host bundle checks, and Terraform validation.
+Wide, tall, transparent, and multipage PDF samples were rendered and visually
+checked. A temporary ARM64 Lambda ran the actual deployment archive with a
+smoke-only synthetic identity lookup and the restricted production database role:
+real S3 upload/read/replace/remove, anonymous S3 rejection, binary PNG transport,
+logo PDF embedding, Sales permissions, and repeated removal all passed. Database
+fixtures rolled back, uploaded objects were removed, and the temporary Lambda
+was deleted. The production identity verifier was unchanged. Staging and
+production were not modified. Existing local product-picker work remains outside
+this release.
+
+Evidence: [migration journal](../database/deployments/development-0009.json),
+[release verification](deployments/2026-10-15-logo-verification.json), and
+[Lambda runtime verification](deployments/2026-10-15-logo-runtime-verification.json).

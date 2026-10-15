@@ -2,20 +2,24 @@
 // role. Database fixtures roll back; all uploaded objects and the temporary
 // Lambda are deleted. Synthetic identity lookup is confined to this smoke copy.
 import assert from 'node:assert/strict';
-import { mkdtemp, cp, readFile, writeFile, rm } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile, rm } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { aws, target } from './development-database.mjs';
 assert.equal(JSON.parse(aws(['sts', 'get-caller-identity'])).Account, target.account);
 const config = JSON.parse(aws(['lambda', 'get-function-configuration', '--function-name', 'quotes-development-api', '--qualifier', 'development']));
 assert.ok(config.Environment.Variables.ORGANIZATION_LOGO_BUCKET);
+const archive = fileURLToPath(new URL('../../AWS/environments/development/.terraform/quotes-api.zip', import.meta.url));
+assert.equal(config.CodeSha256, createHash('sha256').update(await readFile(archive)).digest('base64'));
 const directory = await mkdtemp(join(tmpdir(), 'quotes-logo-runtime-'));
 const name = 'quotes-development-logo-smoke';
 let created = false;
 try {
   const code = join(directory, 'code');
-  await cp(new URL('../dist/', import.meta.url), code, { recursive: true });
+  execFileSync('unzip', ['-q', archive, '-d', code]);
   const source = await readFile(join(code, 'index.mjs'), 'utf8');
   await writeFile(join(code, 'index.mjs'), source + `
 export async function logoRuntimeSmoke() {
@@ -49,6 +53,8 @@ export async function logoRuntimeSmoke() {
     const downloaded = await call('GET', '/logo');
     assert(downloaded.isBase64Encoded && downloaded.headers['content-type'] === 'image/png', 'PNG must survive Lambda binary encoding');
     assert(Buffer.from(downloaded.body, 'base64').subarray(1,4).toString() === 'PNG', 'Expected PNG bytes');
+    const anonymous = await fetch('https://' + process.env.ORGANIZATION_LOGO_BUCKET + '.s3.' + process.env.AWS_REGION + '.amazonaws.com/organizations/' + orgId + '/logos/' + first + '.png');
+    assert(anonymous.status === 403, 'Stored logo must reject anonymous access');
     const quote = (await service.createQuote({ orgId, identity, body: { customerName: 'Smoke customer', projectName: 'Smoke project', ownerId: null, lines: [] } })).quote;
     const pdf = await call('GET', '/quotes/' + quote.id + '/pdf?expectedToken=' + encodeURIComponent(quote.token));
     assert(Buffer.from(pdf.body, 'base64').toString('latin1').includes('/Subtype /Image'), 'PDF must embed the current logo');
@@ -61,7 +67,7 @@ export async function logoRuntimeSmoke() {
     await client.query("UPDATE public.organization_memberships SET role='administrator' WHERE organization_id=$1 AND user_id=$2", [orgId,user.id]);
     assert(JSON.parse((await call('DELETE', '/logo')).body).organization.logoVersion === null, 'Removal must clear reference');
     await call('DELETE', '/logo'); await call('GET', '/logo', null, 404);
-    return { status: 'passed', runtime: process.version, architecture: process.arch, checks: ['native-normalization','restricted-database-role','S3-upload-read-replace-remove','Lambda-PNG-binary-response','PDF-embedded-logo','Sales-read-and-write-boundaries','idempotent-removal'], fixtures: 'rolled-back' };
+    return { status: 'passed', runtime: process.version, architecture: process.arch, checks: ['native-normalization','restricted-database-role','S3-upload-read-replace-remove','anonymous-S3-read-denied','Lambda-PNG-binary-response','PDF-embedded-logo','Sales-read-and-write-boundaries','idempotent-removal'], fixtures: 'rolled-back' };
   } finally {
     try { await client.query('ROLLBACK'); }
     finally { client.release(); }
