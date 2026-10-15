@@ -84,3 +84,13 @@ Live runtime-role quote verification passed all eleven checks (member writes, pe
 Migration 0005 is applied and verified in development. The existing admin membership became `administrator`; new memberships default to `sales`. Company contact fields, exact enrollment domains, configuration sharing, authorization guards/revisions, validated constraints/indexes, and restricted grants are installed. Initial enrollment-domain mappings are empty. The development API remained paused during migration and the coordinated API/frontend release, then its original unreserved concurrency was restored.
 
 Statement hashes, asynchronous jobs, constraints, roles, and traffic-restoration evidence are in [development-0005.json](deployments/development-0005.json). Live restricted runtime-role validation passed all six checks; fixtures were rolled back and the temporary Lambda deleted: [development-0005-validation.json](deployments/development-0005-validation.json). Lambda version 11 and Amplify job 20 are released; see [task 6000 verification](../tasks/6000/development-verification.json). Real Cognito user browser verification remains unrun. Staging and production are unchanged.
+
+## Regular products and quote multiples (0006) — October 14, 2026
+
+Migration 0006 is applied and verified in development. API traffic stayed paused through the schema/API/frontend cutover, then the original unreserved concurrency was restored. The regular-product table, organization/parent foreign keys, organization-scoped part-number uniqueness, list-price checks, sequence permissions, and quote multiple default/range constraint are installed and validated. The asynchronous constraint validation job completed successfully. Runtime DELETE remains denied.
+
+The one existing quote received multiple 1.0000 in a bounded backfill. Its IDs, customer/project, owner, lines/snapshots, modifier, and modification timestamp/token are unchanged; the before/after metadata digest matches. No quote JSON backfill was needed. The quote multiple column uses a validated non-null/range CHECK after DSQL's separate add/default/backfill steps.
+
+The coordinated release uses source commit `67e2da77910ff3d4bbc8abf5ed4588312ac8f239`, Lambda version 12, and successful Amplify job 22. All 33 Gateway routes match OpenAPI and retain JWT authorization except health. Public health/auth/CORS and released asset checks passed; Terraform reports no changes. No live test users or fixtures were created. Product and pricing flow testing is deferred to the user at their request. Staging and production were not modified.
+
+Evidence: [0006 migration journal](deployments/development-0006.json) and [release verification](../AWS/deployments/2026-10-14-products-verification.json).

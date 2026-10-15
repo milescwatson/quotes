@@ -124,3 +124,15 @@ Amplify development job **20** for `f68defd` passed BUILD, DEPLOY and VERIFY. Th
 Validation passed: 92 API tests, 12 database tests, all 52 browser cases (two artifact cleanup errors passed on isolated rerun), 10 quote-list regressions after the pagination fix, three HTTP/OIDC auth regressions, typecheck, production builds, and actual bundled Lambda invocation. Six live checks through the restricted runtime IAM/SQL role passed; all fixtures were rolled back and the temporary function removed. A real signed-in Cognito browser check was not run because no user session/token was available.
 
 Evidence: [task 6000 release verification](../tasks/6000/development-verification.json), [0005 migration journal](../database/deployments/development-0005.json), and [restricted-role validation](../database/deployments/development-0005-validation.json). Staging and production are unchanged. Retain 0005 data and roles; version 10 is incompatible with the migrated membership-role constraint.
+
+## Regular products and quote price multiples — October 14, 2026
+
+Source commit `67e2da77910ff3d4bbc8abf5ed4588312ac8f239` is pushed to development. Migration 0006 completed with API traffic paused, including the regular-product catalog, quote multiple default, bounded backfill, validated constraints and runtime grants. The existing quote contents and modification token were preserved.
+
+The reviewed Terraform release changed only the API bundle, development alias and Gateway: **0 added, 3 changed, 0 destroyed**. Lambda version **12** is Active/Successful with archive-matching SHA-256 `DgHLcERAGYs3AzVZn+5+7AlZ1cyFTwF1zma/p5a1Jao=`. Gateway metadata was reconciled with a reviewed metadata-only plan. All **33** routes match OpenAPI and use JWT except health.
+
+Amplify development job **22** for the same source commit passed BUILD, DEPLOY and VERIFY at **18:46 PDT**. The released regular-product and quote-editor assets contain the new catalog, freeform part picker and compound pricing controls. After frontend verification, a reviewed concurrency-only plan restored the original unreserved API concurrency. The final Terraform plan reports **no changes**. Frontend/root/login/catalog/quote pages returned 200, API health returned 200, anonymous business requests returned 401, and configured-origin PUT preflight returned 204.
+
+The corrected DSQL migration passed 99 server and 13 database regressions locally before release. The preceding implementation passed 15 quote-editor browser scenarios, typecheck and builds. At the user's request, no live test users or fixtures were created and functional product/pricing verification is left to the user. Staging and production are unchanged. Retain the additive schema; the older writer is incompatible with mixed regular/freeform quote lines.
+
+Evidence: [release verification](deployments/2026-10-14-products-verification.json) and [migration journal](../database/deployments/development-0006.json).
