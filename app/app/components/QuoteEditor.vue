@@ -84,7 +84,6 @@ async function changeArchiveState(archive: boolean) {
           <div><label for="quote-customer" class="mt-0">Customer</label><input id="quote-customer" v-model="customer" maxlength="120" required :aria-invalid="!!fieldError('/customerName')" aria-describedby="customer-error" /><p v-if="fieldError('/customerName')" id="customer-error" class="mt-2 text-red-700" role="alert">{{ fieldError('/customerName') }}</p></div>
           <div><label for="quote-project" class="sm:mt-0">Project</label><input id="quote-project" v-model="project" maxlength="120" required :aria-invalid="!!fieldError('/projectName')" aria-describedby="project-error" /><p v-if="fieldError('/projectName')" id="project-error" class="mt-2 text-red-700" role="alert">{{ fieldError('/projectName') }}</p></div>
           <div><label for="quote-owner" class="sm:mt-0">Owner</label><select id="quote-owner" v-model="owner" class="w-full" :aria-invalid="!!fieldError('/ownerId')"><option :value="null">Unassigned</option><option v-if="owner && !owners.some(o => o.id === owner)" :value="owner" disabled>{{ saved?.ownerName || 'Unavailable owner' }}</option><option v-for="o in owners" :key="o.id" :value="o.id">{{ o.name }}</option></select><p v-if="fieldError('/ownerId')" class="text-red-700" role="alert">{{ fieldError('/ownerId') }}</p></div>
-          <div><label for="quote-multiple">Quote multiple</label><input id="quote-multiple" v-model.number="multiple" type="number" min="0" max="1000" step="0.0001" :aria-invalid="!!fieldError('/multiple')" /><p v-if="fieldError('/multiple')" class="text-red-700" role="alert">{{ fieldError('/multiple') }}</p></div>
           <p class="mt-4 break-words text-gray-500 sm:col-span-3">{{ customer.trim() || 'Customer' }} - {{ project.trim() || 'Project' }}</p>
         </fieldset>
         <div v-if="catalogLoading" class="mb-4 text-gray-600" role="status">Loading product configurations…</div>
@@ -94,7 +93,20 @@ async function changeArchiveState(archive: boolean) {
         <div class="space-y-4"><QuoteLineEditor v-for="(key,i) in keys" :key="key" :ref="el => editors[key] = el as unknown as LineEditor | null" :model-value="lines[i] ?? null" :line-key="key" :index="i" :products="products" :regular-products="regularProducts" :quote-multiple="multiple" :organization="organization" :disabled="busy || submitting || conflicted || !!saved?.archivedAt" @update:model-value="lines[i] = $event" @pending="$event ? pending.add(key) : pending.delete(key)" @remove="removeLine(i)" @access-lost="invalidate()" /></div>
         <div class="mt-5 flex flex-wrap items-start justify-between gap-6">
           <button ref="addButton" type="button" class="button secondary" :disabled="busy || submitting || conflicted || !!saved?.archivedAt || catalogLoading || !!catalogError || keys.length >= 100" @click="add">+ Add line</button>
-          <div class="text-right"><p class="text-gray-600">{{ partial ? 'Estimated List Quote Total' : 'List Quote Total' }}</p><p class="text-xl font-semibold">{{ listTotal }}</p><p class="mt-3 text-gray-600">{{ partial ? 'Estimated After Multiple' : 'After Multiple' }}</p><p class="text-3xl font-semibold">{{ total }}</p><p v-if="partial" class="mt-1 text-xs text-gray-500">Missing options excluded. Amounts may change as choices are added.</p></div>
+          <section aria-label="Quote totals" class="panel w-full p-5 sm:ml-auto sm:max-w-md">
+            <h2 class="mb-4 text-base">Quote summary</h2>
+            <dl class="space-y-4 tabular-nums">
+              <div class="flex items-baseline justify-between gap-4"><dt class="text-gray-600">{{ partial ? 'Estimated List Quote Total' : 'List Quote Total' }}</dt><dd class="text-right font-medium">{{ listTotal }}</dd></div>
+              <div class="flex items-center justify-between gap-4">
+                <dt><label for="quote-multiple" class="m-0">Quote multiple</label><p id="quote-multiple-help" class="text-xs text-gray-500">Applies to every line · increments of 0.1</p></dt>
+                <dd class="w-28 shrink-0"><input id="quote-multiple" v-model.number="multiple" class="text-right tabular-nums" type="number" min="0" max="1000" step="0.1" :disabled="busy || submitting || conflicted || !!saved?.archivedAt" :aria-invalid="!!fieldError('/multiple')" aria-describedby="quote-multiple-help" /></dd>
+              </div>
+              <div class="flex items-baseline justify-between gap-4 border-t border-gray-200 pt-4"><dt class="font-semibold">{{ partial ? 'Estimated After Multiple' : 'After Multiple' }}</dt><dd class="text-right text-2xl font-semibold">{{ total }}</dd></div>
+            </dl>
+            <p v-if="fieldError('/multiple')" class="mt-2 text-red-700" role="alert">{{ fieldError('/multiple') }}</p>
+            <p v-if="pending.size" class="mt-3 text-xs text-gray-500">Finish editing lines to update quote totals.</p>
+            <p v-if="partial" class="mt-3 text-xs text-gray-500">Missing options excluded. Amounts may change as choices are added.</p>
+          </section>
         </div>
       </form>
       <ConfirmDialog :open="archiveOpen" title="Archive this quote?" confirm-label="Archive quote" :busy="archiveBusy" :error="archiveError" @cancel="archiveOpen = false; archiveError = ''" @confirm="changeArchiveState(true)">

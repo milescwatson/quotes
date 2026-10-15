@@ -33,8 +33,7 @@ onBeforeUnmount(() => {
       <NuxtLink :to="org ? `${identity.organizationPath(org.id)}/quotes` : '/'" class="brand" aria-label="Quotes home">Quotes</NuxtLink>
       <nav aria-label="Main navigation" @click="menu = false">
         <template v-if="org"
-          ><p class="sidebar-label section-label">{{ org.name }}</p>
-          <NuxtLink
+          ><NuxtLink
             :to="`${identity.organizationPath(org.id)}/quotes`"
             active-class="selected"
             > Quotes</NuxtLink

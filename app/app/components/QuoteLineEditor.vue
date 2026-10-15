@@ -125,29 +125,43 @@ defineExpose({ validate, done })
           <template v-if="draft.kind === 'freeform'">
             <label :for="`part-${lineKey}`">Part number</label><input :id="`part-${lineKey}`" v-model="draft.snapshot.content.productFamilyName" maxlength="120" @input="change" />
             <label :for="`description-${lineKey}`">Description</label><input :id="`description-${lineKey}`" v-model="draft.snapshot.content.productDescription" maxlength="500" @input="change" />
-            <label :for="`price-${lineKey}`">List Price</label><input :id="`price-${lineKey}`" v-model="draft.snapshot.content.basePrice" inputmode="decimal" @input="change" />
           </template>
-          <label :for="`multiple-${lineKey}`">Line multiple</label><input :id="`multiple-${lineKey}`" v-model.number="draft.multiple" type="number" min="0" max="1000" step="0.0001" :aria-invalid="!validMultiple(draft.multiple ?? 1)" @input="change" />
-          <label :for="`qty-${lineKey}`">Quantity</label><div class="flex max-w-48 items-center gap-2"><button type="button" class="button secondary" :disabled="draft.quantity <= 1" aria-label="Decrease quantity" @click="draft.quantity--; change()">−</button><input :id="`qty-${lineKey}`" v-model.number="draft.quantity" type="number" min="1" max="1000000" step="1" :aria-invalid="!Number.isInteger(draft.quantity) || draft.quantity < 1 || draft.quantity > 1000000" @input="change" /><button type="button" class="button secondary" aria-label="Increase quantity" @click="draft.quantity++; change()">+</button></div>
-          <p class="mt-3 text-gray-600">{{ draft.selections.some(s => s === null) ? 'Estimated' : 'Preview' }} List Price {{ displayPrice(amounts!.unitPrice) }} · List Line Total {{ displayPrice(amounts!.lineTotal) }} · After Multiple {{ displayPrice(adjustedAmount(amounts!.lineTotal, quoteMultiple, draft.multiple ?? 1)) }}</p>
+          <div class="mt-5 border-t border-gray-200 pt-4">
+            <div class="quote-pricing-grid xl:ml-auto">
+              <div>
+                <label v-if="draft.kind === 'freeform'" :for="`price-${lineKey}`" class="quote-pricing-label">List Price</label>
+                <p v-else class="quote-pricing-label">List Price</p>
+                <input v-if="draft.kind === 'freeform'" :id="`price-${lineKey}`" v-model="draft.snapshot.content.basePrice" class="text-right tabular-nums" inputmode="decimal" @input="change" />
+                <p v-else class="quote-pricing-value">{{ displayPrice(amounts!.unitPrice) }}</p>
+              </div>
+              <div>
+                <label :for="`qty-${lineKey}`" class="quote-pricing-label">Quantity</label>
+                <input :id="`qty-${lineKey}`" v-model.number="draft.quantity" class="text-right tabular-nums" type="number" min="1" max="1000000" step="1" :aria-invalid="!Number.isInteger(draft.quantity) || draft.quantity < 1 || draft.quantity > 1000000" @input="change" />
+              </div>
+              <div>
+                <label :for="`multiple-${lineKey}`" class="quote-pricing-label">Line multiple</label>
+                <input :id="`multiple-${lineKey}`" v-model.number="draft.multiple" class="text-right tabular-nums" type="number" min="0" max="1000" step="0.1" :aria-invalid="!validMultiple(draft.multiple ?? 1)" @input="change" />
+              </div>
+            </div>
+          </div>
           <p v-if="modelValue" class="mt-1 text-xs text-gray-500">Quote total keeps the previous amount until Done.</p>
         </template>
         <p v-if="failure" class="error" role="alert">{{ failure }}</p>
         <div class="mt-4 flex justify-end gap-2"><button v-if="modelValue" type="button" class="button secondary" @click="cancel">Cancel</button><button type="button" class="button primary" @click="done">Done</button></div>
       </template>
       <template v-else-if="modelValue">
-        <div class="grid items-center gap-4 border-t border-gray-200 pt-4 lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-6">
+        <div class="grid items-center gap-4 border-t border-gray-200 pt-4 xl:grid-cols-[minmax(0,1fr)_40rem] xl:gap-6">
           <div class="min-w-0">
             <p class="mb-1 text-xs font-medium text-gray-500">Part number</p>
             <div class="flex flex-wrap items-center break-all font-mono text-xl font-semibold" aria-label="Saved part number"><span v-if="modelValue.kind === 'regular' || modelValue.kind === 'freeform'">{{ modelValue.partNumber }}</span><template v-for="(s,i) in modelValue.snapshot.content.segments" :key="s.id"><span v-if="i">{{ (modelValue.snapshot.content.separators ?? Array(modelValue.selections.length - 1).fill('-'))[i - 1] }}</span><button v-if="s.options.length > 1" type="button" class="rounded px-1 py-2 text-blue-700 hover:bg-blue-50" :aria-label="`Edit ${s.name || s.placeholder} in line ${index + 1}`" @click="focusSegment(i)">{{ s.options.find(o => o.id === modelValue!.selections[i])?.code || s.placeholder }}</button><span v-else class="px-1">{{ s.options[0]?.code }}</span></template></div>
             <p v-if="!modelValue.complete" class="mt-1 text-xs text-amber-800">Incomplete options — estimated price. Blank choices are saved.</p>
           </div>
-          <dl class="grid grid-cols-[minmax(0,0.65fr)_minmax(0,1fr)_minmax(0,1.15fr)] items-start gap-3 border-t border-gray-200 pt-4 text-right tabular-nums lg:border-t-0 lg:pt-0">
-            <div><dt class="text-xs text-gray-500">Quantity</dt><dd class="mt-2 font-medium">{{ modelValue.quantity }}</dd></div>
-            <div><dt class="text-xs text-gray-500">List Price</dt><dd class="mt-2 font-medium">{{ displayPrice(modelValue.unitPrice) }}</dd></div>
-            <div class="border-l border-gray-200 pl-3"><dt class="text-xs text-gray-500">List Line Total</dt><dd class="mt-2 font-semibold">{{ displayPrice(modelValue.lineTotal) }}</dd></div>
-            <div><dt class="text-xs text-gray-500">Line multiple</dt><dd class="mt-2 font-medium">{{ modelValue.multiple ?? 1 }}</dd></div>
-            <div class="col-span-2"><dt class="text-xs text-gray-500">After Multiple</dt><dd class="mt-2 font-semibold">{{ displayPrice(adjustedAmount(modelValue.lineTotal, quoteMultiple, modelValue.multiple ?? 1)) }}</dd></div>
+          <dl class="quote-pricing-grid border-t border-gray-200 pt-4 xl:border-t-0 xl:pt-0">
+            <div><dt class="quote-pricing-label">List Price</dt><dd class="quote-pricing-value">{{ displayPrice(modelValue.unitPrice) }}</dd></div>
+            <div><dt class="quote-pricing-label">Quantity</dt><dd class="quote-pricing-value">{{ modelValue.quantity }}</dd></div>
+            <div><dt class="quote-pricing-label">Line multiple</dt><dd class="quote-pricing-value">{{ modelValue.multiple ?? 1 }}</dd></div>
+            <div><dt class="quote-pricing-label">List Line Total</dt><dd class="quote-pricing-value">{{ displayPrice(modelValue.lineTotal) }}</dd></div>
+            <div class="quote-pricing-final"><dt class="quote-pricing-label">After Multiple</dt><dd class="quote-pricing-value font-semibold">{{ displayPrice(adjustedAmount(modelValue.lineTotal, quoteMultiple, modelValue.multiple ?? 1)) }}</dd></div>
           </dl>
         </div>
         <details v-if="!flat" class="group mt-4 rounded-md border border-gray-200 bg-gray-50">

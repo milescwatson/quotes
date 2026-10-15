@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { displayPrice } from '~/utils/configuration'
 import type { QuoteSnapshot } from '~/types/quotes'
 const props = defineProps<{ segment: QuoteSnapshot['content']['segments'][number]; modelValue: string | null; label: string; active: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [value: string | null]; active: []; validity: [valid: boolean]; text: [value: string] }>()
@@ -40,7 +39,7 @@ defineExpose({ focus: () => input.value?.focus(), validate: exact })
       <ul v-if="opened" :id="`${id}-options`" role="listbox" :aria-label="label" class="mt-2 max-h-60 overflow-y-auto rounded border border-gray-200 bg-white">
         <li v-for="(option,i) in matches" :id="`${id}-${i}`" :key="option.id" role="option" :aria-selected="option.id === modelValue" class="cursor-pointer p-2" :class="i === cursor ? 'bg-blue-100' : 'hover:bg-gray-50'" @pointerdown.prevent="choose(option.id)">
           <span class="font-mono font-semibold">{{ option.code }}</span> <span>{{ option.description || option.code }}</span>
-          <span class="block text-xs text-gray-500">+{{ displayPrice(option.price) }} {{ option.id === modelValue ? '✓' : '' }}</span>
+          <span v-if="option.id === modelValue" class="ml-1 text-xs text-gray-500">✓</span>
         </li>
         <li v-if="!matches.length" class="p-2 text-red-700">No matching codes.</li>
       </ul>

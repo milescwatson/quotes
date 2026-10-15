@@ -72,7 +72,6 @@ function blurBase() { const formatted = formatPrice(draft.value.basePrice, true)
       <p v-if="saved?.archivedAt" class="mb-4 text-gray-600">This configuration is archived.</p>
       <p v-else-if="!canEdit" class="mb-4 text-gray-600">Read-only configuration.</p>
       <NuxtLink v-if="saved && !canEdit && identity.state.user?.isSuperAdministrator && saved.ownerOrganizationId !== identity.organizationId(route.params.orgId)" :to="`${identity.organizationPath(saved.ownerOrganizationId)}/taxonomies/${saved.id}`" class="mb-4 inline-block text-blue-600">Switch to owning organization to edit</NuxtLink>
-      <ConfigurationSharing v-if="saved?.permissions.canManageSharing" :taxonomy="saved" :organization="identity.organizationId(route.params.orgId)" />
       <fieldset :disabled="disabled" class="min-w-0">
         <div class="rounded-t-md border border-gray-200 bg-white p-4 sm:p-5">
           <div class="flex flex-wrap items-start gap-x-5 gap-y-3">
@@ -84,7 +83,7 @@ function blurBase() { const formatted = formatPrice(draft.value.basePrice, true)
           <p class="mb-2 mt-5 text-xs font-medium text-gray-600">Part number pattern</p><div class="flex min-h-8 flex-wrap items-center gap-2" aria-label="Part number pattern"><template v-for="(s, i) in draft.segments" :key="s.key"><span v-if="i && draft.separators[i - 1]" class="text-gray-400">{{ draft.separators[i - 1] }}</span><span class="rounded bg-gray-100 px-2 py-1 text-lg font-semibold">{{ s.placeholder || '…' }}</span></template></div>
         </div>
         <div class="border-x border-b border-gray-200 bg-gray-100 p-4 sm:p-5">
-          <div class="flex items-start gap-3 overflow-x-auto pb-5" role="region" aria-label="Configuration segments" tabindex="0">
+          <div class="configuration-segments-scroll flex items-start gap-3 overflow-x-scroll pb-5" role="region" aria-label="Configuration segments" tabindex="0">
             <template v-for="(s, i) in draft.segments" :key="s.key">
             <div v-if="i" class="w-24 shrink-0 pt-3"><label :for="`separator-${i}`" class="!mt-0 !text-xs">Separator</label><select :id="`separator-${i}`" v-model="draft.separators[i - 1]" :aria-label="`Separator between segments ${i} and ${i + 1}`" :aria-invalid="!!message('/content/separators')" @change="clearErrors"><option value="-">-</option><option value="">None</option></select></div>
             <section class="w-[520px] max-w-full shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white" :aria-label="`Segment ${i + 1}`" @dragover.prevent @drop.prevent="dropSegment(i)">
@@ -118,6 +117,7 @@ function blurBase() { const formatted = formatPrice(draft.value.basePrice, true)
           </div>
         </div>
       </fieldset>
+      <ConfigurationSharing v-if="saved?.permissions.canManageSharing" :taxonomy="saved" :organization="identity.organizationId(route.params.orgId)" />
     </template>
   </div>
 </template>
@@ -125,6 +125,10 @@ function blurBase() { const formatted = formatPrice(draft.value.basePrice, true)
 .option-grid { display:grid;grid-template-columns:16px 58px minmax(0,1fr) 94px 16px;gap:6px;align-items:center;padding-left:8px;padding-right:8px; }
 .cell { min-width:0;min-height:36px;border-color:#9ca3af;padding:6px;font-size:14px; }
 .configuration-editor textarea { width:100%;min-width:0;border:1px solid #9ca3af;border-radius:4px;padding:8px;font-size:14px;resize:vertical; }
+.configuration-segments-scroll { scrollbar-color:#6b7280 #e5e7eb;scrollbar-width:auto; }
+.configuration-segments-scroll::-webkit-scrollbar { height:12px; }
+.configuration-segments-scroll::-webkit-scrollbar-track { background:#e5e7eb;border-radius:6px; }
+.configuration-segments-scroll::-webkit-scrollbar-thumb { background:#6b7280;border:2px solid #e5e7eb;border-radius:6px; }
 .configuration-editor input,.configuration-editor select { border-color:#9ca3af; }
 .configuration-editor input:hover,.configuration-editor select:hover,.configuration-editor textarea:hover { border-color:#6b7280; }
 .configuration-editor [aria-invalid="true"] { border-color:#b91c1c; }
