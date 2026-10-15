@@ -31,7 +31,7 @@ test('0005 migration, enrollment, role boundaries, sharing and email-based globa
   const denied = (fn,code='FORBIDDEN')=>assert.rejects(fn,{code});
   let owner,recipient,other,config;
   try {
-    for(const file of ['0001/identity/schema.sql','0001/quotes/schema.sql','0002/taxonomy/schema.sql','0003/principals/schema.sql','0003/principals/enforce.sql','0004/quotes/schema.sql','0004/quotes/backfill.sql','0004/quotes/enforce.sql']) await db.exec(await read(file));
+    for(const file of ['0001/identity/schema.sql','0001/quotes/schema.sql','0002/taxonomy/schema.sql','0003/principals/schema.sql','0003/principals/enforce.sql','0004/quotes/schema.sql','0004/quotes/backfill.sql','0004/quotes/enforce.sql','0006/products/schema.sql','0006/products/backfill.sql','0006/products/enforce.sql']) await db.exec(await read(file));
     for(const sub of ['admin','sales','super','outside','candidate']) people[sub]=(await q('INSERT INTO users(cognito_issuer,cognito_subject,email,normalized_email,display_name) VALUES($1,$2,$3,$3,$2) RETURNING *',['test',sub,sub==='super'?'mc.watson415@gmail.com':`${sub}@gmail.com`]))[0];
     [owner,recipient,other]=await q("INSERT INTO organizations(name,status) VALUES('Owner','active'),('Recipient','active'),('Other','active') RETURNING *");
     await q("INSERT INTO organization_memberships(organization_id,user_id,role) VALUES($1,$2,'admin'),($1,$3,'editor'),($4,$5,'member'),($6,$7,'admin')",[owner.id,people.admin.id,people.sales.id,recipient.id,people.outside.id,other.id,people.candidate.id]);
@@ -144,7 +144,7 @@ test('0005 migration, enrollment, role boundaries, sharing and email-based globa
     });
     await t.test('runtime grants support enrollment, sharing and details without hard deletes or audit edits',async()=>{
       await db.exec('CREATE ROLE organizations_api; CREATE ROLE organizations_operator;');
-      for(const p of ['0001/identity/permissions.sql','0001/quotes/permissions.sql','0002/taxonomy/permissions.sql','0003/principals/permissions.sql','0004/quotes/permissions.sql','0005/organizations/permissions.sql']) await db.exec((await read(p)).replaceAll(':"api_role"','organizations_api').replaceAll(':"operator_role"','organizations_operator'));
+      for(const p of ['0001/identity/permissions.sql','0001/quotes/permissions.sql','0002/taxonomy/permissions.sql','0003/principals/permissions.sql','0004/quotes/permissions.sql','0005/organizations/permissions.sql','0006/products/permissions.sql']) await db.exec((await read(p)).replaceAll(':"api_role"','organizations_api').replaceAll(':"operator_role"','organizations_operator'));
       await db.exec('SET ROLE organizations_api');
       try {
         const profile=await identity.bootstrapProfile({identity:{issuer:'test',sub:'runtime',email:'new@runtime-company.com'},body:{},requestId:randomUUID()});assert.ok(profile.user.id);

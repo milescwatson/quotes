@@ -14,6 +14,7 @@ const pageTitle = computed(() => {
         new: 'New Quote',
         settings: 'Organization settings',
         configurations: 'Product Configurations',
+        'regular-products': 'Regular Products',
         principals: 'Principals',
         profile: 'Your profile',
         organizations: 'Your organizations',

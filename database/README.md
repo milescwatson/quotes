@@ -79,3 +79,7 @@ Follow the additive [quote migration](versions/0004/quotes/README.md) after 0003
 ## Organization roles and sharing (0005)
 
 [0005](versions/0005/organizations/README.md) replaces membership roles with Sales/Administrator, adds global Super Administrator privileges, company contact fields, exact enrollment-domain assignments, and configuration sharing. Its checkpoint runner keeps the API paused until the matching release. [Task 6000](../tasks/6000/implementation.md) records local checks and live-release status; older version-specific identity tests remain historical schema coverage.
+
+## Regular products and quote multiples (0006)
+
+The additive [0006 migration and coordinated release procedure](versions/0006/products/README.md) adds a regular-product catalog and quote-wide price multiples. Legacy quote snapshots remain unchanged; line multiples default to 1 when absent. Source preparation does not mean deployment: 0006 has not been applied by this change.

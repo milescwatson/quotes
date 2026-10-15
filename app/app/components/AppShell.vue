@@ -39,6 +39,7 @@ onBeforeUnmount(() => {
             active-class="selected"
             > Quotes</NuxtLink
           ><NuxtLink :to="`${identity.organizationPath(org.id)}/configurations`" active-class="selected">Product Configurations</NuxtLink
+          ><NuxtLink :to="`${identity.organizationPath(org.id)}/regular-products`" active-class="selected">Regular Products</NuxtLink
           ><NuxtLink
               :to="`${identity.organizationPath(org.id)}/members`"
               active-class="selected"

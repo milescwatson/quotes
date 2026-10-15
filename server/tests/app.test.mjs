@@ -48,11 +48,11 @@ function event(method = 'GET', path = '/me', overrides = {}) {
   };
 }
 function services(operation = () => ({ ok: true })) {
-  const result = { identity: {}, taxonomy: {}, principals: {} };
+  const result = { identity: {}, taxonomy: {}, principals: {}, regularProducts: {} };
   for (const [, , group, name] of mappings)
     result[group][name] = (args) => {
       const body = operation(name, args);
-      return group === 'identity'
+      return ['identity', 'regularProducts'].includes(group)
         ? body
         : {
             statusCode:
@@ -98,7 +98,7 @@ test('registered Fastify methods and paths exactly match the retained OpenAPI co
       .map((m) => `${m.toUpperCase()} ${path}`),
   );
   assert.deepEqual(registered.sort(), declared.sort());
-  assert.equal(new Set(registered).size, 30);
+  assert.equal(new Set(registered).size, 33);
   const contract = await readFile(new URL('../../AWS/openapi.yaml', import.meta.url), 'utf8');
   assert.doesNotMatch(contract, /(?:^|\s)[&*][a-zA-Z0-9_-]+(?:\s|$)/m, 'Gateway requires an expanded YAML contract without aliases');
   for (const route of registered) assert.ok(api['x-amazon-apigateway-cors'].allowMethods.includes(route.split(' ')[0]), `${route} must be allowed by Gateway CORS`);
@@ -140,7 +140,7 @@ test('injection maps every business route to its named operation and preserves i
     });
     assert.equal(
       response.statusCode,
-      group !== 'identity' &&
+      !['identity', 'regularProducts'].includes(group) &&
         (name.startsWith('create') || name === 'saveTaxonomyVersion')
         ? 201
         : 200,

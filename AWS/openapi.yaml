@@ -2132,6 +2132,277 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/ConfigurationSharingUpdate"
+  /organizations/{orgId}/regular-products:
+    get:
+      operationId: listRegularProducts
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      parameters:
+        - in: path
+          name: orgId
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/RegularProduct"
+                required:
+                  - items
+        "401":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+    post:
+      operationId: createRegularProduct
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      parameters:
+        - in: path
+          name: orgId
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  product:
+                    $ref: "#/components/schemas/RegularProduct"
+                required:
+                  - product
+        "401":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                partNumber:
+                  type: string
+                description:
+                  type: string
+                listPrice:
+                  type: string
+                parentTaxonomyId:
+                  type: string
+                  nullable: true
+              required:
+                - partNumber
+                - description
+                - listPrice
+                - parentTaxonomyId
+  /organizations/{orgId}/regular-products/{productId}:
+    put:
+      operationId: updateRegularProduct
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      parameters:
+        - in: path
+          name: orgId
+          required: true
+          schema:
+            type: string
+            maxLength: 19
+            pattern: ^[1-9][0-9]{0,18}$
+        - in: path
+          name: productId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  product:
+                    $ref: "#/components/schemas/RegularProduct"
+                required:
+                  - product
+        "401":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Request failed; see error code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                partNumber:
+                  type: string
+                description:
+                  type: string
+                listPrice:
+                  type: string
+                parentTaxonomyId:
+                  type: string
+                  nullable: true
+                expectedToken:
+                  type: string
+              required:
+                - partNumber
+                - description
+                - listPrice
+                - parentTaxonomyId
+                - expectedToken
+
 components:
   schemas:
     Health:
@@ -2193,8 +2464,10 @@ components:
           nullable: true
         taxonomyId:
           type: string
+          nullable: true
         versionId:
           type: string
+          nullable: true
         selections:
           type: array
           maxItems: 50
@@ -2205,18 +2478,86 @@ components:
           type: integer
           minimum: 1
           maximum: 1000000
+        multiple:
+          type: number
+          minimum: 0
+          maximum: 1000
+          multipleOf: 0.0001
+          default: 1
+        kind:
+          type: string
+          enum:
+            - configured
+            - regular
+            - freeform
+        regularProductId:
+          type: string
+          nullable: true
+        partNumber:
+          type: string
+          maxLength: 120
+        description:
+          type: string
+          maxLength: 500
+        listPrice:
+          type: string
       required:
         - id
-        - taxonomyId
-        - versionId
-        - selections
         - quantity
       additionalProperties: false
+      description: Configured lines require taxonomyId, versionId and selections.
+        Regular lines require regularProductId. Freeform lines require partNumber,
+        description and listPrice. Server validates fields by kind.
+    QuoteSnapshotContent:
+      type: object
+      additionalProperties: false
+      properties:
+        productFamilyName:
+          type: string
+          maxLength: 120
+          minLength: 1
+        productDescription:
+          type: string
+          maxLength: 1000
+          nullable: true
+        separators:
+          type: array
+          description: One separator per gap between segments; omitted values default to dashes.
+          maxItems: 49
+          items:
+            type: string
+            enum:
+              - "-"
+              - ""
+        currency:
+          type: string
+          enum:
+            - USD
+        basePrice:
+          type: string
+          maxLength: 15
+          pattern: ^(0|[1-9][0-9]{0,11})(\.[0-9]{1,2})?$
+        segments:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaxonomySegment"
+          minItems: 0
+          maxItems: 50
+        schemaVersion:
+          type: integer
+          enum:
+            - 1
+      required:
+        - productFamilyName
+        - currency
+        - basePrice
+        - segments
+        - schemaVersion
     QuoteConfigurationSnapshot:
       type: object
       properties:
         content:
-          $ref: "#/components/schemas/TaxonomyContent"
+          $ref: "#/components/schemas/QuoteSnapshotContent"
         principalId:
           type: string
           nullable: true
@@ -2235,8 +2576,10 @@ components:
           type: string
         taxonomyId:
           type: string
+          nullable: true
         versionId:
           type: string
+          nullable: true
         selections:
           type: array
           maxItems: 50
@@ -2257,6 +2600,24 @@ components:
           type: string
         lineTotal:
           type: string
+        multiple:
+          type: number
+          minimum: 0
+          maximum: 1000
+          multipleOf: 0.0001
+          default: 1
+        kind:
+          type: string
+          enum:
+            - configured
+            - regular
+            - freeform
+        regularProductId:
+          type: string
+          nullable: true
+        parentTaxonomyId:
+          type: string
+          nullable: true
       required:
         - id
         - taxonomyId
@@ -2288,6 +2649,12 @@ components:
           maxItems: 100
           items:
             $ref: "#/components/schemas/QuoteLineInput"
+        multiple:
+          type: number
+          minimum: 0
+          maximum: 1000
+          multipleOf: 0.0001
+          default: 1
       required:
         - customerName
         - projectName
@@ -2315,6 +2682,12 @@ components:
             $ref: "#/components/schemas/QuoteLineInput"
         expectedToken:
           type: string
+        multiple:
+          type: number
+          minimum: 0
+          maximum: 1000
+          multipleOf: 0.0001
+          default: 1
       required:
         - customerName
         - projectName
@@ -2328,11 +2701,13 @@ components:
         id:
           type: string
           pattern: ^[1-9][0-9]{0,18}$
-          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+          description: Positive bigint identifier encoded as a decimal string (maximum
+            9223372036854775807).
         organizationId:
           type: string
           pattern: ^[1-9][0-9]{0,18}$
-          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+          description: Positive bigint identifier encoded as a decimal string (maximum
+            9223372036854775807).
         customerId:
           type: integer
           format: int32
@@ -2350,7 +2725,8 @@ components:
         modifiedBy:
           type: string
           pattern: ^[1-9][0-9]{0,18}$
-          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+          description: Positive bigint identifier encoded as a decimal string (maximum
+            9223372036854775807).
         modifiedByName:
           type: string
         modifiedWhen:
@@ -2359,7 +2735,8 @@ components:
         ownerId:
           type: string
           pattern: ^[1-9][0-9]{0,18}$
-          description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+          description: Positive bigint identifier encoded as a decimal string (maximum
+            9223372036854775807).
           nullable: true
         ownerName:
           type: string
@@ -2375,6 +2752,14 @@ components:
           enum:
             - USD
         total:
+          type: string
+        multiple:
+          type: number
+          minimum: 0
+          maximum: 1000
+          multipleOf: 0.0001
+          default: 1
+        listTotal:
           type: string
       required:
         - id
@@ -2392,6 +2777,8 @@ components:
         - lines
         - currency
         - total
+        - multiple
+        - listTotal
       additionalProperties: false
     QuoteDetailResponse:
       type: object
@@ -3441,6 +3828,30 @@ components:
       required:
         - organizationIds
         - expectedRevision
+    RegularProduct:
+      type: object
+      properties:
+        id:
+          type: string
+        partNumber:
+          type: string
+        description:
+          type: string
+        listPrice:
+          type: string
+        parentTaxonomyId:
+          type: string
+          nullable: true
+        token:
+          type: string
+      required:
+        - id
+        - partNumber
+        - description
+        - listPrice
+        - parentTaxonomyId
+        - token
+
   securitySchemes:
     CognitoJwt:
       type: oauth2
@@ -3457,6 +3868,7 @@ components:
           issuer: ${issuer}
           audience:
             - ${client_id}
+
 x-amazon-apigateway-cors:
   allowOrigins:
     - ${frontend_url}

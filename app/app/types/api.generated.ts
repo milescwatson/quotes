@@ -316,6 +316,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/organizations/{orgId}/regular-products": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["listRegularProducts"];
+        put?: never;
+        post: operations["createRegularProduct"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/organizations/{orgId}/regular-products/{productId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["updateRegularProduct"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -337,22 +369,43 @@ export interface components {
             }[];
             currentVersionId?: string;
         };
+        /** @description Configured lines require taxonomyId, versionId and selections. Regular lines require regularProductId. Freeform lines require partNumber, description and listPrice. Server validates fields by kind. */
         QuoteLineInput: {
             id: string | null;
-            taxonomyId: string;
-            versionId: string;
-            selections: (string | null)[];
+            taxonomyId?: string | null;
+            versionId?: string | null;
+            selections?: (string | null)[];
             quantity: number;
+            /** @default 1 */
+            multiple: number;
+            /** @enum {string} */
+            kind?: "configured" | "regular" | "freeform";
+            regularProductId?: string | null;
+            partNumber?: string;
+            description?: string;
+            listPrice?: string;
+        };
+        QuoteSnapshotContent: {
+            productFamilyName: string;
+            productDescription?: string | null;
+            /** @description One separator per gap between segments; omitted values default to dashes. */
+            separators?: ("-" | "")[];
+            /** @enum {string} */
+            currency: "USD";
+            basePrice: string;
+            segments: components["schemas"]["TaxonomySegment"][];
+            /** @enum {integer} */
+            schemaVersion: 1;
         };
         QuoteConfigurationSnapshot: {
-            content: components["schemas"]["TaxonomyContent"];
+            content: components["schemas"]["QuoteSnapshotContent"];
             principalId: string | null;
             principalName: string | null;
         };
         QuoteLine: {
             id: string;
-            taxonomyId: string;
-            versionId: string;
+            taxonomyId: string | null;
+            versionId: string | null;
             selections: (string | null)[];
             quantity: number;
             snapshot: components["schemas"]["QuoteConfigurationSnapshot"];
@@ -360,12 +413,20 @@ export interface components {
             complete: boolean;
             unitPrice: string;
             lineTotal: string;
+            /** @default 1 */
+            multiple: number;
+            /** @enum {string} */
+            kind?: "configured" | "regular" | "freeform";
+            regularProductId?: string | null;
+            parentTaxonomyId?: string | null;
         };
         QuoteCreate: {
             customerName: string;
             projectName: string;
             ownerId: string | null;
             lines: components["schemas"]["QuoteLineInput"][];
+            /** @default 1 */
+            multiple: number;
         };
         QuoteUpdate: {
             customerName: string;
@@ -373,6 +434,8 @@ export interface components {
             ownerId: string | null;
             lines: components["schemas"]["QuoteLineInput"][];
             expectedToken: string;
+            /** @default 1 */
+            multiple: number;
         };
         QuoteDetail: {
             /** @description Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807). */
@@ -397,6 +460,9 @@ export interface components {
             /** @enum {string} */
             currency: "USD";
             total: string;
+            /** @default 1 */
+            multiple: number;
+            listTotal: string;
         };
         QuoteDetailResponse: {
             quote: components["schemas"]["QuoteDetail"];
@@ -709,6 +775,14 @@ export interface components {
         ConfigurationSharingUpdate: {
             organizationIds: string[];
             expectedRevision: string;
+        };
+        RegularProduct: {
+            id: string;
+            partNumber: string;
+            description: string;
+            listPrice: string;
+            parentTaxonomyId: string | null;
+            token: string;
         };
     };
     responses: never;
@@ -3177,6 +3251,287 @@ export interface operations {
                 };
             };
             /** @description Temporarily unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    listRegularProducts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orgId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful operation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        items: components["schemas"]["RegularProduct"][];
+                    };
+                };
+            };
+            /** @description Request failed; see error code */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed; see error code */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed; see error code */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed; see error code */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed; see error code */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed; see error code */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed; see error code */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    createRegularProduct: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orgId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    partNumber: string;
+                    description: string;
+                    listPrice: string;
+                    parentTaxonomyId: string | null;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful operation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        product: components["schemas"]["RegularProduct"];
+                    };
+                };
+            };
+            /** @description Request failed; see error code */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed; see error code */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed; see error code */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed; see error code */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed; see error code */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed; see error code */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed; see error code */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    updateRegularProduct: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                orgId: string;
+                productId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    partNumber: string;
+                    description: string;
+                    listPrice: string;
+                    parentTaxonomyId: string | null;
+                    expectedToken: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful operation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        product: components["schemas"]["RegularProduct"];
+                    };
+                };
+            };
+            /** @description Request failed; see error code */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed; see error code */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed; see error code */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed; see error code */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed; see error code */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed; see error code */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed; see error code */
             503: {
                 headers: {
                     [name: string]: unknown;

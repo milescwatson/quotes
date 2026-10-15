@@ -1,21 +1,39 @@
 <script setup lang="ts">
 import { Combobox, ComboboxLabel, ComboboxInput, ComboboxButton, ComboboxOptions, ComboboxOption } from '@headlessui/vue'
-import type { LocalQuoteLine, QuoteProduct } from '~/types/quotes'
-import { quoteAmount, quoteNumber } from '~/utils/quote'
+import type { LocalQuoteLine, QuoteProduct, RegularProduct } from '~/types/quotes'
+import { quoteAmount, quoteNumber, adjustedAmount, validMultiple } from '~/utils/quote'
 import { displayPrice } from '~/utils/configuration'
 import { useQueryClient } from '@tanstack/vue-query'
 import { queryKeys } from '~/utils/query-keys'
-const props = defineProps<{ modelValue: LocalQuoteLine | null; lineKey: string; index: number; products: QuoteProduct[]; organization: string; disabled: boolean }>()
+const props = defineProps<{ modelValue: LocalQuoteLine | null; lineKey: string; index: number; products: QuoteProduct[]; regularProducts: RegularProduct[]; quoteMultiple: number; organization: string; disabled: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [value: LocalQuoteLine]; pending: [value: boolean]; remove: []; accessLost: [] }>()
 let disposed = false
 const identity = useIdentity(), queryClient = useQueryClient(), editor = ref(!props.modelValue), draft = ref<LocalQuoteLine | null>(null), query = ref(''), codeText = ref<Record<number,string>>({}), failure = ref(''), loading = ref(false), active = ref(-1)
 onBeforeUnmount(() => { disposed = true })
 const picker = ref<InstanceType<typeof ComboboxInput>>(), editButton = ref<HTMLButtonElement>(), root = ref<HTMLElement>(), segments = ref<({ focus: () => void; validate: () => boolean } | null)[]>([]), valid = ref<Record<number,boolean>>({})
-const copy = (value: LocalQuoteLine | null) => value ? JSON.parse(JSON.stringify(value)) as LocalQuoteLine : null
+const copy = (value: LocalQuoteLine | null) => value ? { ...JSON.parse(JSON.stringify(value)), multiple: value.multiple ?? 1 } as LocalQuoteLine : null
 watch(() => props.modelValue, value => { draft.value = copy(value); valid.value = {}; codeText.value = {} }, { immediate: true })
 const filtered = computed(() => props.products.filter(p => `${p.productFamilyName} ${p.principalName} ${p.modelCode || ''}`.toLowerCase().includes(query.value.toLowerCase())))
+const regularFiltered = computed(() => [...props.regularProducts].filter(p => `${p.partNumber} ${p.description} ${parentName(p)}`.toLowerCase().includes(query.value.toLowerCase())).sort((a,b) => parentName(a).localeCompare(parentName(b)) || a.partNumber.localeCompare(b.partNumber)))
+const regularChoices = computed(() => regularFiltered.value.map(product => ({ kind: 'regular' as const, product })))
+const freeformChoice = { kind: 'freeform' as const }
+function parentName(p: RegularProduct) { return p.parentTaxonomyId ? props.products.find(t => t.id === p.parentTaxonomyId)?.productFamilyName ?? 'Unavailable parent' : 'Unparented' }
+const flat = computed(() => draft.value?.kind === 'regular' || draft.value?.kind === 'freeform')
+function chooseFlat(p: RegularProduct | null) {
+  if (props.disabled || loading.value) return
+  if (draft.value && !window.confirm('Switch products and discard this line’s selections?')) return
+  const partNumber = p?.partNumber ?? '', price = p?.listPrice ?? '0.00'
+  draft.value = { id: props.modelValue?.id ?? null, key: props.lineKey, kind: p ? 'regular' : 'freeform', regularProductId: p?.id ?? null, parentTaxonomyId: p?.parentTaxonomyId ?? null, taxonomyId: null, versionId: null,
+    snapshot: { content: { schemaVersion: 1, productFamilyName: partNumber, productDescription: p?.description ?? '', currency: 'USD', basePrice: price, separators: [], segments: [] }, principalId: null, principalName: null },
+    selections: [], quantity: 1, multiple: 1, partNumber, complete: true, unitPrice: price, lineTotal: price }
+  valid.value = {}; codeText.value = {}; query.value = ''; emit('pending', true)
+}
 const product = computed(() => props.products.find(p => p.id === draft.value?.taxonomyId) ?? null)
-const amounts = computed(() => draft.value ? quoteAmount(draft.value) : null)
+const amounts = computed(() => { try { return draft.value ? quoteAmount(draft.value) : null } catch { return { unitPrice: '0.00', lineTotal: '0.00' } } })
+function selectProduct(p: QuoteProduct | { kind: 'regular'; product: RegularProduct } | { kind: 'freeform' } | null) {
+  if (p && 'kind' in p) { chooseFlat(p.kind === 'regular' ? p.product : null); return }
+  void choose(p)
+}
 async function choose(p: QuoteProduct | null) {
   if (!p || props.disabled || loading.value) return
   if (draft.value && !window.confirm('Switch products and discard this line’s selections?')) { query.value = ''; return }
@@ -30,7 +48,7 @@ async function choose(p: QuoteProduct | null) {
     const content = t.version.content
     draft.value = { id: props.modelValue?.id ?? null, key: props.lineKey, taxonomyId: t.id, versionId: t.version.id,
       snapshot: { content, principalId: t.version.principalId, principalName: t.principalName },
-      selections: content.segments.map(s => s.options.length === 1 ? s.options[0]!.id : s.defaultOptionId), quantity: 1,
+      selections: content.segments.map(s => s.options.length === 1 ? s.options[0]!.id : s.defaultOptionId), quantity: 1, multiple: 1,
       partNumber: '', complete: false, unitPrice: '0.00', lineTotal: '0.00' }
     valid.value = {}; codeText.value = {}; active.value = -1; emit('pending',true)
   } catch (e) { if (disposed) return; failure.value = (e as Error).message; if ('status' in (e as object) && [401,403,404].includes((e as { status: number }).status)) emit('accessLost') }
@@ -41,6 +59,12 @@ function validate() {
   if (!editor.value) return true
   if (loading.value) { failure.value = 'Wait for the product to load.'; return false }
   if (!draft.value) { failure.value = 'Choose a product, or remove this empty line.'; picker.value?.$el?.focus(); return false }
+  if (!validMultiple(draft.value.multiple ?? 1)) { failure.value = 'Use a multiple from 0 to 1,000 with at most four decimal places.'; return false }
+  if (draft.value.kind === 'freeform') {
+    const c = draft.value.snapshot.content
+    if (!c.productFamilyName.trim() || c.productFamilyName.trim().length > 120 || /[\p{Cc}\p{Cs}]/u.test(c.productFamilyName) || (c.productDescription ?? '').length > 500 || /[\p{Cc}\p{Cs}]/u.test(c.productDescription ?? '') || !/^(0|[1-9][0-9]{0,11})(\.[0-9]{1,2})?$/.test(c.basePrice)) { failure.value = 'Enter a part number, a description up to 500 characters, and a nonnegative List Price with at most two decimals.'; return false }
+    c.productFamilyName = c.productFamilyName.trim(); c.productDescription = (c.productDescription ?? '').trim()
+  }
   for (const segment of segments.value) segment?.validate()
   if (Object.values(valid.value).some(v => !v)) { nextTick(() => root.value?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus()); failure.value = 'Resolve pending or unknown codes, or clear them to save blank options.'; return false }
   if (!Number.isInteger(draft.value.quantity) || draft.value.quantity < 1 || draft.value.quantity > 1000000) { nextTick(() => root.value?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus()); failure.value = 'Use a whole quantity between 1 and 1,000,000.'; return false }
@@ -75,28 +99,37 @@ defineExpose({ validate, done })
     </div>
     <fieldset :disabled="disabled || loading" class="min-w-0">
       <template v-if="editor">
-        <Combobox :model-value="product" nullable @update:model-value="choose">
+        <Combobox :model-value="product" nullable @update:model-value="selectProduct">
           <div class="relative mb-4 max-w-xl">
             <ComboboxLabel class="mt-0">Product</ComboboxLabel>
             <div class="relative"><ComboboxInput :id="`product-${lineKey}`" ref="picker" class="pr-10" autocomplete="off" :display-value="() => draft?.snapshot.content.productFamilyName ?? ''" placeholder="Search product, model, or principal" @change="query = $event.target.value" @blur="query = ''" /><ComboboxButton class="absolute inset-y-0 right-0 px-3" aria-label="Show products">⌄</ComboboxButton></div>
             <ComboboxOptions class="absolute z-10 mt-1 max-h-72 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
               <ComboboxOption v-for="p in filtered" :key="p.id" v-slot="{ active: highlighted, selected }" :value="p" as="template"><li class="cursor-pointer p-3" :class="highlighted ? 'bg-blue-50' : ''"><span class="block font-medium">{{ p.productFamilyName }} <span v-if="selected">✓</span></span><span class="text-xs text-gray-500">{{ p.principalName }} <template v-if="p.modelCode">· {{ p.modelCode }}</template></span></li></ComboboxOption>
-              <li v-if="!filtered.length" class="p-3 text-gray-600">No matching products. Try a product or principal name.</li>
+              <ComboboxOption v-for="choice in regularChoices" :key="`regular-${choice.product.id}`" v-slot="{ active: highlighted }" :value="choice" as="template"><li class="cursor-pointer p-3" :class="highlighted ? 'bg-blue-50' : ''"><span class="block text-xs text-gray-500">Regular · {{ parentName(choice.product) }}</span><span class="block font-medium">{{ choice.product.partNumber }}</span><span class="text-xs text-gray-500">{{ choice.product.description }} · {{ displayPrice(choice.product.listPrice) }}</span></li></ComboboxOption>
+              <ComboboxOption v-if="!query || (!filtered.length && !regularFiltered.length)" v-slot="{ active: highlighted }" :value="freeformChoice" as="template"><li class="cursor-pointer p-3 font-medium" :class="highlighted ? 'bg-blue-50' : ''">Add freeform part</li></ComboboxOption>
+              <li v-if="!filtered.length && !regularFiltered.length" class="p-3 text-gray-600">No matching products. Try a product or principal name.</li>
             </ComboboxOptions>
           </div>
         </Combobox>
         <p v-if="loading" role="status">Loading product…</p>
         <template v-if="draft">
           <p v-if="draft.snapshot.content.productDescription" class="mb-3 text-gray-600">{{ draft.snapshot.content.productDescription }}</p>
-          <p class="mb-2 text-xs text-gray-500">Saved configuration version {{ draft.versionId }} · {{ draft.selections.filter(Boolean).length }} of {{ draft.selections.length }} positions complete<span v-if="active >= 0"> · Position {{ active + 1 }}</span></p>
+          <template v-if="!flat"><p class="mb-2 text-xs text-gray-500">Saved configuration version {{ draft.versionId }} · {{ draft.selections.filter(Boolean).length }} of {{ draft.selections.length }} positions complete<span v-if="active >= 0"> · Position {{ active + 1 }}</span></p>
           <div class="mb-3 flex flex-wrap items-center font-mono text-xl" aria-label="Full part number">
             <template v-for="(s,i) in draft.snapshot.content.segments" :key="s.id"><span v-if="i">{{ (draft.snapshot.content.separators ?? Array(draft.selections.length - 1).fill('-'))[i - 1] }}</span><button v-if="s.options.length > 1" type="button" class="rounded px-1 py-2" :class="active === i ? 'bg-blue-100 text-blue-800' : valid[i] === false ? 'bg-red-50 text-red-700' : !draft.selections[i] ? 'bg-amber-50 text-amber-900' : ''" :aria-label="`Choose ${s.name || s.placeholder}, position ${i + 1}`" @click="focusSegment(i)" @keydown.right.prevent="focusSegment(Math.min(i + 1,draft.selections.length - 1))" @keydown.left.prevent="focusSegment(Math.max(0,i - 1))">{{ codeText[i] || s.options.find(o => o.id === draft!.selections[i])?.code || s.placeholder }}<span class="text-xs">{{ valid[i] === false ? '!' : !draft.selections[i] ? '?' : '' }}</span></button><span v-else class="px-1 text-gray-500">{{ s.options[0]?.code }}</span></template>
           </div>
           <div class="flex max-w-full items-start gap-2 overflow-x-auto pb-3" role="region" aria-label="Part number segments">
             <template v-for="(s,i) in draft.snapshot.content.segments" :key="`${draft.versionId}-${s.id}`"><span v-if="i" class="mt-4 self-start text-lg text-gray-500">{{ (draft.snapshot.content.separators ?? Array(draft.selections.length - 1).fill('-'))[i - 1] }}</span><QuoteSegment :ref="el => segments[i] = el as unknown as { focus: () => void; validate: () => boolean } | null" :segment="s" :model-value="draft.selections[i] ?? null" :label="`${s.name || s.placeholder} (position ${i + 1})`" :active="active === i" @update:model-value="draft!.selections[i] = $event; change()" @active="active = i" @validity="valid[i] = $event; if (!$event) change()" @text="codeText[i] = $event" /></template>
           </div>
+          </template>
+          <template v-if="draft.kind === 'freeform'">
+            <label :for="`part-${lineKey}`">Part number</label><input :id="`part-${lineKey}`" v-model="draft.snapshot.content.productFamilyName" maxlength="120" @input="change" />
+            <label :for="`description-${lineKey}`">Description</label><input :id="`description-${lineKey}`" v-model="draft.snapshot.content.productDescription" maxlength="500" @input="change" />
+            <label :for="`price-${lineKey}`">List Price</label><input :id="`price-${lineKey}`" v-model="draft.snapshot.content.basePrice" inputmode="decimal" @input="change" />
+          </template>
+          <label :for="`multiple-${lineKey}`">Line multiple</label><input :id="`multiple-${lineKey}`" v-model.number="draft.multiple" type="number" min="0" max="1000" step="0.0001" :aria-invalid="!validMultiple(draft.multiple ?? 1)" @input="change" />
           <label :for="`qty-${lineKey}`">Quantity</label><div class="flex max-w-48 items-center gap-2"><button type="button" class="button secondary" :disabled="draft.quantity <= 1" aria-label="Decrease quantity" @click="draft.quantity--; change()">−</button><input :id="`qty-${lineKey}`" v-model.number="draft.quantity" type="number" min="1" max="1000000" step="1" :aria-invalid="!Number.isInteger(draft.quantity) || draft.quantity < 1 || draft.quantity > 1000000" @input="change" /><button type="button" class="button secondary" aria-label="Increase quantity" @click="draft.quantity++; change()">+</button></div>
-          <p class="mt-3 text-gray-600">{{ draft.selections.some(s => s === null) ? 'Estimated' : 'Preview' }} unit {{ displayPrice(amounts!.unitPrice) }} · Line {{ displayPrice(amounts!.lineTotal) }}</p>
+          <p class="mt-3 text-gray-600">{{ draft.selections.some(s => s === null) ? 'Estimated' : 'Preview' }} List Price {{ displayPrice(amounts!.unitPrice) }} · List Line Total {{ displayPrice(amounts!.lineTotal) }} · After Multiple {{ displayPrice(adjustedAmount(amounts!.lineTotal, quoteMultiple, draft.multiple ?? 1)) }}</p>
           <p v-if="modelValue" class="mt-1 text-xs text-gray-500">Quote total keeps the previous amount until Done.</p>
         </template>
         <p v-if="failure" class="error" role="alert">{{ failure }}</p>
@@ -106,22 +139,24 @@ defineExpose({ validate, done })
         <div class="grid items-center gap-4 border-t border-gray-200 pt-4 lg:grid-cols-[minmax(0,1fr)_24rem] lg:gap-6">
           <div class="min-w-0">
             <p class="mb-1 text-xs font-medium text-gray-500">Part number</p>
-            <div class="flex flex-wrap items-center break-all font-mono text-xl font-semibold" aria-label="Saved part number"><template v-for="(s,i) in modelValue.snapshot.content.segments" :key="s.id"><span v-if="i">{{ (modelValue.snapshot.content.separators ?? Array(modelValue.selections.length - 1).fill('-'))[i - 1] }}</span><button v-if="s.options.length > 1" type="button" class="rounded px-1 py-2 text-blue-700 hover:bg-blue-50" :aria-label="`Edit ${s.name || s.placeholder} in line ${index + 1}`" @click="focusSegment(i)">{{ s.options.find(o => o.id === modelValue!.selections[i])?.code || s.placeholder }}</button><span v-else class="px-1">{{ s.options[0]?.code }}</span></template></div>
+            <div class="flex flex-wrap items-center break-all font-mono text-xl font-semibold" aria-label="Saved part number"><span v-if="modelValue.kind === 'regular' || modelValue.kind === 'freeform'">{{ modelValue.partNumber }}</span><template v-for="(s,i) in modelValue.snapshot.content.segments" :key="s.id"><span v-if="i">{{ (modelValue.snapshot.content.separators ?? Array(modelValue.selections.length - 1).fill('-'))[i - 1] }}</span><button v-if="s.options.length > 1" type="button" class="rounded px-1 py-2 text-blue-700 hover:bg-blue-50" :aria-label="`Edit ${s.name || s.placeholder} in line ${index + 1}`" @click="focusSegment(i)">{{ s.options.find(o => o.id === modelValue!.selections[i])?.code || s.placeholder }}</button><span v-else class="px-1">{{ s.options[0]?.code }}</span></template></div>
             <p v-if="!modelValue.complete" class="mt-1 text-xs text-amber-800">Incomplete options — estimated price. Blank choices are saved.</p>
           </div>
           <dl class="grid grid-cols-[minmax(0,0.65fr)_minmax(0,1fr)_minmax(0,1.15fr)] items-start gap-3 border-t border-gray-200 pt-4 text-right tabular-nums lg:border-t-0 lg:pt-0">
             <div><dt class="text-xs text-gray-500">Quantity</dt><dd class="mt-2 font-medium">{{ modelValue.quantity }}</dd></div>
-            <div><dt class="text-xs text-gray-500">Unit price</dt><dd class="mt-2 font-medium">{{ displayPrice(modelValue.unitPrice) }}</dd></div>
-            <div class="border-l border-gray-200 pl-3"><dt class="text-xs text-gray-500">Line total</dt><dd class="mt-2 font-semibold">{{ displayPrice(modelValue.lineTotal) }}</dd></div>
+            <div><dt class="text-xs text-gray-500">List Price</dt><dd class="mt-2 font-medium">{{ displayPrice(modelValue.unitPrice) }}</dd></div>
+            <div class="border-l border-gray-200 pl-3"><dt class="text-xs text-gray-500">List Line Total</dt><dd class="mt-2 font-semibold">{{ displayPrice(modelValue.lineTotal) }}</dd></div>
+            <div><dt class="text-xs text-gray-500">Line multiple</dt><dd class="mt-2 font-medium">{{ modelValue.multiple ?? 1 }}</dd></div>
+            <div class="col-span-2"><dt class="text-xs text-gray-500">After Multiple</dt><dd class="mt-2 font-semibold">{{ displayPrice(adjustedAmount(modelValue.lineTotal, quoteMultiple, modelValue.multiple ?? 1)) }}</dd></div>
           </dl>
         </div>
-        <details class="group mt-4 rounded-md border border-gray-200 bg-gray-50">
+        <details v-if="!flat" class="group mt-4 rounded-md border border-gray-200 bg-gray-50">
           <summary class="flex min-h-10 cursor-pointer list-none items-center gap-2 rounded-md px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-100 [&::-webkit-details-marker]:hidden">
             <svg aria-hidden="true" class="size-4 shrink-0 transition-transform group-open:rotate-90 motion-reduce:transition-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6" /></svg>
             Option and price breakdown
           </summary>
           <ul class="space-y-2 border-t border-gray-200 px-3 py-3 text-xs text-gray-600">
-            <li class="flex justify-between gap-4"><span>Base price</span><span class="shrink-0 tabular-nums">{{ displayPrice(modelValue.snapshot.content.basePrice) }}</span></li>
+            <li class="flex justify-between gap-4"><span>Base List Price</span><span class="shrink-0 tabular-nums">{{ displayPrice(modelValue.snapshot.content.basePrice) }}</span></li>
             <li v-for="(s,i) in modelValue.snapshot.content.segments" :key="s.id" class="flex justify-between gap-4">
               <button v-if="s.options.length > 1" type="button" class="min-w-0 rounded text-left hover:text-blue-700 hover:underline" @click="focusSegment(i)">{{ s.name || s.placeholder }}: {{ s.options.find(o => o.id === modelValue!.selections[i])?.code || 'Not selected' }} — {{ s.options.find(o => o.id === modelValue!.selections[i])?.description }}</button>
               <span v-else>{{ s.name || s.placeholder }}: {{ s.options[0]?.code }}</span>

@@ -1,4 +1,5 @@
 export const queryKeys = {
+  regularProducts: (org: string) => ['organizations', org, 'regular-products'] as const,
   organizations: ['organizations'] as const,
   organization: (org: string) => ['organizations', org] as const,
   quotes: (org: string) => ['organizations', org, 'quotes'] as const,

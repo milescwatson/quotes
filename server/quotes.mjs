@@ -1,3 +1,5 @@
+import { multiple, netAmount, flatSnapshot } from './quote-pricing.mjs';
+import { productFields } from './regular-products.mjs';
 import { randomUUID } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { fail, identifier, one, readUser, readOrganization, guardUser, guardOrganization, authorize, configurationAccessPredicate } from './shared.mjs';
@@ -15,7 +17,7 @@ async function detail(db, orgId, id) {
     customerName: q.customer_name, projectName: q.project_name, title: `${q.customer_name} - ${q.project_name}`,
     ownerId: q.owner_user_id == null ? null : String(q.owner_user_id), ownerName: q.owner_name,
     modifiedBy: String(q.modified_by), modifiedByName: q.modifier_name, modifiedWhen: new Date(q.modified_when).toISOString(),
-    token: q.token, lines: q.lines, currency: 'USD', total: dollars(q.lines.reduce((sum,l) => sum + cents(l.lineTotal),0n)) };
+    token: q.token, multiple: Number(q.multiple ?? 1), lines: q.lines, currency: 'USD', listTotal: dollars(q.lines.reduce((sum,l) => sum + cents(l.lineTotal),0n)), total: dollars(q.lines.reduce((sum,l) => sum + cents(netAmount(l.lineTotal,Number(q.multiple ?? 1),l)),0n)) };
 }
 export function createQuoteService(withTransaction) {
   async function transaction(input, write, work) {
@@ -39,7 +41,8 @@ export function createQuoteService(withTransaction) {
   }
   async function save(input) {
     const { body, quoteId } = input;
-    object(body,['customerName','projectName','ownerId','lines',...(quoteId ? ['expectedToken'] : [])]);
+    object(body,['customerName','projectName','ownerId','lines','multiple',...(quoteId ? ['expectedToken'] : [])],'',['customerName','projectName','ownerId','lines',...(quoteId ? ['expectedToken'] : [])]);
+    const quoteMultiple = multiple(body.multiple);
     const text = (v,path) => { if (typeof v !== 'string' || !v.trim() || v.trim().length > 120 || /[\p{Cc}\p{Cs}]/u.test(v)) invalid(path,'Enter 1–120 characters without control characters.'); return v.trim(); };
     const customer = text(body.customerName,'/customerName'), project = text(body.projectName,'/projectName');
     if (!Array.isArray(body.lines) || body.lines.length > 100) invalid('/lines','Use at most 100 product lines.');
@@ -49,23 +52,55 @@ export function createQuoteService(withTransaction) {
       if (old && old.token !== body.expectedToken) conflict();
       if (body.ownerId !== null && !await one(db,`SELECT u.id FROM public.organization_memberships m JOIN public.users u ON u.id=m.user_id
         WHERE m.organization_id=$1 AND m.user_id=$2 AND m.removed_at IS NULL AND u.disabled_at IS NULL`,[org.id,body.ownerId])) invalid('/ownerId','Choose an active team member from this organization.');
-      const used = new Set(); let total = 0n;
+      const used = new Set(); let total = 0n, netTotal = 0n;
       const lines = [];
       for (const [i,line] of body.lines.entries()) {
         const path = `/lines/${i}`;
-        object(line,['id','taxonomyId','versionId','selections','quantity'],path);
-        identifier(line.taxonomyId); identifier(line.versionId);
+        if (!line || typeof line !== 'object' || Array.isArray(line)) invalid(path,'Provide a product line.');
+        const kind = line.kind ?? 'configured';
+        if (!['configured','regular','freeform'].includes(kind)) invalid(`${path}/kind`,'Choose a supported product type.');
+        const common = ['id','quantity','kind','multiple'];
+        const fields = kind === 'configured' ? ['taxonomyId','versionId','selections'] : kind === 'regular' ? ['regularProductId'] : ['partNumber','description','listPrice'];
+        object(line,[...common,...fields],path,['id','quantity',...fields]);
+        const lineMultiple = multiple(line.multiple,`${path}/multiple`);
+        if (kind === 'configured') { identifier(line.taxonomyId); identifier(line.versionId); }
         if (!Number.isInteger(line.quantity) || line.quantity < 1 || line.quantity > 1000000) invalid(`${path}/quantity`,'Use a whole quantity between 1 and 1,000,000.');
         const previous = old?.lines.find(l => l.id === line.id);
         if (line.id !== null && (!previous || used.has(line.id))) invalid(`${path}/id`,'Use a unique saved line identity or null.');
         used.add(line.id);
-        if (previous && previous.taxonomyId === line.taxonomyId && previous.versionId === line.versionId) {
+        const pricing = {multiple:lineMultiple};
+        // Keep the legacy default representation so saving old quotes is a no-op.
+        const extras = lineMultiple === 1 ? {} : pricing;
+        if (kind !== 'configured') {
+          let snapshot, partNumber, price, parentTaxonomyId = null;
+          if (kind === 'regular') {
+            identifier(line.regularProductId);
+            if (previous?.kind === 'regular' && previous.regularProductId === line.regularProductId) {
+              snapshot = previous.snapshot; partNumber = previous.partNumber; price = previous.unitPrice; parentTaxonomyId = previous.parentTaxonomyId;
+            } else {
+              const p = await one(db,'SELECT * FROM public.regular_products WHERE id=$1 AND organization_id=$2',[line.regularProductId,org.id]);
+              if (!p) invalid(`${path}/regularProductId`,'Choose a regular product in this organization.');
+              partNumber = p.part_number; price = p.list_price; parentTaxonomyId = p.parent_taxonomy_id == null ? null : String(p.parent_taxonomy_id);
+              snapshot = flatSnapshot(partNumber,p.description,price);
+            }
+          } else {
+            const p = productFields(line,path); partNumber = p.partNumber; price = p.listPrice;
+            snapshot = flatSnapshot(partNumber,p.description,price);
+          }
+          const amount = cents(price) * BigInt(line.quantity);
+          total += amount; netTotal += cents(netAmount(dollars(amount),quoteMultiple,pricing));
+          if (total > 99999999999999n || netTotal > 99999999999999n) invalid('/lines','Quote total exceeds the supported USD limit.');
+          lines.push({id:previous?.id ?? randomUUID(),kind,...extras,regularProductId:kind === 'regular' ? line.regularProductId : null,parentTaxonomyId,taxonomyId:null,versionId:null,snapshot,selections:[],quantity:line.quantity,partNumber,complete:true,unitPrice:price,lineTotal:dollars(amount)});
+          continue;
+        }
+
+        if (previous && !previous.kind && previous.taxonomyId === line.taxonomyId && previous.versionId === line.versionId) {
           const segments = previous.snapshot.content.segments;
           if (!Array.isArray(line.selections) || line.selections.length !== segments.length) invalid(`${path}/selections`,'Provide a choice or null for each segment.');
           line.selections.forEach((choice,j)=>{ if (choice !== null && !segments[j].options.some(o=>o.id===choice)) invalid(`${path}/selections/${j}`,'Choose an option from the saved configuration.'); });
         }
         let snapshot;
-        if (previous && previous.taxonomyId === line.taxonomyId && previous.versionId === line.versionId && isDeepStrictEqual(previous.selections,line.selections)) snapshot = previous.snapshot;
+        if (previous && !previous.kind && previous.taxonomyId === line.taxonomyId && previous.versionId === line.versionId && isDeepStrictEqual(previous.selections,line.selections)) snapshot = previous.snapshot;
         else {
           await db.query('UPDATE public.taxonomies t SET auth_revision=COALESCE(auth_revision,0)+1 WHERE t.id=$1 AND '+configurationAccessPredicate,[line.taxonomyId,org.id]);
           const source = await one(db,`SELECT t.owner_organization_id,t.current_version_id,t.archived_at,v.content,v.principal_id,p.name AS principal_name
@@ -87,22 +122,22 @@ export function createQuoteService(withTransaction) {
           if (!option) invalid(`${path}/selections/${j}`,'Choose an option from the saved configuration.');
           price += cents(option.price); return option.code;
         });
-        const amount = price * BigInt(line.quantity); total += amount;
-        if (total > 99999999999999n) invalid('/lines','Quote total exceeds the supported USD limit.');
+        const amount = price * BigInt(line.quantity); total += amount; netTotal += cents(netAmount(dollars(amount),quoteMultiple,pricing));
+        if (total > 99999999999999n || netTotal > 99999999999999n) invalid('/lines','Quote total exceeds the supported USD limit.');
         const separators = content.separators ?? Array(content.segments.length-1).fill('-');
-        lines.push({ id: previous?.id ?? randomUUID(), taxonomyId: line.taxonomyId, versionId: line.versionId, snapshot,
+        lines.push({ id: previous?.id ?? randomUUID(), ...extras, taxonomyId: line.taxonomyId, versionId: line.versionId, snapshot,
           selections: line.selections, quantity: line.quantity, partNumber: codes.map((code,j) => (j ? separators[j-1] : '')+code).join(''),
           complete: line.selections.every(s => s !== null), unitPrice: dollars(price), lineTotal: dollars(amount) });
       }
       if (Buffer.byteLength(JSON.stringify(lines),'utf8') > 512 * 1024) invalid('/lines','Quote snapshots exceed 512 KiB. Use fewer lines.', 'PAYLOAD_TOO_LARGE', 413);
-      if (old && old.customerName === customer && old.projectName === project && old.ownerId === body.ownerId && isDeepStrictEqual(old.lines,lines)) return { quote: old, unchanged: true };
+      if (old && old.customerName === customer && old.projectName === project && old.ownerId === body.ownerId && old.multiple === quoteMultiple && isDeepStrictEqual(old.lines,lines)) return { quote: old, unchanged: true };
       let id = quoteId;
       if (old) {
-        const updated = await one(db,`UPDATE public.quotes SET customer_name=$1, project_name=$2,owner_user_id=$3,lines=$4,modified_by=$5,modified_when=now()
-          WHERE id=$6 AND organization_id=$7 AND modified_when::text=$8 RETURNING id`,[customer,project,body.ownerId,JSON.stringify(lines),user.id,id,org.id,body.expectedToken]);
+        const updated = await one(db,`UPDATE public.quotes SET customer_name=$1, project_name=$2,owner_user_id=$3,lines=$4,modified_by=$5,modified_when=now(),multiple=$9
+          WHERE id=$6 AND organization_id=$7 AND modified_when::text=$8 RETURNING id`,[customer,project,body.ownerId,JSON.stringify(lines),user.id,id,org.id,body.expectedToken,quoteMultiple]);
         if (!updated) conflict();
-      } else id = String((await one(db,`INSERT INTO public.quotes(organization_id,customer_name,project_name,owner_user_id,lines,modified_by)
-        VALUES($1,$2,$3,$4,$5,$6) RETURNING id`,[org.id,customer,project,body.ownerId,JSON.stringify(lines),user.id])).id);
+      } else id = String((await one(db,`INSERT INTO public.quotes(organization_id,customer_name,project_name,owner_user_id,lines,modified_by,multiple)
+        VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING id`,[org.id,customer,project,body.ownerId,JSON.stringify(lines),user.id,quoteMultiple])).id);
       return { quote: await detail(db,org.id,id), unchanged: false };
     });
   }

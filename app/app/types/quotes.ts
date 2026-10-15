@@ -11,7 +11,14 @@ export interface QuoteFilters {
 }
 export type QuoteDetail = components['schemas']['QuoteDetail']
 export type QuoteLine = components['schemas']['QuoteLine']
-export type QuoteLineInput = components['schemas']['QuoteLineInput']
+type LineInput = components['schemas']['QuoteLineInput']
+export type QuoteLineInput = Pick<LineInput, 'id' | 'quantity' | 'multiple'> & (
+  | { kind?: 'configured'; taxonomyId: string; versionId: string; selections: (string | null)[] }
+  | { kind: 'regular'; regularProductId: string }
+  | { kind: 'freeform'; partNumber: string; description: string; listPrice: string }
+)
 export type QuoteSnapshot = components['schemas']['QuoteConfigurationSnapshot']
 export type QuoteProduct = components['schemas']['TaxonomyListResponse']['items'][number]
 export type LocalQuoteLine = Omit<QuoteLine, 'id'> & { id: string | null; key: string }
+
+export type RegularProduct = components['schemas']['RegularProduct']

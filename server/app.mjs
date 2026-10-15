@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import { HttpError } from './shared.mjs';
 import { MAX_BYTES } from './taxonomy-content.mjs';
 import { validateClaims, verifiedIdentityLookup } from './authentication.mjs';
+import { business, boundedBusiness, operationInput } from './routes/context.mjs';
 import { registerSessionRoutes } from './routes/session.mjs';
 import { registerProfileRoutes } from './routes/profile.mjs';
 import { registerOrganizationRoutes } from './routes/organizations.mjs';
@@ -135,6 +136,9 @@ export function createApp({
             };
     reply.code(status).send({ ...body, requestId: request.id });
   });
+  app.get('/organizations/:orgId/regular-products', business, request => services.regularProducts.list(operationInput(request)));
+  app.post('/organizations/:orgId/regular-products', boundedBusiness, request => services.regularProducts.save(operationInput(request)));
+  app.put('/organizations/:orgId/regular-products/:productId', boundedBusiness, request => services.regularProducts.save(operationInput(request)));
   registerSessionRoutes(app, config);
   registerProfileRoutes(app, services.identity);
   registerOrganizationRoutes(app, services.identity);

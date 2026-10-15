@@ -7,9 +7,9 @@ import {
   type Organization,
   type Profile,
 } from '~/types/identity'
-import { quoteAmount, quoteNumber } from '~/utils/quote'
+import { quoteAmount, quoteNumber, adjustedAmount, validMultiple } from '~/utils/quote'
 import type { Taxonomy } from '~/types/taxonomy'
-import type { Quote, QuoteDetail, LocalQuoteLine } from '~/types/quotes'
+import type { Quote, QuoteDetail, LocalQuoteLine, RegularProduct } from '~/types/quotes'
 export function createFixtures() {
   if (!import.meta.dev)
     throw new Error('Fixtures are unavailable in production')
@@ -193,7 +193,26 @@ export function createFixtures() {
           save(); return structuredClone({domains:state.domains[orgId] || []}) as T
         }
         if (['taxonomies', 'principals'].includes(parts[2] || '')) return structuredClone(configurations.request(path, method, body, org!, state.user)) as T
-        const quoteDetail = (quote: Quote & Partial<QuoteDetail>): QuoteDetail => ({ ...quote, token: quote.modifiedWhen, lines: quote.lines ?? [], currency: 'USD', total: (() => { const n = (quote.lines ?? []).reduce((sum,l) => sum + BigInt(l.lineTotal.replace('.','')),0n); return `${n / 100n}.${String(n % 100n).padStart(2,'0')}` })() })
+        const regularKey = `quotes:fixture:regular-products:${orgId}`
+        const regular: RegularProduct[] = JSON.parse(sessionStorage.getItem(regularKey) || '[]')
+        if (parts[2] === 'regular-products') {
+          if (method === 'GET') return structuredClone({ items: regular }) as T
+          if (org!.role !== 'administrator' && !state.user.isSuperAdministrator) fail(403, 'FORBIDDEN', 'Only an administrator can manage products.')
+          const old = regular.find(p => p.id === parts[3])
+          if (parts[3] && !old) fail(404, 'NOT_FOUND', 'Product not found.')
+          if (old && old.token !== body.expectedToken) fail(409, 'PRODUCT_CONFLICT', 'This product changed. Reload before saving.')
+          if (!body.partNumber?.trim() || body.partNumber.trim().length > 120 || /[\p{Cc}\p{Cs}]/u.test(body.partNumber) || typeof body.description !== 'string' || body.description.length > 500 || !/^(0|[1-9][0-9]{0,11})(\.[0-9]{1,2})?$/.test(body.listPrice)) fail(422, 'INVALID_INPUT', 'Enter valid part number, description and List Price.')
+          if (regular.some(p => p.id !== old?.id && p.partNumber === body.partNumber.trim())) fail(409, 'PRODUCT_DUPLICATE', 'This part number already exists in this organization.')
+          if (body.parentTaxonomyId && body.parentTaxonomyId !== old?.parentTaxonomyId) {
+            const parent = (configurations.request(`/organizations/${orgId}/taxonomies/${body.parentTaxonomyId}`, 'GET', {}, org!, state.user) as { taxonomy: Taxonomy }).taxonomy
+            if (parent.archivedAt) fail(422, 'INVALID_INPUT', 'Choose an accessible active configured product.')
+          }
+          const product: RegularProduct = { id: old?.id ?? String(Math.max(0, ...regular.map(p => Number(p.id))) + 1), partNumber: body.partNumber.trim(), description: body.description.trim(), listPrice: Number(body.listPrice).toFixed(2), parentTaxonomyId: body.parentTaxonomyId, token: new Date().toISOString() }
+          if (old) regular.splice(regular.indexOf(old), 1, product); else regular.push(product)
+          sessionStorage.setItem(regularKey, JSON.stringify(regular)); return structuredClone({ product }) as T
+        }
+        const sumMoney = (values: string[]) => { const n = values.reduce((sum, v) => sum + BigInt(v.replace('.', '')), 0n); return `${n / 100n}.${String(n % 100n).padStart(2, '0')}` }
+        const quoteDetail = (quote: Quote & Partial<QuoteDetail>): QuoteDetail => ({ ...quote, token: quote.modifiedWhen, lines: quote.lines ?? [], multiple: quote.multiple ?? 1, currency: 'USD', listTotal: sumMoney((quote.lines ?? []).map(l => l.lineTotal)), total: sumMoney((quote.lines ?? []).map(l => adjustedAmount(l.lineTotal, quote.multiple ?? 1, l.multiple ?? 1))) })
         if (parts[2] === 'quotes' && ((parts.length === 4 && ['GET','PUT'].includes(method)) || (parts.length === 3 && method === 'POST'))) {
           const previous = state.quotes[orgId]?.find(q => q.id === parts[3])
           if (parts[3] && !previous) fail(404,'NOT_FOUND','Quote not found.')
@@ -203,9 +222,19 @@ export function createFixtures() {
           const owner = (state.members[orgId] || []).find(m => m.userId === body.ownerId)
           if (body.ownerId !== null && !owner) fail(422,'OWNER_UNAVAILABLE','Choose an active team member.')
           if (!Array.isArray(body.lines) || body.lines.length > 100) fail(422,'INVALID_INPUT','Use at most 100 lines.')
+          if (!validMultiple(body.multiple ?? 1)) fail(422, 'INVALID_INPUT', 'Enter a valid quote multiple.')
           const lines = body.lines.map((input: any) => {
             const old = previous?.lines?.find(l => l.id === input.id)
             if (!Number.isInteger(input.quantity) || input.quantity < 1 || input.quantity > 1000000) fail(422,'INVALID_INPUT','Use a positive whole quantity.')
+            if (!validMultiple(input.multiple ?? 1)) fail(422, 'INVALID_INPUT', 'Enter a valid line multiple.')
+            if (input.kind === 'regular' || input.kind === 'freeform') {
+              const p = input.kind === 'regular' ? regular.find(p => p.id === input.regularProductId) : { partNumber: input.partNumber, description: input.description, listPrice: input.listPrice, parentTaxonomyId: null }
+              const retained = old?.kind === 'regular' && old.regularProductId === input.regularProductId ? old : null
+              if (!p && !retained) fail(422, 'INVALID_INPUT', 'Choose a regular product.')
+              const snapshot = retained?.snapshot ?? { content: { schemaVersion: 1 as const, productFamilyName: p!.partNumber.trim(), productDescription: p!.description, currency: 'USD' as const, basePrice: p!.listPrice, separators: [], segments: [] }, principalId: null, principalName: null }
+              const line: LocalQuoteLine = { ...input, id: old?.id ?? crypto.randomUUID(), key: '', taxonomyId: null, versionId: null, parentTaxonomyId: retained?.parentTaxonomyId ?? p?.parentTaxonomyId, snapshot, selections: [], complete: true }
+              return { ...line, key: undefined, ...quoteAmount(line), partNumber: quoteNumber(line) }
+            }
             let snapshot = old && old.taxonomyId === input.taxonomyId && old.versionId === input.versionId && JSON.stringify(old.selections) === JSON.stringify(input.selections) ? old.snapshot : null
             if (!snapshot) {
               let t: Taxonomy
@@ -218,8 +247,8 @@ export function createFixtures() {
             const line: LocalQuoteLine = { ...input, id: old?.id ?? crypto.randomUUID(), key: '', snapshot, complete: input.selections.every((id: string | null) => id !== null) }
             return { ...line, key: undefined, ...quoteAmount(line), partNumber: quoteNumber(line) }
           })
-          const quote: Quote & Partial<QuoteDetail> = { id: previous?.id ?? String(Math.max(10000,...Object.values(state.quotes).flat().map(q => Number(q.id))) + 1), organizationId: orgId, customerId: previous?.customerId ?? null, customerName: body.customerName.trim(), projectName: body.projectName.trim(), title: `${body.customerName.trim()} - ${body.projectName.trim()}`, ownerId: body.ownerId, ownerName: owner ? owner.displayName?.trim() || 'Unnamed team member' : null, modifiedBy: state.user.id, modifiedByName: state.user.displayName?.trim() || 'Unnamed team member', modifiedWhen: new Date().toISOString(), lines }
-          const unchanged = previous && previous.customerName === quote.customerName && previous.projectName === quote.projectName && previous.ownerId === quote.ownerId && JSON.stringify(previous.lines ?? []) === JSON.stringify(lines)
+          const quote: Quote & Partial<QuoteDetail> = { id: previous?.id ?? String(Math.max(10000,...Object.values(state.quotes).flat().map(q => Number(q.id))) + 1), organizationId: orgId, customerId: previous?.customerId ?? null, customerName: body.customerName.trim(), projectName: body.projectName.trim(), title: `${body.customerName.trim()} - ${body.projectName.trim()}`, ownerId: body.ownerId, ownerName: owner ? owner.displayName?.trim() || 'Unnamed team member' : null, modifiedBy: state.user.id, modifiedByName: state.user.displayName?.trim() || 'Unnamed team member', modifiedWhen: new Date().toISOString(), multiple: body.multiple ?? 1, lines }
+          const unchanged = previous && previous.customerName === quote.customerName && previous.projectName === quote.projectName && previous.ownerId === quote.ownerId && (previous.multiple ?? 1) === quote.multiple && JSON.stringify(previous.lines ?? []) === JSON.stringify(lines)
           if (unchanged) return structuredClone({ quote: quoteDetail(previous), unchanged: true }) as T
           if (previous) state.quotes[orgId]!.splice(state.quotes[orgId]!.indexOf(previous),1,quote); else (state.quotes[orgId] ??= []).push(quote)
           save(); return structuredClone({ quote: quoteDetail(quote), unchanged: false }) as T
