@@ -6,7 +6,7 @@ import { createApp } from '../app.mjs';
 import { createLambdaHandler } from '../lambda.mjs';
 
 export const sampleQuote = {
-  id: '123', customerName: 'Acme Café', projectName: 'Office', multiple: 0.5, total: '0.05',
+  id: '123', customerName: 'Acme Café', projectName: 'Office', location: 'Seattle, WA', authorName: 'Mary Jane Watson', multiple: 0.5, total: '0.05',
   lines: [{ partNumber: 'F-A', quantity: 3, complete: true, unitPrice: '0.03', lineTotal: '0.09',
     selections: ['a'], snapshot: { content: { productFamilyName: 'F Series', productDescription: 'Configured product', segments: [
       { name: 'Size', placeholder: 'XX', options: [{ id: 'a', code: 'A', description: 'Small', price: '0.01' }] },
@@ -18,6 +18,8 @@ test('PDF data uses saved prices, line rounding, and per-unit additions after mu
   assert.equal(result.lines[0].extendedPrice, '0.05'); // Not rounded unit price * quantity (0.06).
   assert.equal(result.lines[0].options[0].addition, '0.01');
   assert.equal(result.total, '0.05');
+  assert.equal(result.location, 'Seattle, WA');
+  assert.equal(result.quoteBy, 'MW');
   assert.equal(result.draft, false);
   assert.equal(result.lines[0].productName, 'F Series');
   const ordinary = structuredClone(sampleQuote);
@@ -73,4 +75,10 @@ test('Gateway v2 delivers actual PDF bytes and dispositions, retains authenticat
     assert.equal((await handler(event, {})).statusCode, 401);
   }
   await app.close();
+});
+
+test('Quote By uses first and last author initials with safe missing-name handling', () => {
+  for (const [authorName, expected] of [[null, '-'], ['', '-'], ['  Miles  Watson  ', 'MW'], ['Prince', 'P'], ['Élodie van Dijk', 'ÉD']]) {
+    assert.equal(prepareQuotePdf({ ...sampleQuote, authorName }, {}).quoteBy, expected);
+  }
 });

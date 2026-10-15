@@ -1,5 +1,6 @@
 import { business, boundedBusiness, operationInput } from './context.mjs';
 export function registerQuoteRoutes(app, service) {
+  app.get('/organizations/:orgId/quotes/:quoteId/pdf-url', business, request => service.readQuotePdfUrl(operationInput(request)));
   app.get('/organizations/:orgId/quotes/:quoteId/pdf', business, async (request, reply) => {
     const result = await service.readQuotePdf(operationInput(request));
     return reply.type('application/pdf')

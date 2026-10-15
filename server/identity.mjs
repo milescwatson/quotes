@@ -1,3 +1,4 @@
+import { createQuotePdfQueue, createQuotePdfStorage } from './quote-pdf-storage.mjs';
 import { randomUUID } from 'node:crypto';
 import { isSuperAdministratorEmail } from './super-administrators.mjs';
 import { createOrganizationAdminService } from './organization-admin.mjs';
@@ -181,6 +182,7 @@ async function quotePage(db, organizationId, query) {
       ownerName: q.owner_name,
       customerName: q.customer_name,
       projectName: q.project_name,
+      location: q.location ?? '',
       title: `${q.customer_name} - ${q.project_name}`,
       modifiedBy: String(q.modified_by),
       modifiedByName: q.modifier_name,
@@ -193,7 +195,7 @@ async function quotePage(db, organizationId, query) {
     totalPages: Math.ceil(totalItems / pageSize),
   };
 }
-export function createIdentityService(withTransaction, { logoStorage = createLogoStorage() } = {}) {
+export function createIdentityService(withTransaction, { logoStorage = createLogoStorage(), enqueueQuotePdf = createQuotePdfQueue(), pdfStorage = createQuotePdfStorage(), now = Date.now } = {}) {
   // Reads validate current access without writes. Mutations guard participants
   // in numeric order before the organization to serialize authorization changes.
   async function account(db, identity) {
@@ -337,7 +339,7 @@ export function createIdentityService(withTransaction, { logoStorage = createLog
   }
   async function setQuoteArchived({ orgId, quoteId, identity }, archived) {
     identifier(quoteId);
-    return withTransaction(async (db) => {
+    const result = await withTransaction(async (db) => {
       const { u } = await participants(db, identity, { orgId });
       const { org } = await organizationAccess(db, u, orgId);
       const quote = await one(
@@ -356,6 +358,8 @@ export function createIdentityService(withTransaction, { logoStorage = createLog
       if (!result) fail(409, 'QUOTE_STATE_CHANGED', 'This quote changed. Reload before trying again.');
       return { success: true };
     });
+    await enqueueQuotePdf({ organizationId: orgId, quoteId });
+    return result;
   }
   async function changeLogo(input, version) {
     const result = await withTransaction(async db => {
@@ -373,7 +377,7 @@ export function createIdentityService(withTransaction, { logoStorage = createLog
     return { organization: result.organization };
   }
   return {
-    ...createQuoteService(withTransaction, { logoStorage }),
+    ...createQuoteService(withTransaction, { logoStorage, enqueueQuotePdf, pdfStorage, now }),
     ...createOrganizationAdminService(withTransaction),
     async bootstrapProfile({ body = {}, identity, requestId }) {
       return withTransaction(async (db) => {
@@ -553,7 +557,7 @@ export function createIdentityService(withTransaction, { logoStorage = createLog
       });
     },
     async updateQuoteOwner({ orgId, quoteId, body = {}, identity }) {
-      return withTransaction(async (db) => {
+      const changed = await withTransaction(async (db) => {
         const { u } = await participants(db, identity, {
           orgId,
           quoteId,
@@ -563,7 +567,7 @@ export function createIdentityService(withTransaction, { logoStorage = createLog
         const { org } = await organizationAccess(db, u, orgId);
         const quote = await one(
           db,
-          'SELECT id FROM public.quotes WHERE id=$1 AND organization_id=$2 AND archived_at IS NULL',
+          'SELECT id, owner_user_id FROM public.quotes WHERE id=$1 AND organization_id=$2 AND archived_at IS NULL',
           [quoteId, org.id],
         );
         if (!quote) fail(404, 'NOT_FOUND', 'Quote not found.');
@@ -582,13 +586,16 @@ export function createIdentityService(withTransaction, { logoStorage = createLog
               'Choose an active team member from this organization.',
             );
         }
+        if ((quote.owner_user_id == null ? null : String(quote.owner_user_id)) === body.ownerId) return false;
         await db.query(
           `UPDATE public.quotes SET owner_user_id=$1, modified_by=$2, modified_when=now()
           WHERE id=$3 AND organization_id=$4`,
           [body.ownerId, u.id, quoteId, org.id],
         );
-        return { success: true };
+        return true;
       });
+      if (changed) await enqueueQuotePdf({ organizationId: orgId, quoteId });
+      return { success: true };
     },
     archiveQuote(input) { return setQuoteArchived(input, true); },
     restoreQuote(input) { return setQuoteArchived(input, false); },

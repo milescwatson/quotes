@@ -10,12 +10,12 @@ export function useQuoteEditor() {
   const organization = computed(() => identity.organizationId(route.params.orgId))
   const org = computed(() => identity.state.organizations.find(o => o.id === organization.value))
   const back = computed(() => `${identity.organizationPath(organization.value)}/quotes`)
-  const saved = ref<QuoteDetail | null>(null), customer = ref(''), project = ref(''), owner = ref<string | null>(null), lines = ref<(LocalQuoteLine | null)[]>([])
+  const saved = ref<QuoteDetail | null>(null), customer = ref(''), project = ref(''), location = ref(''), owner = ref<string | null>(null), lines = ref<(LocalQuoteLine | null)[]>([])
   const multiple = ref(1), regularProducts = ref<RegularProduct[]>([])
   const keys = ref<string[]>([]), pending = ref(new Set<string>())
   const products = ref<QuoteProduct[]>([]), owners = ref<QuoteOwners['items']>([])
   const loading = ref(true), ready = ref(false), error = ref(''), catalogError = ref(''), catalogLoading = ref(false), notice = ref(''), conflicted = ref(false), errors = ref<FieldError[]>([])
-  const fingerprint = () => JSON.stringify({ customer: customer.value, project: project.value, owner: owner.value, multiple: multiple.value, lines: lines.value, keys: keys.value })
+  const fingerprint = () => JSON.stringify({ customer: customer.value, project: project.value, location: location.value, owner: owner.value, multiple: multiple.value, lines: lines.value, keys: keys.value })
   const baseline = ref(''), dirty = computed(() => ready.value && (fingerprint() !== baseline.value || pending.value.size > 0))
   let generation = 0
   const saveMutation = useMutation({
@@ -27,7 +27,7 @@ export function useQuoteEditor() {
   })
   const busy = saveMutation.isPending
   function adopt(q: QuoteDetail) {
-    saved.value = q; customer.value = q.customerName; project.value = q.projectName; owner.value = q.ownerId; multiple.value = q.multiple ?? 1
+    saved.value = q; customer.value = q.customerName; project.value = q.projectName; location.value = q.location ?? ''; owner.value = q.ownerId; multiple.value = q.multiple ?? 1
     lines.value = q.lines.map(l => ({ ...l, key: l.id })); keys.value = q.lines.map(l => l.id); pending.value.clear(); baseline.value = fingerprint()
   }
   async function catalog() {
@@ -64,24 +64,25 @@ export function useQuoteEditor() {
       if (current !== generation) return
       owners.value = team.items
       if (result) adopt(result.quote)
-      else { saved.value = null; multiple.value = 1; customer.value = ''; project.value = ''; owner.value = team.items.some(person => person.id === identity.state.user?.id) ? identity.state.user!.id : null; lines.value = []; keys.value = []; pending.value.clear(); baseline.value = fingerprint() }
+      else { saved.value = null; multiple.value = 1; customer.value = ''; project.value = ''; location.value = ''; owner.value = team.items.some(person => person.id === identity.state.user?.id) ? identity.state.user!.id : null; lines.value = []; keys.value = []; pending.value.clear(); baseline.value = fingerprint() }
       ready.value = true; void catalog()
     } catch (e) { if (current === generation) error.value = (e as Error).message }
     finally { if (current === generation) loading.value = false }
   }
-  function clear() { ready.value = false; saved.value = null; multiple.value = 1; customer.value = ''; project.value = ''; owner.value = null; lines.value = []; keys.value = []; products.value = []; regularProducts.value = []; owners.value = []; pending.value.clear() }
+  function clear() { ready.value = false; saved.value = null; multiple.value = 1; customer.value = ''; project.value = ''; location.value = ''; owner.value = null; lines.value = []; keys.value = []; products.value = []; regularProducts.value = []; owners.value = []; pending.value.clear() }
   function invalidate(message = 'You no longer have access to this organization.') { generation++; clear(); loading.value = false; error.value = message }
   async function save() {
     if (!ready.value || busy.value || conflicted.value) return
     error.value = ''; errors.value = []; notice.value = ''
     for (const [field,value] of [['customerName',customer.value],['projectName',project.value]]) if (!value?.trim() || value.trim().length > 120 || /[\p{Cc}\p{Cs}]/u.test(value)) errors.value.push({ path: `/${field}`, code: 'INVALID_INPUT', message: 'Enter 1–120 characters without control characters.' })
+    if (location.value.trim().length > 120 || /[\p{Cc}\p{Cs}]/u.test(location.value)) errors.value.push({ path: '/location', code: 'INVALID_INPUT', message: 'Enter at most 120 characters without control characters.' })
     if (!validMultiple(multiple.value)) errors.value.push({ path: '/multiple', code: 'INVALID_INPUT', message: 'Use a multiple from 0 to 1,000 with at most four decimal places.' })
     if (lines.value.some(l => !l)) error.value = 'Choose a product for every line, or remove the empty line.'
     if (errors.value.length || error.value) { await nextTick(); document.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus(); return }
     const current = generation
     try {
       const result = await saveMutation.mutateAsync({ organization: organization.value, id: saved.value?.id ?? null, body: {
-        customerName: customer.value.trim(), projectName: project.value.trim(), ownerId: owner.value, multiple: multiple.value, lines: lines.value.map(l => lineInput(l!)), ...(saved.value ? { expectedToken: saved.value.token } : {}),
+        customerName: customer.value.trim(), projectName: project.value.trim(), location: location.value.trim(), ownerId: owner.value, multiple: multiple.value, lines: lines.value.map(l => lineInput(l!)), ...(saved.value ? { expectedToken: saved.value.token } : {}),
       } })
       if (current !== generation) return
       const created = !saved.value; adopt(result.quote); notice.value = result.unchanged ? 'No changes to save.' : 'Quote saved.'
@@ -105,5 +106,5 @@ export function useQuoteEditor() {
   watch(() => org.value, value => { if (!value) invalidate() })
   watch(() => identity.state.user?.id, () => invalidate('Your session changed. Reload to continue.'))
   onBeforeUnmount(() => { generation++; window.removeEventListener('beforeunload',unload); window.removeEventListener('quotes:before-sign-out',signOut) })
-  return { multiple, regularProducts, saved, customer, project, owner, lines, keys, pending, owners, products, back, organization, ready, loading, busy, error, catalogError, catalogLoading, notice, conflicted, errors, dirty, load, catalog, save, add, remove, reload, invalidate, discardChanges }
+  return { multiple, regularProducts, saved, customer, project, location, owner, lines, keys, pending, owners, products, back, organization, ready, loading, busy, error, catalogError, catalogLoading, notice, conflicted, errors, dirty, load, catalog, save, add, remove, reload, invalidate, discardChanges }
 }

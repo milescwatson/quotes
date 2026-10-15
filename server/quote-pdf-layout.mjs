@@ -91,13 +91,19 @@ export function renderQuotePdf(model) {
         y += 22;
       }
       function customerDetails() {
-        const boxHeight = Math.max(height(model.customer, 236, 11, 'Bold'), height(model.project, 236, 11, 'Bold')) + 42;
+        const firstRowHeight = Math.max(height(model.customer, 236, 11, 'Bold'), height(model.project, 236, 11, 'Bold'));
+        const secondRowTop = 27 + firstRowHeight + 14;
+        const boxHeight = secondRowTop + 16 + Math.max(height(model.location || '-', 236, 11, 'Bold'), height(model.quoteBy || '-', 236, 11, 'Bold')) + 15;
         ensure(boxHeight + 40);
         doc.roundedRect(LEFT, y, RIGHT - LEFT, boxHeight, 5).fill(PALE);
         text('CUSTOMER', LEFT + 14, y + 11, 236, 8, 'Bold', 'left', ACCENT);
         text('PROJECT', 320, y + 11, 236, 8, 'Bold', 'left', ACCENT);
         text(model.customer, LEFT + 14, y + 27, 236, 11, 'Bold');
         text(model.project, 320, y + 27, 236, 11, 'Bold');
+        text('JOB LOCATION', LEFT + 14, y + secondRowTop, 236, 8, 'Bold', 'left', ACCENT);
+        text('QUOTE BY', 320, y + secondRowTop, 236, 8, 'Bold', 'left', ACCENT);
+        text(model.location || '-', LEFT + 14, y + secondRowTop + 16, 236, 11, 'Bold');
+        text(model.quoteBy || '-', 320, y + secondRowTop + 16, 236, 11, 'Bold');
         y += boxHeight + 15;
         if (model.draft) flowing('DRAFT - Incomplete quote; prices are estimated.', LEFT, 528, 9, 'Regular', '#80571b');
         y += 9; ensure(32); columns();

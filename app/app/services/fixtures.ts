@@ -92,7 +92,7 @@ export function createFixtures() {
         customerId: index % 2 === 0 ? null : index + 100,
         ownerId: index % 3 === 2 ? null : index % 3 === 0 ? me : id(2),
         ownerName: index % 3 === 2 ? null : index % 3 === 0 ? user.displayName! : 'Jamie Chen',
-        customerName, projectName, title: `${customerName} - ${projectName}`,
+        customerName, projectName, location: '', title: `${customerName} - ${projectName}`,
         modifiedBy: index % 2 === 0 ? me : id(5),
         modifiedByName: index % 2 === 0 ? user.displayName! : 'Unnamed team member',
         modifiedWhen: new Date(Date.UTC(2026, 9, 10, 12) - index * 3600000).toISOString(),
@@ -232,7 +232,13 @@ export function createFixtures() {
           sessionStorage.setItem(regularKey, JSON.stringify(regular)); return structuredClone({ product }) as T
         }
         const sumMoney = (values: string[]) => { const n = values.reduce((sum, v) => sum + BigInt(v.replace('.', '')), 0n); return `${n / 100n}.${String(n % 100n).padStart(2, '0')}` }
-        const quoteDetail = (quote: Quote & Partial<QuoteDetail>): QuoteDetail => ({ ...quote, archivedAt: quote.archivedAt ?? null, token: quote.modifiedWhen, lines: (quote.lines ?? []).map(({ multiple: _removed, ...line }: any) => line), multiple: quote.multiple ?? 1, currency: 'USD', listTotal: sumMoney((quote.lines ?? []).map(l => l.lineTotal)), total: sumMoney((quote.lines ?? []).map(l => adjustedAmount(l.lineTotal, quote.multiple ?? 1))) })
+        const quoteDetail = (quote: Quote & Partial<QuoteDetail>): QuoteDetail => ({ ...quote, location: quote.location ?? '', authorName: quote.authorName ?? null, archivedAt: quote.archivedAt ?? null, token: quote.modifiedWhen, lines: (quote.lines ?? []).map(({ multiple: _removed, ...line }: any) => line), multiple: quote.multiple ?? 1, currency: 'USD', listTotal: sumMoney((quote.lines ?? []).map(l => l.lineTotal)), total: sumMoney((quote.lines ?? []).map(l => adjustedAmount(l.lineTotal, quote.multiple ?? 1))) })
+        if (parts[2] === 'quotes' && parts[4] === 'pdf-url' && method === 'GET') {
+          const quote = state.quotes[orgId]?.find(q => q.id === parts[3])
+          if (!quote) fail(404, 'NOT_FOUND', 'Quote not found.')
+          if (quote!.modifiedWhen !== new URL(path, 'https://fixture.invalid').searchParams.get('expectedToken')) fail(409, 'QUOTE_CONFLICT', 'This quote changed. Reload the page before exporting a PDF.')
+          return { url: null } as T
+        }
         if (parts[2] === 'quotes' && parts.length === 5 && ['archive', 'restore'].includes(parts[4]!) && method === 'POST') {
           const quote = state.quotes[orgId]?.find(q => q.id === parts[3])
           if (!quote) fail(404, 'NOT_FOUND', 'Quote not found.')
@@ -281,8 +287,8 @@ export function createFixtures() {
             return { ...line, key: undefined, ...quoteAmount(line), partNumber: quoteNumber(line) }
           })
           if (previous?.archivedAt) fail(409, 'QUOTE_ARCHIVED', 'This quote is archived. Restore it before making changes.')
-          const quote: Quote & Partial<QuoteDetail> = { id: previous?.id ?? String(Math.max(10000,...Object.values(state.quotes).flat().map(q => Number(q.id))) + 1), organizationId: orgId, customerId: previous?.customerId ?? null, customerName: body.customerName.trim(), projectName: body.projectName.trim(), title: `${body.customerName.trim()} - ${body.projectName.trim()}`, ownerId: body.ownerId, ownerName: owner ? owner.displayName?.trim() || 'Unnamed team member' : null, modifiedBy: state.user.id, modifiedByName: state.user.displayName?.trim() || 'Unnamed team member', modifiedWhen: new Date().toISOString(), archivedAt: previous?.archivedAt ?? null, multiple: body.multiple ?? 1, lines }
-          const unchanged = previous && previous.customerName === quote.customerName && previous.projectName === quote.projectName && previous.ownerId === quote.ownerId && (previous.multiple ?? 1) === quote.multiple && JSON.stringify(previous.lines ?? []) === JSON.stringify(lines)
+          const quote: Quote & Partial<QuoteDetail> = { id: previous?.id ?? String(Math.max(10000,...Object.values(state.quotes).flat().map(q => Number(q.id))) + 1), organizationId: orgId, customerId: previous?.customerId ?? null, customerName: body.customerName.trim(), projectName: body.projectName.trim(), location: body.location?.trim() ?? previous?.location ?? '', authorName: previous ? previous.authorName ?? null : state.user.displayName?.trim() || null, title: `${body.customerName.trim()} - ${body.projectName.trim()}`, ownerId: body.ownerId, ownerName: owner ? owner.displayName?.trim() || 'Unnamed team member' : null, modifiedBy: state.user.id, modifiedByName: state.user.displayName?.trim() || 'Unnamed team member', modifiedWhen: new Date().toISOString(), archivedAt: previous?.archivedAt ?? null, multiple: body.multiple ?? 1, lines }
+          const unchanged = previous && previous.customerName === quote.customerName && previous.projectName === quote.projectName && (previous.location ?? '') === quote.location && previous.ownerId === quote.ownerId && (previous.multiple ?? 1) === quote.multiple && JSON.stringify(previous.lines ?? []) === JSON.stringify(lines)
           if (unchanged) return structuredClone({ quote: quoteDetail(previous), unchanged: true }) as T
           if (previous) state.quotes[orgId]!.splice(state.quotes[orgId]!.indexOf(previous),1,quote); else (state.quotes[orgId] ??= []).push(quote)
           save(); return structuredClone({ quote: quoteDetail(quote), unchanged: false }) as T

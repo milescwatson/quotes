@@ -11,8 +11,11 @@ const input = { productFamilyName:'F Series',currency:'USD',basePrice:'0.10',sep
 ] };
 test('quote creation, partial options, snapshots, authorization, atomic validation and concurrency',async t => {
   const db = new PGlite();
-  const tx = async work => { await db.exec('BEGIN ISOLATION LEVEL REPEATABLE READ'); try { const value = await work(db); await db.exec('COMMIT'); return value } catch(e) { await db.exec('ROLLBACK'); throw e } };
-  const quotes = createIdentityService(tx), catalog = createTaxonomyService(tx);
+  let inTransaction = false;
+  const enqueued = [];
+  const tx = async work => { await db.exec('BEGIN ISOLATION LEVEL REPEATABLE READ'); inTransaction = true; try { const value = await work(db); await db.exec('COMMIT'); inTransaction = false; return value } catch(e) { await db.exec('ROLLBACK'); inTransaction = false; throw e } };
+  const enqueueQuotePdf = async message => { assert.equal(inTransaction, false, 'enqueue must follow commit'); enqueued.push(message); };
+  const quotes = createIdentityService(tx, { enqueueQuotePdf }), catalog = createTaxonomyService(tx);
   const call = (fn,body={},quoteId,sub='member',orgId='10') => fn({identity:{issuer:'test',sub},orgId,quoteId,body});
   const reject = (fn,code) => assert.rejects(fn,e => e.code === code);
   try {
@@ -31,6 +34,75 @@ test('quote creation, partial options, snapshots, authorization, atomic validati
     const line = { id:null,taxonomyId:product.id,versionId:product.version.id,selections:source.segments.map(s=>s.options[0].id),quantity:3 };
     const body = {customerName:'Customer',projectName:'Project',ownerId:'2',lines:[line,{...line,quantity:2}]};
     let q;
+    await t.test('queue follows committed changes, skips no-ops and failures, and covers owner/archive/restore', async () => {
+      const created = (await call(quotes.createQuote, { ...body, lines: [] })).quote;
+      assert.deepEqual(enqueued.at(-1), { organizationId: '10', quoteId: created.id });
+      const initial = enqueued.length;
+      const write = { customerName: created.customerName, projectName: created.projectName, ownerId: created.ownerId, lines: [], expectedToken: created.token };
+      assert.equal((await call(quotes.updateQuote, write, created.id)).unchanged, true);
+      assert.equal(enqueued.length, initial);
+      await reject(() => call(quotes.updateQuote, { ...write, expectedToken: 'stale', projectName: 'Other' }, created.id), 'QUOTE_CONFLICT');
+      assert.equal(enqueued.length, initial);
+      await call(quotes.updateQuote, { ...write, projectName: 'Other' }, created.id);
+      assert.equal(enqueued.length, initial + 1);
+      await call(quotes.updateQuoteOwner, { ownerId: '2' }, created.id);
+      assert.equal(enqueued.length, initial + 1);
+      await call(quotes.updateQuoteOwner, { ownerId: '1' }, created.id);
+      assert.equal(enqueued.length, initial + 2);
+      await call(quotes.archiveQuote, {}, created.id, 'admin');
+      await call(quotes.restoreQuote, {}, created.id, 'admin');
+      assert.equal(enqueued.length, initial + 4);
+      await db.query('DELETE FROM quotes WHERE id=$1', [created.id]);
+      // A transaction that cannot commit must not publish its proposed quote.
+      const broken = createIdentityService(async work => { await db.exec('BEGIN'); try { await work(db); throw Error('commit failed'); } finally { await db.exec('ROLLBACK'); } }, { enqueueQuotePdf });
+      await assert.rejects(() => call(broken.createQuote, { ...body, lines: [] }), /commit failed/);
+      assert.equal(enqueued.length, initial + 4);
+    });
+    await t.test('PDF URL checks server age, five-minute boundary, token and authorization', async () => {
+      const created = (await call(quotes.createQuote, { ...body, lines: [] })).quote;
+      await db.query("UPDATE quotes SET modified_when='2026-10-01T00:00:00Z' WHERE id=$1", [created.id]);
+      const current = (await call(quotes.readQuote, {}, created.id)).quote;
+      let age = 299999;
+      const urls = [];
+      const service = createIdentityService(tx, { enqueueQuotePdf, now: () => Date.parse(current.modifiedWhen) + age, pdfStorage: { url: async (...args) => { urls.push(args); return 'https://pdf.example/signed'; } } });
+      const request = { identity: { issuer: 'test', sub: 'member' }, orgId: '10', quoteId: created.id, query: { expectedToken: current.token, disposition: 'attachment' } };
+      assert.deepEqual(await service.readQuotePdfUrl(request), { url: null });
+      assert.equal(urls.length, 0);
+      age = 300000;
+      assert.deepEqual(await service.readQuotePdfUrl(request), { url: 'https://pdf.example/signed' });
+      assert.deepEqual(urls[0], ['10', created.id, current.token, 'attachment']);
+      age = 300001;
+      assert.ok((await service.readQuotePdfUrl(request)).url);
+      await reject(() => service.readQuotePdfUrl({ ...request, query: { expectedToken: 'stale' } }), 'QUOTE_CONFLICT');
+      await reject(() => service.readQuotePdfUrl({ ...request, query: { ...request.query, disposition: 'bad' } }), 'INVALID_INPUT');
+      await reject(() => service.readQuotePdfUrl({ ...request, identity: { issuer: 'test', sub: 'outsider' } }), 'NOT_FOUND');
+      await db.exec('UPDATE organization_memberships SET removed_at=now() WHERE organization_id=10 AND user_id=2');
+      await reject(() => service.readQuotePdfUrl(request), 'NOT_FOUND');
+      await db.exec('UPDATE organization_memberships SET removed_at=NULL WHERE organization_id=10 AND user_id=2');
+      await db.query('DELETE FROM quotes WHERE id=$1', [created.id]);
+    });
+    await t.test('location persists and author survives edits and ownership changes', async () => {
+      await db.exec("UPDATE users SET display_name='Miles Watson' WHERE id=2; UPDATE users SET display_name='Other Editor' WHERE id=1");
+      const created = (await call(quotes.createQuote, { ...body, lines: [], location: '  Seattle, WA  ' })).quote;
+      assert.equal(created.location, 'Seattle, WA');
+      assert.equal(created.authorName, 'Miles Watson');
+      const update = { customerName: created.customerName, projectName: created.projectName, ownerId: '1', lines: [], location: 'Portland, OR', expectedToken: created.token };
+      const edited = (await call(quotes.updateQuote, update, created.id, 'admin')).quote;
+      assert.equal(edited.location, 'Portland, OR');
+      assert.equal(edited.authorName, 'Miles Watson');
+      assert.equal(edited.modifiedByName, 'Other Editor');
+      const { location: omitted, ...withoutLocation } = { ...update, expectedToken: edited.token };
+      assert.equal((await call(quotes.updateQuote, withoutLocation, created.id, 'admin')).quote.location, 'Portland, OR');
+      const cleared = (await call(quotes.updateQuote, { ...withoutLocation, location: '' }, created.id, 'admin')).quote;
+      assert.equal(cleared.location, '');
+      for (const location of [null, 42, 'x'.repeat(121), 'bad\nlocation']) {
+        await assert.rejects(() => call(quotes.createQuote, { ...body, lines: [], location }), e => e.status === 422);
+      }
+      const legacy = (await call(quotes.readQuote, {}, '100')).quote;
+      assert.equal(legacy.location, '');
+      assert.equal(legacy.authorName, null);
+      await db.query('DELETE FROM quotes WHERE id=$1', [created.id]);
+    });
     await t.test('member creates repeated lines and exact cents with leading zero and blank separator',async()=>{
       q = (await call(quotes.createQuote,body)).quote;
       assert.equal(q.lines[0].partNumber,'F01'); assert.equal(q.lines[0].unitPrice,'0.30'); assert.equal(q.total,'1.50');
@@ -100,7 +172,7 @@ test('quote creation, partial options, snapshots, authorization, atomic validati
       await db.exec('CREATE ROLE quote_runtime; CREATE ROLE quote_operator;');
       for(const p of ['versions/0001/identity/permissions.sql','versions/0001/quotes/permissions.sql','versions/0002/taxonomy/permissions.sql','versions/0003/principals/permissions.sql','versions/0004/quotes/permissions.sql']) await db.exec((await read(p)).replaceAll(':"api_role"','quote_runtime').replaceAll(':"operator_role"','quote_operator'));
       await db.exec('SET ROLE quote_runtime');
-      try { const empty=await call(quotes.createQuote,{...body,lines:[]}); assert.equal(empty.quote.ownerId,'2'); await assert.rejects(()=>db.exec('DELETE FROM quotes'),e=>e.code==='42501') } finally { await db.exec('RESET ROLE') }
+      try { const empty=await call(quotes.createQuote,{...body,lines:[],location:'Job site'}); assert.equal(empty.quote.ownerId,'2'); assert.equal(empty.quote.location,'Job site'); await assert.rejects(()=>db.exec('UPDATE quotes SET created_by_user_id=1'),e=>e.code==='42501'); await assert.rejects(()=>db.exec('DELETE FROM quotes'),e=>e.code==='42501') } finally { await db.exec('RESET ROLE') }
     });
     await t.test('removed membership and disabled account lose quote read/write access',async()=>{
       await db.exec('UPDATE organization_memberships SET removed_at=now() WHERE user_id=2');

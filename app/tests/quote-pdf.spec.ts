@@ -19,8 +19,20 @@ test('PDF preview and download use saved tokens, binary auth, and report errors'
   let httpModule = ''
   page.on('request', request => { if (request.url().includes('/services/http.ts')) httpModule = request.url() })
   const pdf = await renderQuotePdf({ id: '10001', customer: 'Acme', project: 'Office', organization: { name: 'Company', contact: [] }, draft: true, total: '0.00', lines: [] })
-  let failed = false
+  let failed = false, stored = false
   const requests: string[] = []
+  await page.route('**/__pdf-test/organizations/*/quotes/*/pdf-url?*', async route => {
+    expect(route.request().headers().authorization).toBe('Bearer pdf-test-token')
+    const url = new URL(route.request().url())
+    expect(url.searchParams.get('expectedToken')).toBeTruthy()
+    if (failed) await route.fulfill({ status: 409, contentType: 'application/json', body: JSON.stringify({ code: 'QUOTE_CONFLICT', message: 'Reload the page before exporting a PDF.' }) })
+    else await route.fulfill({ json: { url: stored ? `https://pdf-storage.example/stored-quote.pdf?disposition=${url.searchParams.get('disposition')}` : null } })
+  })
+  await page.context().route('https://pdf-storage.example/stored-quote.pdf?*', async route => {
+    expect(route.request().headers().authorization).toBeUndefined()
+    const disposition = new URL(route.request().url()).searchParams.get('disposition')
+    await route.fulfill({ contentType: 'application/pdf', headers: { 'content-disposition': `${disposition}; filename="quote-stored.pdf"` }, body: pdf })
+  })
   await page.route('**/__pdf-test/organizations/*/quotes/*/pdf?*', async route => {
     expect(route.request().headers().authorization).toBe('Bearer pdf-test-token')
     const url = new URL(route.request().url()); requests.push(url.href)
@@ -39,7 +51,7 @@ test('PDF preview and download use saved tokens, binary auth, and report errors'
     const app = (document.querySelector('#__nuxt') as any).__vue_app__.config.globalProperties.$nuxt
     const original = app.$identity.request.bind(app.$identity)
     const http = createHttp('/__pdf-test', async () => 'pdf-test-token')
-    app.$identity.request = (path: string, options: unknown) => path.includes('/pdf?') ? http(path, options) : original(path, options)
+    app.$identity.request = (path: string, options: unknown) => (/\/pdf(?:-url)?\?/.test(path)) ? http(path, options) : original(path, options)
   }, httpModule)
   await expect(preview).toBeEnabled()
   const downloaded = page.waitForEvent('download')
@@ -56,6 +68,17 @@ test('PDF preview and download use saved tokens, binary auth, and report errors'
   await tab.close()
   expect(new URL(requests[0]!).searchParams.get('disposition')).toBe('attachment')
   expect(new URL(requests[1]!).searchParams.get('disposition')).toBe('inline')
+  stored = true
+  const storedDownload = page.waitForEvent('download')
+  await download.click()
+  expect((await storedDownload).suggestedFilename()).toBe('quote-stored.pdf')
+  const storedPopup = page.waitForEvent('popup')
+  await preview.click()
+  const storedTab = await storedPopup
+  await expect.poll(() => storedTab.url()).toContain('https://pdf-storage.example/stored-quote.pdf?disposition=inline')
+  await storedTab.close()
+  expect(requests).toHaveLength(2) // Stored exports bypass the blob endpoint.
+  stored = false
   await page.getByLabel('Project', { exact: true }).fill('Unsaved project')
   await expect(preview).toBeDisabled(); await expect(download).toBeDisabled()
   await save(page).click(); await expect(preview).toBeEnabled()

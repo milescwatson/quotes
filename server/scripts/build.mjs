@@ -4,8 +4,9 @@ import { join } from 'node:path';
 const output = new URL('../dist/', import.meta.url);
 await rm(output, { recursive: true, force: true });
 await build({
-  entryPoints: [new URL('../index.mjs', import.meta.url).pathname],
-  outfile: new URL('../dist/index.mjs', import.meta.url).pathname,
+  entryPoints: { index: new URL('../index.mjs', import.meta.url).pathname, 'quote-pdf-worker': new URL('../quote-pdf-worker-entry.mjs', import.meta.url).pathname },
+  outdir: output.pathname,
+  outExtension: { '.js': '.mjs' },
   bundle: true,
   platform: 'node',
   target: 'node22',

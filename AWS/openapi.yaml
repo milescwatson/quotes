@@ -916,6 +916,100 @@ paths:
             type: string
             pattern: ^[1-9][0-9]{0,18}$
             description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+  /organizations/{orgId}/quotes/{quoteId}/pdf-url:
+    get:
+      operationId: readQuotePdfUrl
+      security:
+        - CognitoJwt:
+            - quotes-api/access
+      parameters:
+        - name: orgId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+        - name: quoteId
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: ^[1-9][0-9]{0,18}$
+            description: Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807).
+        - name: disposition
+          in: query
+          schema:
+            type: string
+            enum: [inline, attachment]
+            default: inline
+        - name: expectedToken
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+      responses:
+        "200":
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url]
+                properties:
+                  url:
+                    type: string
+                    nullable: true
+                    description: Signed PDF URL valid for 60 seconds, or null to request the blob endpoint.
+        "401":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "422":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "503":
+          description: Request failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        payloadFormatVersion: "2.0"
+        uri: ${lambda_invoke_arn}
   /organizations/{orgId}/quotes/{quoteId}/pdf:
     get:
       operationId: readQuotePdf
@@ -3052,6 +3146,10 @@ components:
           type: string
           minLength: 1
           maxLength: 120
+        location:
+          type: string
+          maxLength: 120
+          description: Job location; optional and blank when unspecified.
         ownerId:
           type: string
           nullable: true
@@ -3083,6 +3181,10 @@ components:
           type: string
           minLength: 1
           maxLength: 120
+        location:
+          type: string
+          maxLength: 120
+          description: Job location; optional and blank when unspecified.
         ownerId:
           type: string
           nullable: true
@@ -3138,6 +3240,10 @@ components:
           pattern: ^[1-9][0-9]{0,18}$
           description: Positive bigint identifier encoded as a decimal string (maximum
             9223372036854775807).
+        authorName:
+          type: string
+          nullable: true
+          description: Original quote author; null for quotes created before author tracking.
         modifiedByName:
           type: string
         modifiedWhen:
@@ -3147,6 +3253,10 @@ components:
           type: string
           format: date-time
           nullable: true
+        location:
+          type: string
+          maxLength: 120
+          description: Job location; optional and blank when unspecified.
         ownerId:
           type: string
           pattern: ^[1-9][0-9]{0,18}$
@@ -3184,6 +3294,8 @@ components:
         - projectName
         - title
         - modifiedBy
+        - location
+        - authorName
         - modifiedByName
         - modifiedWhen
         - archivedAt
@@ -3229,6 +3341,10 @@ components:
           type: string
           minLength: 1
           maxLength: 120
+        location:
+          type: string
+          maxLength: 120
+          description: Job location; blank when unspecified.
         title:
           type: string
         modifiedBy:
@@ -3258,6 +3374,7 @@ components:
         - customerId
         - customerName
         - projectName
+        - location
         - title
         - modifiedBy
         - modifiedByName

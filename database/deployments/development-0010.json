@@ -1,0 +1,75 @@
+{
+  "target": {
+    "environment": "development",
+    "account": "415221799122",
+    "region": "us-west-2",
+    "cluster": "3zuetvjhixkp3qeuzxxosvlssq",
+    "profile": "quotes-development"
+  },
+  "startedAt": "2026-10-15T21:37:29.793Z",
+  "events": [
+    {
+      "key": "schema:1",
+      "sql": "ALTER TABLE public.quotes ADD COLUMN location text",
+      "sha256": "5badaa05ca66e9cc16663c1580109eaf16456d28fd48e7be7ed1bf1c156382b7",
+      "status": "completed",
+      "startedAt": "2026-10-15T21:37:30.302Z",
+      "completedAt": "2026-10-15T21:37:30.414Z"
+    },
+    {
+      "key": "schema:2",
+      "sql": "ALTER TABLE public.quotes ALTER COLUMN location SET DEFAULT ''",
+      "sha256": "69c4ca66f1c4d127b74332093c2bcf12fec0619aadea545276dc1c0e710f5fda",
+      "status": "completed",
+      "startedAt": "2026-10-15T21:37:30.415Z",
+      "completedAt": "2026-10-15T21:37:30.513Z"
+    },
+    {
+      "key": "schema:3",
+      "sql": "ALTER TABLE public.quotes ADD COLUMN created_by_user_id bigint",
+      "sha256": "03ec4a9aaef4933c601969340f33e771d4c0e350af35b8b5bd577994f8df3295",
+      "status": "completed",
+      "startedAt": "2026-10-15T21:37:30.513Z",
+      "completedAt": "2026-10-15T21:37:30.583Z"
+    },
+    {
+      "key": "schema:4",
+      "sql": "ALTER TABLE public.quotes ADD CONSTRAINT quotes_created_by_user_fk\n  FOREIGN KEY (created_by_user_id) REFERENCES public.users(id) NOT VALID",
+      "sha256": "8c40a3ff9f7ef7ac06d5decb46f0d7a68136dd634fa55322215130df9acf3df9",
+      "status": "completed",
+      "startedAt": "2026-10-15T21:37:30.583Z",
+      "completedAt": "2026-10-15T21:37:30.722Z"
+    },
+    {
+      "key": "schema:5",
+      "sql": "ALTER TABLE ASYNC public.quotes VALIDATE CONSTRAINT quotes_created_by_user_fk",
+      "sha256": "47bfdd58a8854a08d59b0edaeb7736c03dd93489b5bdb54ff5ea7cacaf81270b",
+      "status": "completed",
+      "startedAt": "2026-10-15T21:37:30.723Z",
+      "jobId": "tagtdo5knnhxhdkcyrv2owjqyy",
+      "completedAt": "2026-10-15T21:37:47.569Z"
+    },
+    {
+      "key": "permissions:1",
+      "sql": "GRANT UPDATE (location) ON public.quotes TO \"quotes_api\"",
+      "sha256": "268baae62e7b168de1aaddf17694516cd782a9e1ddc526e608bc373abf6b1db6",
+      "status": "completed",
+      "startedAt": "2026-10-15T21:37:47.570Z",
+      "completedAt": "2026-10-15T21:37:47.639Z"
+    }
+  ],
+  "before": {
+    "count": 2,
+    "sha256": "bcebdac430199a7d6ca5fb487bf3bf2e5f69bf2a30e9d4824e746a4cc908ad5c"
+  },
+  "verification": {
+    "grants": {
+      "location_update": true,
+      "author_update": false
+    },
+    "authorForeignKeyValidated": true,
+    "originalFieldsUnchanged": true
+  },
+  "status": "verified",
+  "verifiedAt": "2026-10-15T21:37:47.815Z"
+}

@@ -35,6 +35,7 @@ export const mappings = [
   ],
   ['GET', '/organizations/:orgId/quotes', 'identity', 'listQuotes'],
   ['GET', '/organizations/:orgId/quotes/:quoteId', 'identity', 'readQuote'],
+  ['GET', '/organizations/:orgId/quotes/:quoteId/pdf-url', 'identity', 'readQuotePdfUrl'],
   ['GET', '/organizations/:orgId/quotes/:quoteId/pdf', 'identity', 'readQuotePdf'],
   ['POST', '/organizations/:orgId/quotes', 'identity', 'createQuote'],
   ['PUT', '/organizations/:orgId/quotes/:quoteId', 'identity', 'updateQuote'],

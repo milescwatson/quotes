@@ -148,6 +148,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/organizations/{orgId}/quotes/{quoteId}/pdf-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["readQuotePdfUrl"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/organizations/{orgId}/quotes/{quoteId}/pdf": {
         parameters: {
             query?: never;
@@ -483,6 +499,8 @@ export interface components {
         QuoteCreate: {
             customerName: string;
             projectName: string;
+            /** @description Job location; optional and blank when unspecified. */
+            location?: string;
             ownerId: string | null;
             lines: components["schemas"]["QuoteLineInput"][];
             /** @default 1 */
@@ -491,6 +509,8 @@ export interface components {
         QuoteUpdate: {
             customerName: string;
             projectName: string;
+            /** @description Job location; optional and blank when unspecified. */
+            location?: string;
             ownerId: string | null;
             lines: components["schemas"]["QuoteLineInput"][];
             expectedToken: string;
@@ -509,11 +529,15 @@ export interface components {
             title: string;
             /** @description Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807). */
             modifiedBy: string;
+            /** @description Original quote author; null for quotes created before author tracking. */
+            authorName: string | null;
             modifiedByName: string;
             /** Format: date-time */
             modifiedWhen: string;
             /** Format: date-time */
             archivedAt: string | null;
+            /** @description Job location; optional and blank when unspecified. */
+            location: string;
             /** @description Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807). */
             ownerId: string | null;
             ownerName: string | null;
@@ -539,6 +563,8 @@ export interface components {
             customerId: number | null;
             customerName: string;
             projectName: string;
+            /** @description Job location; blank when unspecified. */
+            location: string;
             title: string;
             /** @description Positive bigint identifier encoded as a decimal string (maximum 9223372036854775807). */
             modifiedBy: string;
@@ -1962,6 +1988,98 @@ export interface operations {
                 };
             };
             /** @description Temporarily unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    readQuotePdfUrl: {
+        parameters: {
+            query: {
+                disposition?: "inline" | "attachment";
+                expectedToken: string;
+            };
+            header?: never;
+            path: {
+                orgId: string;
+                quoteId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful operation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @description Signed PDF URL valid for 60 seconds, or null to request the blob endpoint. */
+                        url: string | null;
+                    };
+                };
+            };
+            /** @description Request failed */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Request failed */
             503: {
                 headers: {
                     [name: string]: unknown;

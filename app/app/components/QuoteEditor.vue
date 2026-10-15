@@ -4,7 +4,7 @@ import { Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue'
 import { adjustedAmount } from '~/utils/quote'
 import { displayPrice } from '~/utils/configuration'
 import { queryKeys } from '~/utils/query-keys'
-const { multiple, regularProducts, saved, customer, project, owner, lines, keys, pending, owners, products, back, organization, ready, loading, busy, error, catalogError, catalogLoading, notice, conflicted, errors, dirty, load, catalog, save, add, remove, reload, invalidate, discardChanges } = useQuoteEditor()
+const { multiple, regularProducts, saved, customer, project, location, owner, lines, keys, pending, owners, products, back, organization, ready, loading, busy, error, catalogError, catalogLoading, notice, conflicted, errors, dirty, load, catalog, save, add, remove, reload, invalidate, discardChanges } = useQuoteEditor()
 const identity = useIdentity(), queryClient = useQueryClient()
 const pdfBusy = ref(false), pdfError = ref(''), pdfFallback = ref('')
 const pdfDisabled = computed(() => !saved.value || dirty.value || pending.value.size > 0 || busy.value || submitting.value || conflicted.value || pdfBusy.value)
@@ -23,6 +23,16 @@ async function exportPdf(download: boolean) {
   pdfBusy.value = true; pdfError.value = ''; pdfFallback.value = ''
   try {
     const query = new URLSearchParams({ disposition: download ? 'attachment' : 'inline', expectedToken: quote.token })
+    const stored = await identity.request<{ url: string | null }>(`/organizations/${orgId}/quotes/${quote.id}/pdf-url?${query}`)
+    if (orgId !== organization.value || quote.id !== saved.value?.id || quote.token !== saved.value?.token) { preview?.close(); return }
+    if (stored.url) {
+      if (download) {
+        const link = document.createElement('a'); link.href = stored.url
+        document.body.appendChild(link); link.click(); link.remove()
+      } else if (preview && !preview.closed) preview.location.replace(stored.url)
+      else pdfFallback.value = stored.url
+      return
+    }
     const blob = await identity.request<Blob>(`/organizations/${orgId}/quotes/${quote.id}/pdf?${query}`, { responseType: 'blob' })
     if (orgId !== organization.value || quote.id !== saved.value?.id || quote.token !== saved.value?.token) { preview?.close(); return }
     const url = URL.createObjectURL(blob); pdfUrls.add(url)
@@ -167,10 +177,11 @@ async function changeArchiveState(archive: boolean) {
       <p v-if="saved?.archivedAt && archiveError" class="error mb-4" role="alert">{{ archiveError }}</p>
       <div v-if="error" class="error" role="alert"><p>{{ error }}</p><button v-if="conflicted" class="button secondary mt-2" @click="reload">Reload quote and catalog</button></div>
       <form @submit.prevent="submit">
-        <fieldset :disabled="busy || submitting || conflicted || !!saved?.archivedAt" class="panel mb-6 grid min-w-0 gap-x-6 p-4 sm:grid-cols-3 sm:p-5">
+        <fieldset :disabled="busy || submitting || conflicted || !!saved?.archivedAt" class="panel mb-6 grid min-w-0 gap-x-6 p-4 sm:grid-cols-2 lg:grid-cols-4 sm:p-5">
           <div><label for="quote-customer" class="mt-0">Customer</label><input id="quote-customer" v-model="customer" maxlength="120" required :aria-invalid="!!fieldError('/customerName')" aria-describedby="customer-error" /><p v-if="fieldError('/customerName')" id="customer-error" class="mt-2 text-red-700" role="alert">{{ fieldError('/customerName') }}</p></div>
           <div><label for="quote-project" class="sm:mt-0">Project</label><input id="quote-project" v-model="project" maxlength="120" required :aria-invalid="!!fieldError('/projectName')" aria-describedby="project-error" /><p v-if="fieldError('/projectName')" id="project-error" class="mt-2 text-red-700" role="alert">{{ fieldError('/projectName') }}</p></div>
-          <div><label for="quote-owner" class="sm:mt-0">Owner</label><select id="quote-owner" v-model="owner" class="w-full" :aria-invalid="!!fieldError('/ownerId')"><option :value="null">Unassigned</option><option v-if="owner && !owners.some(o => o.id === owner)" :value="owner" disabled>{{ saved?.ownerName || 'Unavailable owner' }}</option><option v-for="o in owners" :key="o.id" :value="o.id">{{ o.name }}</option></select><p v-if="fieldError('/ownerId')" class="text-red-700" role="alert">{{ fieldError('/ownerId') }}</p></div>
+          <div><label for="quote-location" class="lg:mt-0">Job Location</label><input id="quote-location" v-model="location" maxlength="120" :aria-invalid="!!fieldError('/location')" aria-describedby="location-error" /><p v-if="fieldError('/location')" id="location-error" class="mt-2 text-red-700" role="alert">{{ fieldError('/location') }}</p></div>
+          <div><label for="quote-owner" class="lg:mt-0">Owner</label><select id="quote-owner" v-model="owner" class="w-full" :aria-invalid="!!fieldError('/ownerId')"><option :value="null">Unassigned</option><option v-if="owner && !owners.some(o => o.id === owner)" :value="owner" disabled>{{ saved?.ownerName || 'Unavailable owner' }}</option><option v-for="o in owners" :key="o.id" :value="o.id">{{ o.name }}</option></select><p v-if="fieldError('/ownerId')" class="text-red-700" role="alert">{{ fieldError('/ownerId') }}</p></div>
         </fieldset>
         <div v-if="catalogLoading" class="mb-4 text-gray-600" role="status">Loading product configurations…</div>
         <div v-else-if="catalogError" class="error" role="alert">{{ catalogError }} <button type="button" class="button secondary" @click="catalog()">Retry products</button></div>

@@ -39,6 +39,7 @@ test('0005 migration, enrollment, role boundaries, sharing and email-based globa
       const before=await q('SELECT id,organization_id,user_id,joined_at FROM organization_memberships ORDER BY id');
       for(const file of ['identity','backfill','enforce','sharing']) await db.exec(await read(`0005/organizations/${file}.sql`));
       await db.exec(await read('0009/organizations/schema.sql'));
+      await db.exec(await read('0010/quotes/schema.sql'));
       assert.deepEqual(await q('SELECT id,organization_id,user_id,joined_at FROM organization_memberships ORDER BY id'),before);
       assert.deepEqual((await q('SELECT role FROM organization_memberships ORDER BY id')).map(r=>r.role),['administrator','sales','sales','administrator']);
       await assert.rejects(()=>q("INSERT INTO organization_memberships(organization_id,user_id,role) VALUES($1,$2,'super')",[owner.id,people.super.id]),e=>e.code==='23514');
@@ -145,7 +146,7 @@ test('0005 migration, enrollment, role boundaries, sharing and email-based globa
     });
     await t.test('runtime grants support enrollment, sharing and details without hard deletes or audit edits',async()=>{
       await db.exec('CREATE ROLE organizations_api; CREATE ROLE organizations_operator;');
-      for(const p of ['0001/identity/permissions.sql','0001/quotes/permissions.sql','0002/taxonomy/permissions.sql','0003/principals/permissions.sql','0004/quotes/permissions.sql','0005/organizations/permissions.sql','0006/products/permissions.sql']) await db.exec((await read(p)).replaceAll(':"api_role"','organizations_api').replaceAll(':"operator_role"','organizations_operator'));
+      for(const p of ['0001/identity/permissions.sql','0001/quotes/permissions.sql','0002/taxonomy/permissions.sql','0003/principals/permissions.sql','0004/quotes/permissions.sql','0005/organizations/permissions.sql','0006/products/permissions.sql','0010/quotes/permissions.sql']) await db.exec((await read(p)).replaceAll(':"api_role"','organizations_api').replaceAll(':"operator_role"','organizations_operator'));
       await db.exec('SET ROLE organizations_api');
       try {
         const profile=await identity.bootstrapProfile({identity:{issuer:'test',sub:'runtime',email:'new@runtime-company.com'},body:{},requestId:randomUUID()});assert.ok(profile.user.id);

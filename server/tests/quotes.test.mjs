@@ -151,6 +151,7 @@ test('quotes schema, list service, and organization access', async (t) => {
           ownerName: null,
           customerName: 'Acme',
           projectName: 'Office Renovation',
+          location: '',
           title: 'Acme - Office Renovation',
           modifiedBy: '3',
           modifiedByName: 'Unnamed team member',

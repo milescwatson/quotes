@@ -119,3 +119,16 @@ Staging and production were not modified.
 Evidence: [migration journal](deployments/development-0009.json),
 [release verification](../AWS/deployments/2026-10-15-logo-verification.json), and
 [rollback-only Lambda smoke checks](../AWS/deployments/2026-10-15-logo-runtime-verification.json).
+
+## Quote location/author (0010) and PDF worker — October 15, 2026
+
+Migration 0010 is applied and verified in development. It adds optional location,
+immutable creator tracking, a validated author foreign key, and restricted location
+update grants. The two existing quotes retained their original fields and tokens;
+no author was inferred for historical quotes. Statement-level evidence is in
+[development-0010.json](deployments/development-0010.json).
+
+The queue-backed PDF worker uses a separate `quotes_pdf_worker` login, mapped to
+its development Lambda IAM role. It has SELECT on quotes, organizations, and users;
+quote INSERT, UPDATE, and DELETE are denied. No quote schema change is needed for
+the queue feature. Staging and production were not changed.

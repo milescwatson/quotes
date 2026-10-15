@@ -128,13 +128,15 @@ resource "aws_lambda_function" "api" {
     ENVIRONMENT              = var.environment
     DSQL_CLUSTER_ID          = aws_dsql_cluster.app.identifier
     DSQL_ENDPOINT            = "${aws_dsql_cluster.app.identifier}.dsql.${var.region}.on.aws"
+    QUOTE_PDF_BUCKET         = aws_s3_bucket.quote_pdfs.id
+    QUOTE_PDF_QUEUE_URL      = aws_sqs_queue.quote_pdf.id
     ORGANIZATION_LOGO_BUCKET = aws_s3_bucket.organization_logos.id
     DSQL_USER                = "quotes_api"
     COGNITO_ISSUER           = "https://cognito-idp.${var.region}.amazonaws.com/${aws_cognito_user_pool.app.id}"
     COGNITO_CLIENT_ID        = aws_cognito_user_pool_client.web.id
     COGNITO_DOMAIN           = local.cognito_url
   } }
-  depends_on = [aws_iam_role_policy.api]
+  depends_on = [aws_iam_role_policy.api, aws_iam_role_policy.api_quote_pdfs]
 }
 resource "aws_lambda_alias" "api" {
   name             = var.environment
@@ -184,16 +186,19 @@ resource "aws_apigatewayv2_stage" "api" {
 }
 output "deployment" {
   value = {
-    organization_logo_bucket = aws_s3_bucket.organization_logos.id
-    frontend_url             = local.frontend_url
-    amplify_app_id           = aws_amplify_app.frontend.id
-    amplify_branch           = aws_amplify_branch.frontend.branch_name
-    api_url                  = aws_apigatewayv2_api.api.api_endpoint
-    dsql_cluster_id          = aws_dsql_cluster.app.identifier
-    dsql_cluster_arn         = aws_dsql_cluster.app.arn
-    api_role_arn             = aws_iam_role.api.arn
-    cognito_user_pool_id     = aws_cognito_user_pool.app.id
-    cognito_client_id        = aws_cognito_user_pool_client.web.id
+    quote_pdf_bucket          = aws_s3_bucket.quote_pdfs.id
+    quote_pdf_queue_url       = aws_sqs_queue.quote_pdf.id
+    quote_pdf_worker_role_arn = aws_iam_role.quote_pdf_worker.arn
+    organization_logo_bucket  = aws_s3_bucket.organization_logos.id
+    frontend_url              = local.frontend_url
+    amplify_app_id            = aws_amplify_app.frontend.id
+    amplify_branch            = aws_amplify_branch.frontend.branch_name
+    api_url                   = aws_apigatewayv2_api.api.api_endpoint
+    dsql_cluster_id           = aws_dsql_cluster.app.identifier
+    dsql_cluster_arn          = aws_dsql_cluster.app.arn
+    api_role_arn              = aws_iam_role.api.arn
+    cognito_user_pool_id      = aws_cognito_user_pool.app.id
+    cognito_client_id         = aws_cognito_user_pool_client.web.id
   }
 }
 

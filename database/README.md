@@ -97,3 +97,8 @@ The additive [0006 migration and coordinated release procedure](versions/0006/pr
 [0009](versions/0009/organizations/README.md) adds an optional logo reference and
 runtime column permissions. Deploy its additive migration and private S3 storage
 before releasing the logo settings UI.
+
+## Quote location and author (0010)
+
+[0010](versions/0010/quotes/README.md) adds optional Job Location and immutable
+creator tracking for PDF author initials. Apply before the matching API release.

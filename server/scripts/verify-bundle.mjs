@@ -8,6 +8,8 @@ process.env.COGNITO_ISSUER = 'urn:quotes:bundle-check';
 process.env.COGNITO_CLIENT_ID = 'bundle-check-client';
 process.env.ENVIRONMENT = 'local-bundle-check';
 const { handler } = await import('../dist/index.mjs');
+const { handler: worker } = await import('../dist/quote-pdf-worker.mjs');
+assert.deepEqual(await worker({ Records: [] }), { batchItemFailures: [] });
 const event = (path, claims) => ({
   version: '2.0',
   routeKey: `GET ${path}`,
@@ -56,7 +58,14 @@ try {
   const pdf = await verifyRenderQuotePdf({ id: '1', customer: 'Café', project: 'Bundle check', organization: { name: 'Company', contact: [], logo }, draft: true, total: '0.00', lines: [] });
   assert.equal(pdf.subarray(0, 5).toString(), '%PDF-');
   assert.match(pdf.toString('latin1'), /\/FontFile2/);
+  const workerSource = await readFile(new URL('../dist/quote-pdf-worker.mjs', import.meta.url), 'utf8');
+  await writeFile(join(directory, 'worker.mjs'), `${workerSource}\nexport { renderQuotePdf as verifyRenderQuotePdf };\n`);
+  const { verifyRenderQuotePdf: renderWorker } = await import(pathToFileURL(join(directory, 'worker.mjs')).href);
+  const workerPdf = await renderWorker({ id: '1', customer: 'Worker', project: 'Bundle check', organization: { name: 'Company', contact: [], logo }, draft: true, total: '0.00', lines: [] });
+  assert.equal(workerPdf.subarray(0, 5).toString(), '%PDF-');
+  assert.match(workerPdf.toString('latin1'), /\/FontFile2/);
+
 } finally { await rm(directory, { recursive: true, force: true }); }
 console.log(
-  'Bundled Lambda health, trusted session, unauthorized business route, unknown route, and PDF rendering with packaged fonts passed.',
+  'Bundled Lambda health, trusted session, unauthorized business route, unknown route, and API/worker PDF rendering with packaged fonts passed.',
 );

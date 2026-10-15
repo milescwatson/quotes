@@ -4,8 +4,11 @@ import { netAmount } from './quote-pricing.mjs';
 // explanatory and never summed back into the already quantity-extended total.
 export function prepareQuotePdf(quote, organization) {
   const multiple = quote.multiple ?? 1;
+  const names = quote.authorName?.trim().split(/\s+/u).filter(Boolean) ?? [];
+  const initials = (names.length > 1 ? [names[0], names.at(-1)] : names)
+    .map(name => Array.from(name)[0].toLocaleUpperCase('en-US')).join('');
   return {
-    id: quote.id, customer: quote.customerName, project: quote.projectName,
+    id: quote.id, customer: quote.customerName, project: quote.projectName, location: quote.location || '', quoteBy: initials || '-',
     organization: {
       name: organization.name,
       address: organization.address || '',

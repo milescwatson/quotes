@@ -10,6 +10,7 @@ const emit = defineEmits<{ 'update:modelValue': [value: LocalQuoteLine]; pending
 let disposed = false
 const identity = useIdentity(), queryClient = useQueryClient(), editor = ref(!props.modelValue), draft = ref<LocalQuoteLine | null>(null), query = ref(''), codeText = ref<Record<number,string>>({}), failure = ref(''), loading = ref(false), active = ref(-1)
 onBeforeUnmount(() => { disposed = true })
+const browserOpen = ref(false)
 const picker = ref<InstanceType<typeof ComboboxInput>>(), editButton = ref<HTMLButtonElement>(), root = ref<HTMLElement>(), segments = ref<({ focus: () => void; validate: () => boolean } | null)[]>([]), valid = ref<Record<number,boolean>>({})
 const copy = (value: LocalQuoteLine | null) => value ? JSON.parse(JSON.stringify(value)) as LocalQuoteLine : null
 watch(() => props.modelValue, value => { draft.value = copy(value); valid.value = {}; codeText.value = {} }, { immediate: true })
@@ -27,6 +28,7 @@ function chooseFlat(p: RegularProduct | null) {
     snapshot: { content: { schemaVersion: 1, productFamilyName: partNumber, productDescription: p?.description ?? '', currency: 'USD', basePrice: price, separators: [], segments: [] }, principalId: p?.principalId ?? null, principalName: p?.principalName ?? null },
     selections: [], quantity: 1, partNumber, complete: true, unitPrice: price, lineTotal: price }
   valid.value = {}; codeText.value = {}; query.value = ''; emit('pending', true)
+  return true
 }
 const product = computed(() => props.products.find(p => p.id === draft.value?.taxonomyId) ?? null)
 const amounts = computed(() => { try { return draft.value ? quoteAmount(draft.value) : null } catch { return { unitPrice: '0.00', lineTotal: '0.00' } } })
@@ -51,8 +53,13 @@ async function choose(p: QuoteProduct | null) {
       selections: content.segments.map(s => s.options.length === 1 ? s.options[0]!.id : s.defaultOptionId), quantity: 1,
       partNumber: '', complete: false, unitPrice: '0.00', lineTotal: '0.00' }
     valid.value = {}; codeText.value = {}; active.value = -1; emit('pending',true)
+    return true
   } catch (e) { if (disposed) return; failure.value = (e as Error).message; if ('status' in (e as object) && [401,403,404].includes((e as { status: number }).status)) emit('accessLost') }
   finally { loading.value = false }
+}
+async function chooseFromBrowser(p: QuoteProduct | { kind: 'regular'; product: RegularProduct }) {
+  const chosen = 'kind' in p ? chooseFlat(p.product) : await choose(p)
+  if (chosen) browserOpen.value = false
 }
 function start() { draft.value = copy(props.modelValue); editor.value = true; failure.value = ''; emit('pending',true) }
 function validate() {
@@ -98,8 +105,9 @@ defineExpose({ validate, done })
     </div>
     <fieldset :disabled="disabled || loading" class="min-w-0">
       <template v-if="editor">
+        <div class="mb-4 flex max-w-2xl items-end gap-2">
         <Combobox :model-value="product" nullable @update:model-value="selectProduct">
-          <div class="relative mb-4 max-w-xl">
+          <div class="relative min-w-0 flex-1">
             <ComboboxLabel class="mt-0">Product</ComboboxLabel>
             <div class="relative"><ComboboxInput :id="`product-${lineKey}`" ref="picker" class="pr-10" autocomplete="off" :display-value="() => draft?.snapshot.content.productFamilyName ?? ''" placeholder="Search product, model, or principal" @change="query = $event.target.value" @blur="query = ''" /><ComboboxButton class="absolute inset-y-0 right-0 px-3" aria-label="Show products">⌄</ComboboxButton></div>
             <ComboboxOptions class="absolute z-10 mt-1 max-h-72 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
@@ -110,6 +118,12 @@ defineExpose({ validate, done })
             </ComboboxOptions>
           </div>
         </Combobox>
+        <button type="button" class="button secondary shrink-0" aria-label="Expand product search" @click="failure = ''; browserOpen = true">
+          <svg aria-hidden="true" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H3v5m13-5h5v5M3 16v5h5m13-5v5h-5M3 3l6 6m12-6-6 6M3 21l6-6m12 6-6-6" /></svg>
+          Expand
+        </button>
+        </div>
+        <QuoteProductBrowser :open="browserOpen" :products="products" :regular-products="regularProducts" :line-number="index + 1" :busy="loading" :disabled="disabled" :error="failure" @close="browserOpen = false" @select="chooseFromBrowser" />
         <p v-if="loading" role="status">Loading product…</p>
         <template v-if="draft">
           <p v-if="draft.snapshot.content.productDescription" class="mb-3 text-gray-600">{{ draft.snapshot.content.productDescription }}</p>

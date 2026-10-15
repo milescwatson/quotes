@@ -68,3 +68,38 @@ authenticated API; the bucket has no public access or browser CORS policy.
 Build the release with Sharp's Linux ARM64 runtime as described in the
 [0009 migration guide](../database/versions/0009/organizations/README.md). Apply
 the additive migration before deploying the bucket/API and frontend.
+
+## Asynchronous quote PDFs
+
+Changed quote saves, ownership changes, and archive/restore operations enqueue
+PDF regeneration after the database commit. Unchanged saves do not enqueue.
+The SQS client attempts sends three times in total; exhausted sends are logged
+and do not fail a committed quote save. There is no durable outbox.
+
+The FIFO queue groups work per quote. The separate PDF Lambda reads current
+saved data, renders with the same fonts/logo/layout as on-demand exports, and
+writes `organizations/{orgId}/quotes/{quoteId}.pdf` in the private versioned PDF
+bucket. Object metadata identifies the saved quote token. The queue processes
+one message at a time per quote, uses a 360-second visibility timeout for the
+60-second worker, and moves messages to its dead-letter queue after three
+failed processing attempts. There is no automatic dead-letter recovery.
+
+The authenticated `pdf-url` endpoint returns a 60-second signed URL only when
+the quote is at least five minutes old and the object token matches. URLs pin
+the inspected S3 version and specify inline/attachment response disposition.
+Recent, missing, outdated, or inaccessible stored PDFs return a null URL and
+both frontend buttons use the existing authenticated PDF blob endpoint.
+Existing quotes need no backfill: they continue using blobs until changed.
+S3 versions are retained; no history UI or expiration policy is introduced.
+
+Deployment order:
+
+1. Build and verify the server package, including Sharp's Linux ARM64 runtime.
+2. Run `node server/scripts/deploy-pdf-worker-database.mjs` with development
+   administrator credentials to install the read-only worker role and IAM mapping.
+   Its source is `database/runtime/quote-pdf-worker.sql`; other environments need
+   their own IAM ARN. This does not alter the quote schema.
+3. Review and apply Terraform to deploy the bucket, queues, worker, and API.
+4. Deploy the frontend after the API exposes `pdf-url`.
+
+Check worker logs and dead-letter messages when investigating generation failures.
