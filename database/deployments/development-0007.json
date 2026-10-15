@@ -1,0 +1,76 @@
+{
+  "target": {
+    "environment": "development",
+    "account": "415221799122",
+    "region": "us-west-2",
+    "cluster": "3zuetvjhixkp3qeuzxxosvlssq",
+    "profile": "quotes-development"
+  },
+  "startedAt": "2026-10-15T01:53:04.820Z",
+  "events": [
+    {
+      "key": "schema:1",
+      "sql": "ALTER TABLE public.regular_products ADD COLUMN principal_id bigint",
+      "sha256": "f96b8691ea09eab14cfff22dcdc0882ba900395165cee9a1c9c5d03f1d288491",
+      "status": "completed",
+      "startedAt": "2026-10-15T01:54:04.544Z",
+      "completedAt": "2026-10-15T01:54:04.703Z"
+    },
+    {
+      "key": "schema:2",
+      "sql": "ALTER TABLE public.regular_products ADD CONSTRAINT regular_products_principal_fk\n  FOREIGN KEY (principal_id) REFERENCES public.principals(id) ON DELETE RESTRICT NOT VALID",
+      "sha256": "55cab7580e35abf8869bf93d0680a68b8632fdb7846b4fc45a337bb7476fd894",
+      "status": "completed",
+      "startedAt": "2026-10-15T01:54:04.704Z",
+      "completedAt": "2026-10-15T01:54:04.837Z"
+    },
+    {
+      "key": "schema:3",
+      "sql": "ALTER TABLE ASYNC public.regular_products VALIDATE CONSTRAINT regular_products_principal_fk",
+      "sha256": "5401d4a0d24648324c8341062194872c49f4479d82051a6ea5ab50b9d2ff7f5f",
+      "status": "completed",
+      "startedAt": "2026-10-15T01:54:04.838Z",
+      "jobId": "2ik4bgvc4jckhfmxrl6geym3fi",
+      "job": {
+        "job_id": "2ik4bgvc4jckhfmxrl6geym3fi",
+        "status": "completed",
+        "details": null
+      },
+      "completedAt": "2026-10-15T01:54:13.426Z"
+    }
+  ],
+  "status": "released_verified",
+  "apiPause": {
+    "previousConcurrency": null,
+    "startedAt": "2026-10-15T01:53:45.247Z",
+    "restorationVerifiedAt": "2026-10-15T01:59:10.542Z"
+  },
+  "before": {
+    "productCount": 0,
+    "quoteCount": 1,
+    "originalFieldsSha256": "55de1c376f4c487748f1382fc68cb391f07effce348df7730f6ca03e7c4de372"
+  },
+  "verification": {
+    "constraint": {
+      "conname": "regular_products_principal_fk",
+      "convalidated": true
+    },
+    "grants": {
+      "read": true,
+      "update": true,
+      "insert": true
+    },
+    "originalFieldsSha256": "55de1c376f4c487748f1382fc68cb391f07effce348df7730f6ca03e7c4de372"
+  },
+  "verifiedAt": "2026-10-15T01:54:13.695Z",
+  "release": {
+    "sourceCommit": "bc6836e69716155f1465aa3c465c7cabaf25d58c",
+    "lambdaVersion": "13",
+    "amplifyJobId": "23",
+    "verification": "AWS/deployments/2026-10-14-product-principals-verification.json",
+    "liveTestFixturesCreated": false
+  },
+  "recoveredPreflightError": {
+    "message": "Unexpected end of JSON input"
+  }
+}

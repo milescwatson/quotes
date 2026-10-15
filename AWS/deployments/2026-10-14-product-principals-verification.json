@@ -1,0 +1,124 @@
+{
+  "status": "passed",
+  "environment": "development",
+  "verifiedAt": "2026-10-15T01:59:10.542Z",
+  "sourceCommit": "bc6836e69716155f1465aa3c465c7cabaf25d58c",
+  "migration": "0007",
+  "lambda": {
+    "version": "13",
+    "codeSha256": "Oq+jMZRhOLSIA0rS9oWI6R2TG9idhioxOm1Eui7h+Do=",
+    "state": "Active",
+    "lastUpdateStatus": "Successful"
+  },
+  "routeCount": 33,
+  "frontend": {
+    "jobId": "23",
+    "status": "SUCCEED",
+    "startTime": "2026-10-14T18:55:09.289000-07:00",
+    "endTime": "2026-10-14T18:56:36.805000-07:00",
+    "steps": [
+      {
+        "name": "BUILD",
+        "status": "SUCCEED"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "SUCCEED"
+      },
+      {
+        "name": "VERIFY",
+        "status": "SUCCEED"
+      }
+    ],
+    "features": {
+      "pricing": {
+        "path": "/_nuxt/BSpKOxcV.js",
+        "sha256": "3b0cb9263e5482a75d7298594e675df21bfdec186693ac76cafff03d4b30d762"
+      },
+      "freeform": {
+        "path": "/_nuxt/BSpKOxcV.js",
+        "sha256": "3b0cb9263e5482a75d7298594e675df21bfdec186693ac76cafff03d4b30d762"
+      },
+      "catalog": {
+        "path": "/_nuxt/_4QQVHKF.js",
+        "sha256": "b7dd3c84ab5fbfe40f76a6bda70d050303d98bce612a30bb1fc11937bf2ff0ea"
+      }
+    }
+  },
+  "concurrency": -1,
+  "checks": [
+    {
+      "kind": "frontend",
+      "path": "/",
+      "status": 200
+    },
+    {
+      "kind": "frontend",
+      "path": "/login",
+      "status": 200
+    },
+    {
+      "kind": "frontend",
+      "path": "/organizations/d4735e3a265e/regular-products",
+      "status": 200
+    },
+    {
+      "kind": "frontend",
+      "path": "/organizations/d4735e3a265e/quotes/new",
+      "status": 200
+    },
+    {
+      "kind": "api",
+      "method": "GET",
+      "path": "/health",
+      "status": 200
+    },
+    {
+      "kind": "api",
+      "method": "GET",
+      "path": "/organizations/2/regular-products",
+      "status": 401
+    },
+    {
+      "kind": "api",
+      "method": "POST",
+      "path": "/organizations/2/regular-products",
+      "status": 401
+    },
+    {
+      "kind": "api",
+      "method": "PUT",
+      "path": "/organizations/2/regular-products/1",
+      "status": 401
+    },
+    {
+      "kind": "api",
+      "method": "GET",
+      "path": "/organizations/2/quotes/4",
+      "status": 401
+    },
+    {
+      "kind": "api",
+      "method": "POST",
+      "path": "/organizations/2/quotes",
+      "status": 401
+    },
+    {
+      "kind": "cors",
+      "status": 204,
+      "method": "PUT"
+    }
+  ],
+  "productFlowTesting": "Deferred to user as requested; no live test users or fixtures created.",
+  "migrationEvidence": "database/deployments/development-0007.json",
+  "terraform": {
+    "release": {
+      "added": 0,
+      "changed": 3,
+      "destroyed": 0
+    },
+    "gatewayReconciliation": "Metadata only",
+    "trafficRestoration": "Original unreserved concurrency restored",
+    "finalPlan": "No changes"
+  }
+}

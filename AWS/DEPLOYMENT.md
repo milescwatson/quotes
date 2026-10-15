@@ -136,3 +136,13 @@ Amplify development job **22** for the same source commit passed BUILD, DEPLOY a
 The corrected DSQL migration passed 99 server and 13 database regressions locally before release. The preceding implementation passed 15 quote-editor browser scenarios, typecheck and builds. At the user's request, no live test users or fixtures were created and functional product/pricing verification is left to the user. Staging and production are unchanged. Retain the additive schema; the older writer is incompatible with mixed regular/freeform quote lines.
 
 Evidence: [release verification](deployments/2026-10-14-products-verification.json) and [migration journal](../database/deployments/development-0006.json).
+
+## Principal selection for regular products — October 14, 2026
+
+Source `bc6836e69716155f1465aa3c465c7cabaf25d58c` is released to development with migration 0007. Regular products independently select or clear a shared principal. Catalog and picker display/search include the principal, and newly added regular quote lines snapshot its ID/name. Existing quote snapshots remain fixed. Older clients omitting principalId preserve an existing assignment on update.
+
+The reviewed release updated only Lambda, the development alias and Gateway (0 added, 3 changed, 0 destroyed). Lambda **13** is Active/Successful with archive-matching SHA-256 `Oq+jMZRhOLSIA0rS9oWI6R2TG9idhioxOm1Eui7h+Do=`. Amplify job **23** passed BUILD/DEPLOY/VERIFY for the same commit. Gateway metadata was reconciled and original unreserved concurrency restored after asset verification. All 33 routes retain expected authorization. Live health, anonymous auth, CORS and principal-selector assets passed; the final Terraform plan reports no changes.
+
+Local validation passed 100 server tests, 13 database tests, 15 quote-editor browser tests, frontend typecheck/production build and backend build/bundle verification. Live functional testing remains deferred to the user; no live test users or fixtures were created. Staging and production were not modified.
+
+Evidence: [release verification](deployments/2026-10-14-product-principals-verification.json) and [migration journal](../database/deployments/development-0007.json).

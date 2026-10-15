@@ -94,3 +94,11 @@ The one existing quote received multiple 1.0000 in a bounded backfill. Its IDs, 
 The coordinated release uses source commit `67e2da77910ff3d4bbc8abf5ed4588312ac8f239`, Lambda version 12, and successful Amplify job 22. All 33 Gateway routes match OpenAPI and retain JWT authorization except health. Public health/auth/CORS and released asset checks passed; Terraform reports no changes. No live test users or fixtures were created. Product and pricing flow testing is deferred to the user at their request. Staging and production were not modified.
 
 Evidence: [0006 migration journal](deployments/development-0006.json) and [release verification](../AWS/deployments/2026-10-14-products-verification.json).
+
+## Regular-product principals (0007) — October 14, 2026
+
+Migration 0007 is applied and verified in development. It adds optional principal assignment to regular products with a validated foreign key to shared principals. Existing runtime table-level grants cover principal read/insert/update. No backfill is required; existing products remain unassigned. The original product fields/tokens and complete existing quote documents are unchanged, with matching before/after digests.
+
+The coordinated release uses source `bc6836e69716155f1465aa3c465c7cabaf25d58c`, Lambda version 13 and successful Amplify job 23. The API remained paused through cutover and its original unreserved concurrency is restored. Routes, code hash, principal-selector assets, health, anonymous authorization and CORS checks passed; Terraform reports no changes. No live test users or fixtures were created. Staging and production are unchanged.
+
+Evidence: [migration journal](deployments/development-0007.json) and [release verification](../AWS/deployments/2026-10-14-product-principals-verification.json).
