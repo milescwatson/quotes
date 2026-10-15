@@ -31,13 +31,15 @@
   ],
   "apiPause": {
     "previousConcurrency": -1,
-    "startedAt": "2026-10-15T02:16:37.740Z"
+    "startedAt": "2026-10-15T02:16:37.740Z",
+    "restoredAt": "2026-10-15T02:23:22Z",
+    "restoredConcurrency": null
   },
   "before": {
     "quoteCount": 1,
     "quoteFieldsSha256": "20a07ecf67fc4496930ac87cf10c359fc5c4afad6c978b527a1cda976e033f3e"
   },
-  "status": "migration_verified_api_paused",
+  "status": "applied_and_verified",
   "verification": {
     "quoteCount": 1,
     "quoteFieldsSha256": "20a07ecf67fc4496930ac87cf10c359fc5c4afad6c978b527a1cda976e033f3e",

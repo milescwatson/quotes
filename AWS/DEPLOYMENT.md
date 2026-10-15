@@ -146,3 +146,13 @@ The reviewed release updated only Lambda, the development alias and Gateway (0 a
 Local validation passed 100 server tests, 13 database tests, 15 quote-editor browser tests, frontend typecheck/production build and backend build/bundle verification. Live functional testing remains deferred to the user; no live test users or fixtures were created. Staging and production were not modified.
 
 Evidence: [release verification](deployments/2026-10-14-product-principals-verification.json) and [migration journal](../database/deployments/development-0007.json).
+
+## Owner quote archive and restore — October 14, 2026
+
+Source commit `6b85bb76b75b4da5d615b3995999f2f838727d54` is pushed to development. Migration 0008 added the nullable quote archive timestamp and restricted runtime column grants. The API was paused and drained for migration, then deployed and returned to its previous unreserved concurrency after the frontend release.
+
+The reviewed Terraform release changed only the Lambda bundle, development alias, and API Gateway OpenAPI routes: **0 added, 3 changed, 0 destroyed**. Lambda version **14** is Active/Successful with archive-matching SHA-256 `dZLqQ137hUC4Tsg6kDVKS1gxPxHGzIUdS7ej3r9W+Mw=`. Both archive and restore routes use JWT authorization. Amplify development job **24** passed BUILD, DEPLOY, and VERIFY for the same commit. The hosted root and login page returned HTTP 200; API health returned 200; unauthenticated archive, restore, and archived-list requests returned 401. A final Terraform plan reports no changes.
+
+Frontend typecheck and Amplify production build passed, as did the server build and bundled Lambda verification. Automated tests and authenticated live owner workflows were not run for this release. Staging and production were not modified.
+
+Evidence: [release verification](deployments/2026-10-14-quote-archive-verification.json) and [migration journal](../database/deployments/development-0008.json).

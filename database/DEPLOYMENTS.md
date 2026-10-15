@@ -10,7 +10,7 @@ This is the environment ledger for database schema and grants. Update it after e
 | 0003 shared principals | Applied — 2026-10-12 | Not applied | Not applied |
 | 0004 quote editor | Applied — 2026-10-12 | Not applied | Not applied |
 | 0005 organization roles and sharing | Applied — 2026-10-13 | Not applied | Not applied |
-| 0008 quote archive | Applied — 2026-10-15 | Not applied | Not applied |
+| 0008 quote archive | Applied — 2026-10-14 | Not applied | Not applied |
 | 0001 legacy relational taxonomy | Excluded — never install on DSQL | Excluded | Excluded |
 
 “Applied” means every schema statement and associated permission grant completed, asynchronous jobs succeeded, and catalog verification passed. “Partial” means some changes exist but the module is not ready. “Not applied” means no deployment has been performed by this project; it is not a claim that an independently managed database was inspected.
@@ -104,6 +104,6 @@ The coordinated release uses source `bc6836e69716155f1465aa3c465c7cabaf25d58c`, 
 
 Evidence: [migration journal](deployments/development-0007.json) and [release verification](../AWS/deployments/2026-10-14-product-principals-verification.json).
 
-## Quote archive (0008) — October 15, 2026
+## Quote archive (0008) — October 14, 2026
 
-Migration 0008 is applied and verified in development. It adds nullable `archived_at` to quotes and grants the runtime role update access only to the archive timestamp and existing modification metadata. The API was paused during the migration. The one pre-existing quote and its existing fields are unchanged, with matching before/after digests; no quotes were archived by the migration. Statement hashes, API pause details, and catalog verification are recorded in [the migration journal](deployments/development-0008.json). Staging and production are unchanged.
+Migration 0008 is applied and verified in development. It adds nullable `archived_at` to quotes and grants the runtime role update access only to the archive timestamp and existing modification metadata. The API was paused during the migration and its prior unreserved concurrency was restored after the coordinated release. The one pre-existing quote and its existing fields are unchanged, with matching before/after digests; no quotes were archived by the migration. Statement hashes, API pause details, traffic restoration, and catalog verification are recorded in [the migration journal](deployments/development-0008.json). Staging and production are unchanged.

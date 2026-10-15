@@ -1,0 +1,49 @@
+{
+  "environment": "development",
+  "sourceCommit": "6b85bb76b75b4da5d615b3995999f2f838727d54",
+  "databaseMigration": {
+    "version": "0008",
+    "status": "applied_and_verified",
+    "evidence": "../../database/deployments/development-0008.json",
+    "apiConcurrencyBeforeAndAfter": "unreserved"
+  },
+  "api": {
+    "terraform": {
+      "resourcesAdded": 0,
+      "resourcesChanged": 3,
+      "resourcesDestroyed": 0,
+      "finalPlan": "no changes"
+    },
+    "lambdaVersion": "14",
+    "lambdaState": "Active",
+    "lambdaLastUpdateStatus": "Successful",
+    "codeSha256": "dZLqQ137hUC4Tsg6kDVKS1gxPxHGzIUdS7ej3r9W+Mw=",
+    "healthHttpStatus": 200,
+    "unauthenticatedArchiveHttpStatus": 401,
+    "unauthenticatedRestoreHttpStatus": 401,
+    "unauthenticatedArchivedListHttpStatus": 401,
+    "archiveRouteAuthorization": "JWT",
+    "restoreRouteAuthorization": "JWT",
+    "apiGatewayRouteCount": 35
+  },
+  "frontend": {
+    "amplifyJob": "24",
+    "amplifyStatus": "SUCCEED",
+    "steps": {
+      "BUILD": "SUCCEED",
+      "DEPLOY": "SUCCEED",
+      "VERIFY": "SUCCEED"
+    },
+    "rootHttpStatus": 200,
+    "loginHttpStatus": 200
+  },
+  "localVerification": {
+    "frontendTypecheck": "passed",
+    "frontendAmplifyBuild": "passed",
+    "serverBuild": "passed",
+    "lambdaBundleVerification": "passed",
+    "automatedTests": "not run",
+    "authenticatedOwnerWorkflow": "not run"
+  },
+  "stagingAndProduction": "unchanged"
+}
