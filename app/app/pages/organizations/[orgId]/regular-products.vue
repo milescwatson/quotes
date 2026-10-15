@@ -9,9 +9,10 @@ const route = useRoute(), identity = useIdentity(), cache = useQueryClient()
 const orgId = computed(() => identity.organizationId(route.params.orgId))
 const canEdit = computed(() => identity.state.user?.isSuperAdministrator || identity.state.organizations.find(o => o.id === orgId.value)?.role === 'administrator')
 const products = ref<RegularProduct[]>([]), parents = ref<QuoteProduct[]>([]), search = ref(''), loading = ref(true), busy = ref(false), error = ref(''), notice = ref(''), editing = ref(false)
+const choices = usePrincipalChoices(() => orgId.value)
 const original = ref<RegularProduct | null>(null)
-const draft = reactive({ partNumber: '', description: '', listPrice: '0.00', parentTaxonomyId: null as string | null })
-const filtered = computed(() => products.value.filter(p => `${p.partNumber} ${p.description} ${parentLabel(p.parentTaxonomyId)}`.toLowerCase().includes(search.value.toLowerCase())))
+const draft = reactive({ partNumber: '', description: '', listPrice: '0.00', principalId: null as string | null, parentTaxonomyId: null as string | null })
+const filtered = computed(() => products.value.filter(p => `${p.partNumber} ${p.description} ${p.principalName ?? ''} ${parentLabel(p.parentTaxonomyId)}`.toLowerCase().includes(search.value.toLowerCase())))
 function parentLabel(id: string | null) { return id ? parents.value.find(p => p.id === id)?.productFamilyName ?? 'Unavailable parent' : 'Unparented' }
 async function load() {
   loading.value = true; error.value = ''
@@ -25,7 +26,7 @@ async function load() {
   finally { loading.value = false }
 }
 function edit(product: RegularProduct | null) {
-  original.value = product; Object.assign(draft, product ? { partNumber: product.partNumber, description: product.description, listPrice: product.listPrice, parentTaxonomyId: product.parentTaxonomyId } : { partNumber: '', description: '', listPrice: '0.00', parentTaxonomyId: null }); editing.value = true; error.value = ''; notice.value = ''
+  original.value = product; Object.assign(draft, product ? { partNumber: product.partNumber, description: product.description, listPrice: product.listPrice, principalId: product.principalId, parentTaxonomyId: product.parentTaxonomyId } : { partNumber: '', description: '', listPrice: '0.00', principalId: null, parentTaxonomyId: null }); editing.value = true; error.value = ''; notice.value = ''
   nextTick(() => document.getElementById('regular-part')?.focus())
 }
 async function save() {
@@ -56,6 +57,8 @@ onMounted(load)
       <label for="regular-part">Part number</label><input id="regular-part" v-model="draft.partNumber" maxlength="120" required />
       <label for="regular-description">Description</label><input id="regular-description" v-model="draft.description" maxlength="500" />
       <label for="regular-price">List Price</label><input id="regular-price" v-model="draft.listPrice" inputmode="decimal" required />
+      <label for="regular-principal">Principal</label><select id="regular-principal" v-model="draft.principalId" class="w-full" :disabled="choices.isPending.value || !!choices.error.value"><option :value="null">No principal</option><option v-if="draft.principalId && !choices.data.value?.some(p => p.id === draft.principalId)" :value="draft.principalId">{{ original?.principalName || 'Unavailable principal' }}</option><option v-for="p in choices.data.value || []" :key="p.id" :value="p.id">{{ p.name }}</option></select>
+      <p v-if="choices.error.value" class="error" role="alert">{{ (choices.error.value as Error).message }} <button type="button" class="text-button" @click="choices.refetch()">Retry principals</button></p>
       <label for="regular-parent">Parent configured product</label><select id="regular-parent" v-model="draft.parentTaxonomyId" class="w-full"><option :value="null">Unparented</option><option v-if="draft.parentTaxonomyId && !parents.some(p => p.id === draft.parentTaxonomyId)" :value="draft.parentTaxonomyId">Unavailable parent (retained)</option><option v-for="p in parents" :key="p.id" :value="p.id">{{ p.productFamilyName }}</option></select>
       <div class="mt-4 flex gap-2"><button class="button primary" type="submit">{{ busy ? 'Saving…' : 'Save product' }}</button><button class="button secondary" type="button" @click="editing = false">Cancel</button></div>
     </fieldset>
@@ -64,6 +67,6 @@ onMounted(load)
     <label for="regular-search" class="mt-0">Search regular products</label><input id="regular-search" v-model="search" type="search" />
     <p v-if="loading" class="mt-4" role="status">Loading products…</p>
     <p v-else-if="!filtered.length" class="mt-4">No regular products found.</p>
-    <div v-else class="mt-4 overflow-x-auto" role="region" aria-label="Regular products table" tabindex="0"><table><thead><tr><th>Part number</th><th>Description</th><th>Parent</th><th>List Price</th><th v-if="canEdit">Actions</th></tr></thead><tbody><tr v-for="p in filtered" :key="p.id"><td>{{ p.partNumber }}</td><td>{{ p.description }}</td><td>{{ parentLabel(p.parentTaxonomyId) }}</td><td>{{ displayPrice(p.listPrice) }}</td><td v-if="canEdit"><button type="button" class="text-button" :aria-label="`Edit ${p.partNumber}`" @click="edit(p)">Edit</button></td></tr></tbody></table></div>
+    <div v-else class="mt-4 overflow-x-auto" role="region" aria-label="Regular products table" tabindex="0"><table><thead><tr><th>Part number</th><th>Description</th><th>Principal</th><th>Parent</th><th>List Price</th><th v-if="canEdit">Actions</th></tr></thead><tbody><tr v-for="p in filtered" :key="p.id"><td>{{ p.partNumber }}</td><td>{{ p.description }}</td><td>{{ p.principalName || '—' }}</td><td>{{ parentLabel(p.parentTaxonomyId) }}</td><td>{{ displayPrice(p.listPrice) }}</td><td v-if="canEdit"><button type="button" class="text-button" :aria-label="`Edit ${p.partNumber}`" @click="edit(p)">Edit</button></td></tr></tbody></table></div>
   </section>
 </template>

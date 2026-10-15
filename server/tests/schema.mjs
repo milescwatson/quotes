@@ -15,6 +15,7 @@ export async function readTestFile(url, encoding = 'utf8') {
     GRANT SELECT,INSERT,DELETE ON taxonomy_organization_access TO :"api_role";
     GRANT UPDATE(auth_revision,sharing_revision) ON taxonomies TO :"api_role";`;
   if (url.pathname.endsWith('/0004/quotes/schema.sql')) for (const file of ['schema','backfill','enforce']) text += '\n'+(await readFile(new URL(`../../database/versions/0006/products/${file}.sql`,import.meta.url),'utf8')).replaceAll('ALTER TABLE ASYNC','ALTER TABLE');
+  if (url.pathname.endsWith('/0004/quotes/schema.sql')) text += '\n'+(await readFile(new URL('../../database/versions/0007/products/schema.sql',import.meta.url),'utf8')).replaceAll('ALTER TABLE ASYNC','ALTER TABLE');
   if (url.pathname.endsWith('/0004/quotes/permissions.sql')) text += '\n'+await readFile(new URL('../../database/versions/0006/products/permissions.sql',import.meta.url),'utf8');
   return text;
 }

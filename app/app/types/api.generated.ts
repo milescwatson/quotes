@@ -781,6 +781,8 @@ export interface components {
             partNumber: string;
             description: string;
             listPrice: string;
+            principalId: string | null;
+            principalName: string | null;
             parentTaxonomyId: string | null;
             token: string;
         };
@@ -3363,6 +3365,7 @@ export interface operations {
                     partNumber: string;
                     description: string;
                     listPrice: string;
+                    principalId?: string | null;
                     parentTaxonomyId: string | null;
                 };
             };
@@ -3460,6 +3463,7 @@ export interface operations {
                     partNumber: string;
                     description: string;
                     listPrice: string;
+                    principalId?: string | null;
                     parentTaxonomyId: string | null;
                     expectedToken: string;
                 };

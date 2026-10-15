@@ -1,4 +1,5 @@
 import { identifier, one, rows, readUser, readOrganization, guardUser, guardOrganization, authorize, configurationAccessPredicate, fail } from './shared.mjs';
+import { requirePrincipal } from './principals.mjs';
 import { object, invalid, cents, dollars } from './taxonomy-content.mjs';
 export function productFields(body, prefix = '') {
   const clean = (v,max,path,empty=false) => {
@@ -10,7 +11,7 @@ export function productFields(body, prefix = '') {
   if (typeof body.listPrice !== 'string' || !/^(0|[1-9][0-9]{0,11})(\.[0-9]{1,2})?$/.test(body.listPrice)) invalid(prefix + '/listPrice','Enter a nonnegative list price with at most two decimal places.');
   return {partNumber,description,listPrice:dollars(cents(body.listPrice))};
 }
-export const regularResource = p => ({id:String(p.id),partNumber:p.part_number,description:p.description,listPrice:p.list_price,parentTaxonomyId:p.parent_taxonomy_id == null ? null : String(p.parent_taxonomy_id),token:String(p.token)});
+export const regularResource = p => ({id:String(p.id),partNumber:p.part_number,description:p.description,listPrice:p.list_price,parentTaxonomyId:p.parent_taxonomy_id == null ? null : String(p.parent_taxonomy_id),principalId:p.principal_id == null ? null : String(p.principal_id),principalName:p.principal_name ?? null,token:String(p.token)});
 export function createRegularProductService(withTransaction) {
   async function run(input,write,work) {
     identifier(input.orgId);
@@ -27,13 +28,16 @@ export function createRegularProductService(withTransaction) {
     }
   }
   return {
-    list: input => run(input,false,async (db,org) => ({items:(await rows(db,'SELECT *,modified_when::text AS token FROM public.regular_products WHERE organization_id=$1 ORDER BY part_number,id',[org.id])).map(regularResource)})),
+    list: input => run(input,false,async (db,org) => ({items:(await rows(db,'SELECT r.*,r.modified_when::text AS token,p.name AS principal_name FROM public.regular_products r LEFT JOIN public.principals p ON p.id=r.principal_id WHERE r.organization_id=$1 ORDER BY r.part_number,r.id',[org.id])).map(regularResource)})),
     save: input => run(input,true,async (db,org) => {
-      object(input.body,['partNumber','description','listPrice','parentTaxonomyId',...(input.productId ? ['expectedToken'] : [])]);
+      const required = ['partNumber','description','listPrice','parentTaxonomyId',...(input.productId ? ['expectedToken'] : [])];
+      object(input.body,[...required,'principalId'],'',required);
       const p = productFields(input.body), parent = input.body.parentTaxonomyId;
       const previous = input.productId ? await one(db,'SELECT * FROM public.regular_products WHERE id=$1 AND organization_id=$2',[identifier(input.productId),org.id]) : null;
       if (input.productId && !previous) fail(404,'NOT_FOUND','Product not found.');
       if (input.productId && (typeof input.body.expectedToken !== 'string' || input.body.expectedToken.length > 100)) invalid('/expectedToken','Provide the saved concurrency token.');
+      const principalId = Object.hasOwn(input.body,'principalId') ? input.body.principalId : previous?.principal_id == null ? null : String(previous.principal_id);
+      const principal = principalId === null ? null : await requirePrincipal(db,principalId);
       if (parent !== null) { try { identifier(parent); } catch { invalid('/parentTaxonomyId','Choose an accessible active configured product.'); } }
       if (parent !== null && (!previous || String(previous.parent_taxonomy_id) !== parent)) {
         await db.query('UPDATE public.taxonomies t SET auth_revision=COALESCE(auth_revision,0)+1 WHERE t.id=$1 AND '+configurationAccessPredicate,[parent,org.id]);
@@ -44,10 +48,10 @@ export function createRegularProductService(withTransaction) {
       let row;
       if (input.productId) {
         identifier(input.productId);
-        row = await one(db,`UPDATE public.regular_products SET part_number=$1,description=$2,list_price=$3,parent_taxonomy_id=$4,modified_when=now() WHERE id=$5 AND organization_id=$6 AND modified_when::text=$7 RETURNING *,modified_when::text AS token`,[p.partNumber,p.description,p.listPrice,parent,input.productId,org.id,input.body.expectedToken]);
+        row = await one(db,`UPDATE public.regular_products SET part_number=$1,description=$2,list_price=$3,parent_taxonomy_id=$4,principal_id=$8,modified_when=now() WHERE id=$5 AND organization_id=$6 AND modified_when::text=$7 RETURNING *,modified_when::text AS token`,[p.partNumber,p.description,p.listPrice,parent,input.productId,org.id,input.body.expectedToken,principalId]);
         if (!row) fail(409,'PRODUCT_CONFLICT','This product changed. Reload before saving.');
-      } else row = await one(db,`INSERT INTO public.regular_products(organization_id,part_number,description,list_price,parent_taxonomy_id) VALUES($1,$2,$3,$4,$5) RETURNING *,modified_when::text AS token`,[org.id,p.partNumber,p.description,p.listPrice,parent]);
-      return {product:regularResource(row)};
+      } else row = await one(db,`INSERT INTO public.regular_products(organization_id,part_number,description,list_price,parent_taxonomy_id,principal_id) VALUES($1,$2,$3,$4,$5,$6) RETURNING *,modified_when::text AS token`,[org.id,p.partNumber,p.description,p.listPrice,parent,principalId]);
+      return {product:regularResource({...row,principal_name:principal?.name ?? null})};
     }),
   };
 }

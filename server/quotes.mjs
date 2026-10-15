@@ -78,14 +78,14 @@ export function createQuoteService(withTransaction) {
             if (previous?.kind === 'regular' && previous.regularProductId === line.regularProductId) {
               snapshot = previous.snapshot; partNumber = previous.partNumber; price = previous.unitPrice; parentTaxonomyId = previous.parentTaxonomyId;
             } else {
-              const p = await one(db,'SELECT * FROM public.regular_products WHERE id=$1 AND organization_id=$2',[line.regularProductId,org.id]);
+              const p = await one(db,'SELECT r.*,p.name AS principal_name FROM public.regular_products r LEFT JOIN public.principals p ON p.id=r.principal_id WHERE r.id=$1 AND r.organization_id=$2',[line.regularProductId,org.id]);
               if (!p) invalid(`${path}/regularProductId`,'Choose a regular product in this organization.');
               partNumber = p.part_number; price = p.list_price; parentTaxonomyId = p.parent_taxonomy_id == null ? null : String(p.parent_taxonomy_id);
-              snapshot = flatSnapshot(partNumber,p.description,price);
+              snapshot = flatSnapshot(partNumber,p.description,price,p.principal_id == null ? null : String(p.principal_id),p.principal_name);
             }
           } else {
             const p = productFields(line,path); partNumber = p.partNumber; price = p.listPrice;
-            snapshot = flatSnapshot(partNumber,p.description,price);
+            snapshot = flatSnapshot(partNumber,p.description,price,p.principal_id == null ? null : String(p.principal_id),p.principal_name);
           }
           const amount = cents(price) * BigInt(line.quantity);
           total += amount; netTotal += cents(netAmount(dollars(amount),quoteMultiple,pricing));

@@ -8,6 +8,6 @@ export function netAmount(list, quoteMultiple, line) {
   const factor = q * l;
   return dollars((cents(list) * factor + 50000000n) / 100000000n);
 }
-export function flatSnapshot(partNumber, description, price) {
-  return {content:{schemaVersion:1,productFamilyName:partNumber,productDescription:description,currency:'USD',basePrice:price,separators:[],segments:[]},principalId:null,principalName:null};
+export function flatSnapshot(partNumber, description, price, principalId = null, principalName = null) {
+  return {content:{schemaVersion:1,productFamilyName:partNumber,productDescription:description,currency:'USD',basePrice:price,separators:[],segments:[]},principalId,principalName};
 }

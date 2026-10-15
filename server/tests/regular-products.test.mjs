@@ -27,17 +27,17 @@ test('regular catalog authorization, mixed snapshots, shared parents and restric
       INSERT INTO organization_memberships(organization_id,user_id,role) VALUES(10,1,'administrator'),(10,2,'sales'),(11,3,'administrator');
       INSERT INTO principals(id,name,normalized_name,website_url,website_key,created_by_user_id) VALUES(1,'Maker','maker','https://maker.com','maker.com',1);`);
     const configured=(await call(taxonomies.createTaxonomy,{principalId:'1',content:{productFamilyName:'Configured',currency:'USD',basePrice:'10.00',segments:[{id:null,placeholder:'C',name:null,defaultOptionIndex:null,options:[{id:null,code:'C',description:null,price:'0.00'}]}]}})).body.taxonomy;
-    const fields={partNumber:' 001-A ',description:'Standalone',listPrice:'12.50',parentTaxonomyId:configured.id};
+    const fields={partNumber:' 001-A ',description:'Standalone',listPrice:'12.50',principalId:'1',parentTaxonomyId:configured.id};
     let product=(await call(products.save,fields)).product;
     await t.test('validation, uniqueness, concurrency and organization roles',async()=>{
-      assert.equal(product.partNumber,'001-A');
+      assert.equal(product.partNumber,'001-A');assert.equal(product.principalId,'1');assert.equal(product.principalName,'Maker');
       assert.equal((await call(products.list,{}, {identity:{issuer:'test',sub:'sales'}})).items.length,1);
       await reject(()=>call(products.save,fields,{identity:{issuer:'test',sub:'sales'}}),'FORBIDDEN');
       await reject(()=>call(products.save,fields),'PRODUCT_DUPLICATE');
       await reject(()=>call(products.save,{...fields,partNumber:'New',parentTaxonomyId:'999'}),'INVALID_INPUT');
       await reject(()=>call(products.save,{...fields,expectedToken:'stale'},{productId:product.id}),'PRODUCT_CONFLICT');
       await reject(()=>call(products.save,{...fields,expectedToken:product.token},{productId:product.id,orgId:'11',identity:{issuer:'test',sub:'outside'}}),'NOT_FOUND');
-      for(const change of [{partNumber:''},{listPrice:'-1'},{listPrice:'1.234'},{description:'\n'},{parentTaxonomyId:'undefined'},{parentTaxonomyId:'null'}]) await reject(()=>call(products.save,{...fields,...change}),'INVALID_INPUT');
+      for(const change of [{partNumber:''},{listPrice:'-1'},{listPrice:'1.234'},{description:'\n'},{parentTaxonomyId:'undefined'},{parentTaxonomyId:'null'},{principalId:'999'},{principalId:'bad'}]) await reject(()=>call(products.save,{...fields,...change}),'INVALID_INPUT');
     });
     const body={customerName:'Acme',projectName:'Office',ownerId:null,multiple:0.8,lines:[
       {id:null,taxonomyId:configured.id,versionId:configured.version.id,selections:[configured.version.content.segments[0].options[0].id],quantity:2,multiple:0.5},
@@ -48,12 +48,19 @@ test('regular catalog authorization, mixed snapshots, shared parents and restric
     const write=()=>({...body,expectedToken:quote.token,lines:body.lines.map((l,i)=>({...l,id:quote.lines[i].id}))});
     await t.test('mixed lines, exact totals, no-op save and historical catalog pricing',async()=>{
       quote=(await call(quotes.createQuote,body,{identity:{issuer:'test',sub:'sales'}})).quote;
+      assert.equal(quote.lines[1].snapshot.principalId,'1');assert.equal(quote.lines[1].snapshot.principalName,'Maker');
       assert.equal(quote.listTotal,'57.53');assert.equal(quote.total,'23.01');assert.equal(quote.lines[2].partNumber,'000-X');
       assert.equal((await call(quotes.updateQuote,write(),{quoteId:quote.id})).unchanged,true);
-      product=(await call(products.save,{...fields,listPrice:'99.00',expectedToken:product.token},{productId:product.id})).product;
+      product=(await call(products.save,{...fields,principalId:null,listPrice:'99.00',expectedToken:product.token},{productId:product.id})).product;
       const b=write();b.lines[1].quantity=4;quote=(await call(quotes.updateQuote,b,{quoteId:quote.id})).quote;
-      assert.equal(quote.lines[1].unitPrice,'12.50');assert.equal(quote.total,'28.01');
+      assert.equal(quote.lines[1].snapshot.principalName,'Maker');assert.equal(quote.lines[1].unitPrice,'12.50');assert.equal(quote.total,'28.01');
       assert.equal((await call(quotes.createQuote,{...body,lines:[body.lines[1]]})).quote.lines[0].unitPrice,'99.00');
+    });
+    await t.test('omitted principal keeps assignments and explicit null clears them', async () => {
+      let p=(await call(products.save,{...fields,partNumber:'Principal test',parentTaxonomyId:null})).product;
+      const legacy={...fields,partNumber:p.partNumber,parentTaxonomyId:null,expectedToken:p.token};delete legacy.principalId;
+      p=(await call(products.save,legacy,{productId:p.id})).product;assert.equal(p.principalId,'1');
+      p=(await call(products.save,{...legacy,principalId:null,expectedToken:p.token},{productId:p.id})).product;assert.equal(p.principalId,null);
     });
     await t.test('parent archive retention and sharing access',async()=>{
       await db.query('UPDATE taxonomies SET archived_at=now(),archived_by_user_id=1 WHERE id=$1',[configured.id]);

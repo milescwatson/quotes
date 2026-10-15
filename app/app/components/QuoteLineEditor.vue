@@ -14,7 +14,7 @@ const picker = ref<InstanceType<typeof ComboboxInput>>(), editButton = ref<HTMLB
 const copy = (value: LocalQuoteLine | null) => value ? { ...JSON.parse(JSON.stringify(value)), multiple: value.multiple ?? 1 } as LocalQuoteLine : null
 watch(() => props.modelValue, value => { draft.value = copy(value); valid.value = {}; codeText.value = {} }, { immediate: true })
 const filtered = computed(() => props.products.filter(p => `${p.productFamilyName} ${p.principalName} ${p.modelCode || ''}`.toLowerCase().includes(query.value.toLowerCase())))
-const regularFiltered = computed(() => [...props.regularProducts].filter(p => `${p.partNumber} ${p.description} ${parentName(p)}`.toLowerCase().includes(query.value.toLowerCase())).sort((a,b) => parentName(a).localeCompare(parentName(b)) || a.partNumber.localeCompare(b.partNumber)))
+const regularFiltered = computed(() => [...props.regularProducts].filter(p => `${p.partNumber} ${p.description} ${p.principalName ?? ''} ${parentName(p)}`.toLowerCase().includes(query.value.toLowerCase())).sort((a,b) => parentName(a).localeCompare(parentName(b)) || a.partNumber.localeCompare(b.partNumber)))
 const regularChoices = computed(() => regularFiltered.value.map(product => ({ kind: 'regular' as const, product })))
 const freeformChoice = { kind: 'freeform' as const }
 function parentName(p: RegularProduct) { return p.parentTaxonomyId ? props.products.find(t => t.id === p.parentTaxonomyId)?.productFamilyName ?? 'Unavailable parent' : 'Unparented' }
@@ -24,7 +24,7 @@ function chooseFlat(p: RegularProduct | null) {
   if (draft.value && !window.confirm('Switch products and discard this line’s selections?')) return
   const partNumber = p?.partNumber ?? '', price = p?.listPrice ?? '0.00'
   draft.value = { id: props.modelValue?.id ?? null, key: props.lineKey, kind: p ? 'regular' : 'freeform', regularProductId: p?.id ?? null, parentTaxonomyId: p?.parentTaxonomyId ?? null, taxonomyId: null, versionId: null,
-    snapshot: { content: { schemaVersion: 1, productFamilyName: partNumber, productDescription: p?.description ?? '', currency: 'USD', basePrice: price, separators: [], segments: [] }, principalId: null, principalName: null },
+    snapshot: { content: { schemaVersion: 1, productFamilyName: partNumber, productDescription: p?.description ?? '', currency: 'USD', basePrice: price, separators: [], segments: [] }, principalId: p?.principalId ?? null, principalName: p?.principalName ?? null },
     selections: [], quantity: 1, multiple: 1, partNumber, complete: true, unitPrice: price, lineTotal: price }
   valid.value = {}; codeText.value = {}; query.value = ''; emit('pending', true)
 }
@@ -105,7 +105,7 @@ defineExpose({ validate, done })
             <div class="relative"><ComboboxInput :id="`product-${lineKey}`" ref="picker" class="pr-10" autocomplete="off" :display-value="() => draft?.snapshot.content.productFamilyName ?? ''" placeholder="Search product, model, or principal" @change="query = $event.target.value" @blur="query = ''" /><ComboboxButton class="absolute inset-y-0 right-0 px-3" aria-label="Show products">⌄</ComboboxButton></div>
             <ComboboxOptions class="absolute z-10 mt-1 max-h-72 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
               <ComboboxOption v-for="p in filtered" :key="p.id" v-slot="{ active: highlighted, selected }" :value="p" as="template"><li class="cursor-pointer p-3" :class="highlighted ? 'bg-blue-50' : ''"><span class="block font-medium">{{ p.productFamilyName }} <span v-if="selected">✓</span></span><span class="text-xs text-gray-500">{{ p.principalName }} <template v-if="p.modelCode">· {{ p.modelCode }}</template></span></li></ComboboxOption>
-              <ComboboxOption v-for="choice in regularChoices" :key="`regular-${choice.product.id}`" v-slot="{ active: highlighted }" :value="choice" as="template"><li class="cursor-pointer p-3" :class="highlighted ? 'bg-blue-50' : ''"><span class="block text-xs text-gray-500">Regular · {{ parentName(choice.product) }}</span><span class="block font-medium">{{ choice.product.partNumber }}</span><span class="text-xs text-gray-500">{{ choice.product.description }} · {{ displayPrice(choice.product.listPrice) }}</span></li></ComboboxOption>
+              <ComboboxOption v-for="choice in regularChoices" :key="`regular-${choice.product.id}`" v-slot="{ active: highlighted }" :value="choice" as="template"><li class="cursor-pointer p-3" :class="highlighted ? 'bg-blue-50' : ''"><span class="block text-xs text-gray-500">Regular · {{ parentName(choice.product) }}</span><span class="block font-medium">{{ choice.product.partNumber }}</span><span class="text-xs text-gray-500">{{ choice.product.principalName }} {{ choice.product.description }} · {{ displayPrice(choice.product.listPrice) }}</span></li></ComboboxOption>
               <ComboboxOption v-if="!query || (!filtered.length && !regularFiltered.length)" v-slot="{ active: highlighted }" :value="freeformChoice" as="template"><li class="cursor-pointer p-3 font-medium" :class="highlighted ? 'bg-blue-50' : ''">Add freeform part</li></ComboboxOption>
               <li v-if="!filtered.length && !regularFiltered.length" class="p-3 text-gray-600">No matching products. Try a product or principal name.</li>
             </ComboboxOptions>

@@ -207,7 +207,11 @@ export function createFixtures() {
             const parent = (configurations.request(`/organizations/${orgId}/taxonomies/${body.parentTaxonomyId}`, 'GET', {}, org!, state.user) as { taxonomy: Taxonomy }).taxonomy
             if (parent.archivedAt) fail(422, 'INVALID_INPUT', 'Choose an accessible active configured product.')
           }
-          const product: RegularProduct = { id: old?.id ?? String(Math.max(0, ...regular.map(p => Number(p.id))) + 1), partNumber: body.partNumber.trim(), description: body.description.trim(), listPrice: Number(body.listPrice).toFixed(2), parentTaxonomyId: body.parentTaxonomyId, token: new Date().toISOString() }
+          const principalId = Object.hasOwn(body, 'principalId') ? body.principalId : old?.principalId ?? null
+          const principals = (configurations.request(`/organizations/${orgId}/principals?pageSize=100`, 'GET', {}, org!, state.user) as { items: { id: string; name: string }[] }).items
+          const principal = principals.find(p => p.id === principalId)
+          if (principalId !== null && !principal) fail(422, 'INVALID_INPUT', 'Choose an existing principal.')
+          const product: RegularProduct = { id: old?.id ?? String(Math.max(0, ...regular.map(p => Number(p.id))) + 1), partNumber: body.partNumber.trim(), description: body.description.trim(), listPrice: Number(body.listPrice).toFixed(2), parentTaxonomyId: body.parentTaxonomyId, principalId, principalName: principal?.name ?? null, token: new Date().toISOString() }
           if (old) regular.splice(regular.indexOf(old), 1, product); else regular.push(product)
           sessionStorage.setItem(regularKey, JSON.stringify(regular)); return structuredClone({ product }) as T
         }
@@ -228,10 +232,10 @@ export function createFixtures() {
             if (!Number.isInteger(input.quantity) || input.quantity < 1 || input.quantity > 1000000) fail(422,'INVALID_INPUT','Use a positive whole quantity.')
             if (!validMultiple(input.multiple ?? 1)) fail(422, 'INVALID_INPUT', 'Enter a valid line multiple.')
             if (input.kind === 'regular' || input.kind === 'freeform') {
-              const p = input.kind === 'regular' ? regular.find(p => p.id === input.regularProductId) : { partNumber: input.partNumber, description: input.description, listPrice: input.listPrice, parentTaxonomyId: null }
+              const p = input.kind === 'regular' ? regular.find(p => p.id === input.regularProductId) : { partNumber: input.partNumber, description: input.description, listPrice: input.listPrice, parentTaxonomyId: null, principalId: null, principalName: null }
               const retained = old?.kind === 'regular' && old.regularProductId === input.regularProductId ? old : null
               if (!p && !retained) fail(422, 'INVALID_INPUT', 'Choose a regular product.')
-              const snapshot = retained?.snapshot ?? { content: { schemaVersion: 1 as const, productFamilyName: p!.partNumber.trim(), productDescription: p!.description, currency: 'USD' as const, basePrice: p!.listPrice, separators: [], segments: [] }, principalId: null, principalName: null }
+              const snapshot = retained?.snapshot ?? { content: { schemaVersion: 1 as const, productFamilyName: p!.partNumber.trim(), productDescription: p!.description, currency: 'USD' as const, basePrice: p!.listPrice, separators: [], segments: [] }, principalId: p!.principalId ?? null, principalName: p!.principalName ?? null }
               const line: LocalQuoteLine = { ...input, id: old?.id ?? crypto.randomUUID(), key: '', taxonomyId: null, versionId: null, parentTaxonomyId: retained?.parentTaxonomyId ?? p?.parentTaxonomyId, snapshot, selections: [], complete: true }
               return { ...line, key: undefined, ...quoteAmount(line), partNumber: quoteNumber(line) }
             }

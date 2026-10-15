@@ -23,5 +23,12 @@ test('0006 preserves legacy quotes and enforces catalog uniqueness and price/mul
     await assert.rejects(()=>db.query('UPDATE quotes SET multiple=1001'),e=>e.code==='23514');
     await assert.rejects(()=>db.query('UPDATE quotes SET multiple=NULL'),e=>e.code==='23514');
     await db.query('UPDATE quotes SET multiple=0');await db.query('UPDATE quotes SET multiple=1000');
+    const productsBefore=(await db.query('SELECT * FROM regular_products ORDER BY id')).rows;
+    await apply('0003/principals/schema.sql');
+    await apply('0007/products/schema.sql');
+    const productsAfter=(await db.query('SELECT * FROM regular_products ORDER BY id')).rows;
+    assert.deepEqual(productsAfter.map(({principal_id,...row})=>row),productsBefore);assert.ok(productsAfter.every(p=>p.principal_id===null));
+    await assert.rejects(()=>db.query('UPDATE regular_products SET principal_id=999'),e=>e.code==='23503');
+
   } finally {await db.close()}
 });
