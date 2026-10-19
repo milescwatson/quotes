@@ -253,3 +253,34 @@ and API while retaining the additive schema and stored PDFs.
 Evidence: [release verification](deployments/2026-10-15-queued-pdf-verification.json),
 [runtime verification](deployments/2026-10-15-queued-pdf-runtime-verification.json),
 and [0010 migration journal](../database/deployments/development-0010.json).
+
+## Inline quote descriptions and fixed line products — October 19, 2026
+
+Source `df2635bb3ffd0365fc33d955982f5de83add22c0` is released to development.
+Quote lines now support inline Tiptap descriptions with bold, italic, underline,
+and line breaks. Quote-specific edits are stored separately from product defaults.
+The ellipsis settings menu hides descriptions from the quote and PDF while
+retaining their text and formatting. Selected line products cannot be replaced;
+quantity, configuration options, and appropriate freeform fields remain editable.
+No database migration or quote backfill was needed.
+
+The reviewed Terraform plan updated four resources (API Lambda, PDF worker,
+API alias, and Gateway contract), with no additions or deletions. API version
+**20** and the ARM64 worker match archive SHA-256
+`NTsNO/W6gLV2ddlrGnzcxh/7os2C/svqfTs7ezkwtYI=`. A reviewed metadata-only plan
+restored Gateway description/version/tags after contract import. The final plan
+reports **no changes**. All 40 routes retain the expected authorization.
+API/worker empty-event invocations, public health, anonymous quote/PDF rejection,
+and hosted-origin/localhost PUT preflights passed.
+
+Amplify development job **31** passed BUILD, DEPLOY, and VERIFY for the source
+commit. Hosted root/login pages return 200; the released quote-editor asset
+contains the formatting toolbar, description visibility menu, and persistence
+code. Local validation passed **136 server tests**, **23 editor/PDF browser
+scenarios**, frontend typecheck/build, server build/bundle verification, and
+visual PDF checks for combined formatting, blank lines, wrapping, and pagination.
+Live authenticated quote editing was not exercised; verification created no users
+or quote records. Staging and production were unchanged.
+
+Evidence: [release verification](deployments/2026-10-19-description-verification.json).
+The read-only release check is `node server/scripts/verify-description-release.mjs 31`.

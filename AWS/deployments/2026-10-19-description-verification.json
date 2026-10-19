@@ -1,0 +1,80 @@
+{
+  "environment": "development",
+  "sourceCommit": "df2635bb3ffd0365fc33d955982f5de83add22c0",
+  "verifiedAt": "2026-10-19T19:25:56.162Z",
+  "api": {
+    "version": "20",
+    "codeSha256": "NTsNO/W6gLV2ddlrGnzcxh/7os2C/svqfTs7ezkwtYI=",
+    "routeCount": 40,
+    "checks": [
+      {
+        "path": "/health",
+        "status": 200,
+        "requestId": "FgY-qiWCvHcEMYw="
+      },
+      {
+        "path": "/organizations/1/quotes/1",
+        "status": 401,
+        "requestId": "FgY-shohPHcEMvw="
+      },
+      {
+        "path": "/organizations/1/quotes/1/pdf?expectedToken=test",
+        "status": 401,
+        "requestId": "FgY-tg64PHcEMpA="
+      },
+      {
+        "path": "/organizations/1/quotes/1/pdf-url?expectedToken=test",
+        "status": 401,
+        "requestId": "FgY-tgRZPHcEMcA="
+      },
+      {
+        "method": "OPTIONS",
+        "origin": "https://development.d8i1ve5prnr7w.amplifyapp.com",
+        "status": 204
+      },
+      {
+        "method": "OPTIONS",
+        "origin": "http://localhost:3000",
+        "status": 204
+      }
+    ]
+  },
+  "worker": {
+    "functionName": "quotes-development-quote-pdf-worker",
+    "codeSha256": "NTsNO/W6gLV2ddlrGnzcxh/7os2C/svqfTs7ezkwtYI=",
+    "architecture": "arm64",
+    "emptyEvent": "passed"
+  },
+  "databaseMigration": false,
+  "databaseWrites": false,
+  "frontend": {
+    "jobId": "31",
+    "commitId": "df2635bb3ffd0365fc33d955982f5de83add22c0",
+    "status": "SUCCEED",
+    "steps": [
+      {
+        "name": "BUILD",
+        "status": "SUCCEED"
+      },
+      {
+        "name": "DEPLOY",
+        "status": "SUCCEED"
+      },
+      {
+        "name": "VERIFY",
+        "status": "SUCCEED"
+      }
+    ],
+    "assets": [
+      {
+        "path": "/_nuxt/CF4cGqIP.js",
+        "sha256": "43a146f996660ad39248422f52d0bee66c1b4f8631340db1a387588e4e705a65",
+        "checks": [
+          "Tiptap formatting toolbar",
+          "description visibility menu",
+          "quote-specific description persistence"
+        ]
+      }
+    ]
+  }
+}
