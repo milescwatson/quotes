@@ -82,3 +82,36 @@ test('Quote By uses first and last author initials with safe missing-name handli
     assert.equal(prepareQuotePdf({ ...sampleQuote, authorName }, {}).quoteBy, expected);
   }
 });
+
+test('hidden descriptions are omitted from PDF data without changing the saved default', () => {
+  const quote = structuredClone(sampleQuote);
+  quote.lines[0].descriptionVisible = false;
+  assert.equal(prepareQuotePdf(quote, {}).lines[0].description, '');
+  assert.equal(quote.lines[0].snapshot.content.productDescription, 'Configured product');
+  quote.lines[0].descriptionVisible = true;
+  assert.equal(prepareQuotePdf(quote, {}).lines[0].description, 'Configured product');
+});
+
+test('formatted descriptions use quote edits, preserve marks, and respect hidden and empty values', async () => {
+  const quote = structuredClone(sampleQuote);
+  const runs = [{ text: 'Bold ', bold: true }, { text: 'italic ', italic: true }, { text: 'underlined\n', underline: true }, { text: 'Combined', bold: true, italic: true, underline: true }];
+  quote.lines[0].descriptionContent = runs;
+  const result = prepareQuotePdf(quote, { name: 'Org' });
+  assert.equal(result.lines[0].description, 'Bold italic underlined\nCombined');
+  assert.deepEqual(result.lines[0].descriptionContent, runs);
+  const pdf = await renderQuotePdf(result);
+  assert.equal(pdf.subarray(0, 5).toString(), '%PDF-');
+  quote.lines[0].descriptionVisible = false;
+  assert.equal(prepareQuotePdf(quote, {}).lines[0].description, '');
+  assert.deepEqual(prepareQuotePdf(quote, {}).lines[0].descriptionContent, []);
+  quote.lines[0].descriptionVisible = true;
+  quote.lines[0].descriptionContent = [];
+  assert.equal(prepareQuotePdf(quote, {}).lines[0].description, '');
+});
+test('formatted descriptions paginate long unbroken words, blank lines, and repeated styled text', async () => {
+  const result = model();
+  result.lines[0].descriptionContent = [{ text: 'W'.repeat(1500), bold: true, italic: true }, { text: '\n\n' }, { text: 'Formatted text '.repeat(200), underline: true }];
+  const pdf = await renderQuotePdf(result);
+  const count = [...pdf.toString('latin1').matchAll(/\/Type \/Page\b/g)].length;
+  assert.ok(count >= 2 && count < 10, `Unexpected page count ${count}`);
+});

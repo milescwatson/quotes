@@ -110,6 +110,45 @@ test('quote creation, partial options, snapshots, authorization, atomic validati
       assert.equal((await call(quotes.listQuotes)).totalItems,2);
     });
     const write = (value=q) => ({customerName:value.customerName,projectName:value.projectName,ownerId:value.ownerId,expectedToken:value.token,lines:value.lines.map(({id,taxonomyId,versionId,selections,quantity})=>({id,taxonomyId,versionId,selections:structuredClone(selections),quantity}))});
+    await t.test('line products are immutable and visibility persists without changing snapshots', async () => {
+      for (const fields of [{ taxonomyId: '999' }, { versionId: '999' }, { kind: 'regular', regularProductId: '999' }]) {
+        const b = write();
+        b.lines[0] = fields.kind ? { id: q.lines[0].id, quantity: 1, ...fields } : { ...b.lines[0], ...fields };
+        await assert.rejects(() => call(quotes.updateQuote, b, q.id), e => e.status === 422);
+      }
+      const snapshot = structuredClone(q.lines[0].snapshot);
+      const b = write(); b.lines[0].descriptionVisible = false;
+      q = (await call(quotes.updateQuote, b, q.id)).quote;
+      assert.equal(q.lines[0].descriptionVisible, false);
+      q = (await call(quotes.updateQuote, write(), q.id)).quote;
+      assert.equal(q.lines[0].descriptionVisible, false);
+      assert.deepEqual(q.lines[0].snapshot, snapshot);
+      const shown = write(); shown.lines[0].descriptionVisible = true;
+      q = (await call(quotes.updateQuote, shown, q.id)).quote;
+      assert.equal(q.lines[0].descriptionVisible, true);
+      const invalid = write(); invalid.lines[0].descriptionVisible = 'false';
+      await assert.rejects(() => call(quotes.updateQuote, invalid, q.id), e => e.status === 422);
+    });
+    await t.test('formatted descriptions are quote-specific, preserved when omitted, and cleared explicitly', async () => {
+      const snapshot = structuredClone(q.lines[0].snapshot);
+      const runs = [{ text: 'Edited ', bold: true }, { text: 'description\nSecond line', italic: true, underline: true }];
+      const b = write(); b.lines[0].descriptionContent = runs; b.lines[0].descriptionVisible = false;
+      q = (await call(quotes.updateQuote, b, q.id)).quote;
+      assert.deepEqual(q.lines[0].descriptionContent, runs);
+      assert.deepEqual(q.lines[0].snapshot, snapshot);
+      q = (await call(quotes.updateQuote, write(), q.id)).quote;
+      assert.deepEqual(q.lines[0].descriptionContent, runs);
+      const shown = write(); shown.lines[0].descriptionVisible = true;
+      q = (await call(quotes.updateQuote, shown, q.id)).quote;
+      assert.deepEqual(q.lines[0].descriptionContent, runs);
+      for (const descriptionContent of [null, 'html', [{ text: 'x', html: '<b>x</b>' }], [{ text: 'x', bold: 'true' }], [{ text: 'x'.repeat(5001) }], [{ text: 'bad\u0000text' }], [{ text: '' }]]) {
+        const invalid = write(); invalid.lines[0].descriptionContent = descriptionContent;
+        await assert.rejects(() => call(quotes.updateQuote, invalid, q.id), e => e.status === 422);
+      }
+      const clear = write(); clear.lines[0].descriptionContent = [];
+      q = (await call(quotes.updateQuote, clear, q.id)).quote;
+      assert.deepEqual(q.lines[0].descriptionContent, []);
+    });
     await t.test('PDF exports saved snapshots with membership and concurrency checks', async () => {
       const request = { identity: { issuer: 'test', sub: 'member' }, orgId: '10', quoteId: q.id, query: { expectedToken: q.token } };
       const result = await quotes.readQuotePdf(request);

@@ -1,3 +1,4 @@
+import { lineDescription } from './quote-description.mjs';
 import { netAmount } from './quote-pricing.mjs';
 
 // All amounts remain decimal strings. Option additions are per unit; they are
@@ -22,7 +23,8 @@ export function prepareQuotePdf(quote, organization) {
         productName: line.kind !== 'regular' && line.kind !== 'freeform' && content.productFamilyName !== line.partNumber
           ? content.productFamilyName || '' : '',
         partNumber: line.partNumber, quantity: line.quantity,
-        description: content.productDescription || '',
+        description: lineDescription(line).map(run => run.text).join(''),
+        ...(line.descriptionContent === undefined ? {} : { descriptionContent: lineDescription(line) }),
         extendedPrice: netAmount(line.lineTotal, multiple),
         options: line.kind === 'regular' || line.kind === 'freeform' ? [] : content.segments.flatMap((segment, index) => {
           const option = segment.options.find(item => item.id === line.selections[index]);

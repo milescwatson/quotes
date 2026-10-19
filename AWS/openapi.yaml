@@ -2973,9 +2973,36 @@ components:
         - message
         - requestId
       additionalProperties: false
+    QuoteDescriptionRun:
+      type: object
+      additionalProperties: false
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 5000
+        bold:
+          type: boolean
+        italic:
+          type: boolean
+        underline:
+          type: boolean
+      required:
+        - text
+    QuoteDescriptionContent:
+      type: array
+      description: Quote-specific description; omitted uses the saved product default. Empty array clears it. At most 5000 total text characters, including newlines.
+      maxItems: 1000
+      items:
+        $ref: "#/components/schemas/QuoteDescriptionRun"
     QuoteLineInput:
       type: object
       properties:
+        descriptionContent:
+          $ref: "#/components/schemas/QuoteDescriptionContent"
+        descriptionVisible:
+          type: boolean
+          description: Whether to show the description on the quote and PDF; defaults to true.
         id:
           type: string
           nullable: true
@@ -3083,6 +3110,11 @@ components:
     QuoteLine:
       type: object
       properties:
+        descriptionContent:
+          $ref: "#/components/schemas/QuoteDescriptionContent"
+        descriptionVisible:
+          type: boolean
+          description: Whether to show the description on the quote and PDF; defaults to true.
         id:
           type: string
         taxonomyId:

@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { Combobox, ComboboxLabel, ComboboxInput, ComboboxButton, ComboboxOptions, ComboboxOption } from '@headlessui/vue'
+import { Combobox, ComboboxLabel, ComboboxInput, ComboboxButton, ComboboxOptions, ComboboxOption, Menu, MenuButton, MenuItem, MenuItems } from '@headlessui/vue'
 import type { LocalQuoteLine, QuoteProduct, RegularProduct } from '~/types/quotes'
 import { quoteAmount, quoteNumber, adjustedAmount } from '~/utils/quote'
 import { displayPrice } from '~/utils/configuration'
 import { useQueryClient } from '@tanstack/vue-query'
+import { descriptionRuns, type DescriptionRun } from '~/utils/description'
 import { queryKeys } from '~/utils/query-keys'
 const props = defineProps<{ modelValue: LocalQuoteLine | null; lineKey: string; index: number; products: QuoteProduct[]; regularProducts: RegularProduct[]; quoteMultiple: number; organization: string; disabled: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [value: LocalQuoteLine]; pending: [value: boolean]; remove: []; accessLost: [] }>()
@@ -21,8 +22,7 @@ const freeformChoice = { kind: 'freeform' as const }
 function parentName(p: RegularProduct) { return p.parentTaxonomyId ? props.products.find(t => t.id === p.parentTaxonomyId)?.productFamilyName ?? 'Unavailable parent' : 'Unparented' }
 const flat = computed(() => draft.value?.kind === 'regular' || draft.value?.kind === 'freeform')
 function chooseFlat(p: RegularProduct | null) {
-  if (props.disabled || loading.value) return
-  if (draft.value && !window.confirm('Switch products and discard this line’s selections?')) return
+  if (draft.value || props.disabled || loading.value) return
   const partNumber = p?.partNumber ?? '', price = p?.listPrice ?? '0.00'
   draft.value = { id: props.modelValue?.id ?? null, key: props.lineKey, kind: p ? 'regular' : 'freeform', regularProductId: p?.id ?? null, parentTaxonomyId: p?.parentTaxonomyId ?? null, taxonomyId: null, versionId: null,
     snapshot: { content: { schemaVersion: 1, productFamilyName: partNumber, productDescription: p?.description ?? '', currency: 'USD', basePrice: price, separators: [], segments: [] }, principalId: p?.principalId ?? null, principalName: p?.principalName ?? null },
@@ -37,8 +37,7 @@ function selectProduct(p: QuoteProduct | { kind: 'regular'; product: RegularProd
   void choose(p)
 }
 async function choose(p: QuoteProduct | null) {
-  if (!p || props.disabled || loading.value) return
-  if (draft.value && !window.confirm('Switch products and discard this line’s selections?')) { query.value = ''; return }
+  if (!p || draft.value || props.disabled || loading.value) return
   loading.value = true; failure.value = ''; query.value = ''
   try {
     const { taxonomy: t } = await queryClient.fetchQuery({
@@ -61,8 +60,20 @@ async function chooseFromBrowser(p: QuoteProduct | { kind: 'regular'; product: R
   const chosen = 'kind' in p ? chooseFlat(p.product) : await choose(p)
   if (chosen) browserOpen.value = false
 }
+function updateDescription(value: DescriptionRun[]) {
+  if (!draft.value || props.disabled) return
+  draft.value.descriptionContent = value
+  if (!editor.value) emit('update:modelValue', copy(draft.value)!)
+  else change()
+}
+function toggleDescription() {
+  if (!draft.value || props.disabled) return
+  draft.value.descriptionVisible = draft.value.descriptionVisible === false
+  if (!editor.value) emit('update:modelValue', copy(draft.value)!)
+}
 function start() { draft.value = copy(props.modelValue); editor.value = true; failure.value = ''; emit('pending',true) }
 function validate() {
+  if (draft.value?.descriptionContent && (draft.value.descriptionContent.length > 1000 || draft.value.descriptionContent.reduce((sum, run) => sum + run.text.length, 0) > 5000)) { failure.value = 'Use at most 5,000 description characters and 1,000 formatting runs.'; return false }
   if (!editor.value) return true
   if (loading.value) { failure.value = 'Wait for the product to load.'; return false }
   if (!draft.value) { failure.value = 'Choose a product, or remove this empty line.'; picker.value?.$el?.focus(); return false }
@@ -101,11 +112,18 @@ defineExpose({ validate, done })
           <svg aria-hidden="true" class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M5 6l1 14a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1l1-14M10 10v7M14 10v7" /></svg>
           Remove
         </button>
+        <Menu v-if="draft" as="div" class="relative">
+          <MenuButton type="button" class="inline-flex min-h-10 min-w-10 items-center justify-center rounded-md text-gray-500 hover:bg-gray-100" :disabled="disabled" :aria-label="`Line ${index + 1} settings`"><span aria-hidden="true">⋯</span></MenuButton>
+          <MenuItems class="absolute right-0 z-20 mt-1 w-56 rounded-md border border-gray-200 bg-white p-1 shadow-lg focus:outline-none">
+            <MenuItem v-slot="{ active: highlighted }"><button type="button" class="w-full rounded px-3 py-2 text-left text-sm" :class="highlighted ? 'bg-gray-100' : ''" @click="toggleDescription">{{ draft.descriptionVisible === false ? 'Show description' : 'Hide description' }}</button></MenuItem>
+          </MenuItems>
+        </Menu>
       </div>
     </div>
+    <p v-if="!editor && failure" class="error" role="alert">{{ failure }}</p>
     <fieldset :disabled="disabled || loading" class="min-w-0">
       <template v-if="editor">
-        <div class="mb-4 flex max-w-2xl items-end gap-2">
+        <div v-if="!draft" class="mb-4 flex max-w-2xl items-end gap-2">
         <Combobox :model-value="product" nullable @update:model-value="selectProduct">
           <div class="relative min-w-0 flex-1">
             <ComboboxLabel class="mt-0">Product</ComboboxLabel>
@@ -123,10 +141,10 @@ defineExpose({ validate, done })
           Expand
         </button>
         </div>
-        <QuoteProductBrowser :open="browserOpen" :products="products" :regular-products="regularProducts" :line-number="index + 1" :busy="loading" :disabled="disabled" :error="failure" @close="browserOpen = false" @select="chooseFromBrowser" />
+        <QuoteProductBrowser v-if="!draft" :open="browserOpen" :products="products" :regular-products="regularProducts" :line-number="index + 1" :busy="loading" :disabled="disabled" :error="failure" @close="browserOpen = false" @select="chooseFromBrowser" />
         <p v-if="loading" role="status">Loading product…</p>
         <template v-if="draft">
-          <p v-if="draft.snapshot.content.productDescription" class="mb-3 text-gray-600">{{ draft.snapshot.content.productDescription }}</p>
+          <QuoteDescriptionEditor v-if="draft.descriptionVisible !== false" :model-value="descriptionRuns(draft)" :input-id="`description-${lineKey}`" :disabled="disabled || loading" @update:model-value="updateDescription" />
           <template v-if="!flat"><p class="mb-2 text-xs text-gray-500">Saved configuration version {{ draft.versionId }} · {{ draft.selections.filter(Boolean).length }} of {{ draft.selections.length }} positions complete<span v-if="active >= 0"> · Position {{ active + 1 }}</span></p>
           <div class="mb-3 flex flex-wrap items-center font-mono text-xl" aria-label="Full part number">
             <template v-for="(s,i) in draft.snapshot.content.segments" :key="s.id"><span v-if="i">{{ (draft.snapshot.content.separators ?? Array(draft.selections.length - 1).fill('-'))[i - 1] }}</span><button v-if="s.options.length > 1" type="button" class="rounded px-1 py-2" :class="active === i ? 'bg-blue-100 text-blue-800' : valid[i] === false ? 'bg-red-50 text-red-700' : !draft.selections[i] ? 'bg-amber-50 text-amber-900' : ''" :aria-label="`Choose ${s.name || s.placeholder}, position ${i + 1}`" @click="focusSegment(i)" @keydown.right.prevent="focusSegment(Math.min(i + 1,draft.selections.length - 1))" @keydown.left.prevent="focusSegment(Math.max(0,i - 1))">{{ codeText[i] || s.options.find(o => o.id === draft!.selections[i])?.code || s.placeholder }}<span class="text-xs">{{ valid[i] === false ? '!' : !draft.selections[i] ? '?' : '' }}</span></button><span v-else class="px-1 text-gray-500">{{ s.options[0]?.code }}</span></template>
@@ -137,7 +155,6 @@ defineExpose({ validate, done })
           </template>
           <template v-if="draft.kind === 'freeform'">
             <label :for="`part-${lineKey}`">Part number</label><input :id="`part-${lineKey}`" v-model="draft.snapshot.content.productFamilyName" maxlength="120" @input="change" />
-            <label :for="`description-${lineKey}`">Description</label><input :id="`description-${lineKey}`" v-model="draft.snapshot.content.productDescription" maxlength="500" @input="change" />
           </template>
           <div class="mt-5 border-t border-gray-200 pt-4">
             <div class="quote-pricing-grid xl:ml-auto">
@@ -172,6 +189,7 @@ defineExpose({ validate, done })
             <div class="quote-pricing-final"><dt class="quote-pricing-label">After Multiple</dt><dd class="quote-pricing-value font-semibold">{{ displayPrice(adjustedAmount(modelValue.lineTotal, quoteMultiple)) }}</dd></div>
           </dl>
         </div>
+        <QuoteDescriptionEditor v-if="modelValue.descriptionVisible !== false" :model-value="descriptionRuns(modelValue)" :input-id="`description-${lineKey}`" :disabled="disabled" @update:model-value="updateDescription" />
         <details v-if="!flat" class="group mt-4 rounded-md border border-gray-200 bg-gray-50">
           <summary class="flex min-h-10 cursor-pointer list-none items-center gap-2 rounded-md px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-100 [&::-webkit-details-marker]:hidden">
             <svg aria-hidden="true" class="size-4 shrink-0 transition-transform group-open:rotate-90 motion-reduce:transition-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="m9 6 6 6-6 6" /></svg>

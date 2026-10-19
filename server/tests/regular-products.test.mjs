@@ -56,6 +56,12 @@ test('regular catalog authorization, mixed snapshots, shared parents and restric
       assert.equal(quote.lines[1].snapshot.principalName,'Maker');assert.equal(quote.lines[1].unitPrice,'12.50');assert.equal(quote.total,'56.02');
       assert.equal((await call(quotes.createQuote,{...body,lines:[body.lines[1]]})).quote.lines[0].unitPrice,'99.00');
     });
+    await t.test('saved regular lines reject replacement with another available product', async () => {
+      const other = (await call(products.save, { ...fields, partNumber: 'OTHER-REG', parentTaxonomyId: null })).product;
+      const b = write(); b.lines[1].regularProductId = other.id;
+      await reject(() => call(quotes.updateQuote, b, { quoteId: quote.id }), 'INVALID_INPUT');
+      assert.equal((await call(quotes.readQuote, {}, { quoteId: quote.id })).quote.lines[1].regularProductId, product.id);
+    });
     await t.test('historical line multiples are omitted and ignored for every product kind', async () => {
       const historical = quote.lines.map(line => ({ ...line, multiple: 0.1 }));
       await db.query('UPDATE quotes SET lines=$1 WHERE id=$2', [JSON.stringify(historical), quote.id]);

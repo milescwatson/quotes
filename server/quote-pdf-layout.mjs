@@ -61,6 +61,57 @@ export function renderQuotePdf(model) {
           remaining = remaining.slice(count).trimStart();
         }
       }
+      // Lay out formatted text in bounded lines before drawing, so page breaks
+      // never depend on PDFKit's continued-text state or split a styled run.
+      function descriptionRows(runs, width = 330) {
+        const rows = []; let row = [], used = 0;
+        const flush = () => { rows.push(row); row = []; used = 0; };
+        const measure = (text, run) => doc.font(run.bold ? 'Bold' : 'Regular').fontSize(9).widthOfString(text);
+        function append(text, run, size) {
+          const last = row.at(-1);
+          if (last && last.bold === run.bold && last.italic === run.italic && last.underline === run.underline) last.text += text;
+          else row.push({ ...run, text });
+          used += size;
+        }
+        // Keep whole words together even when formatting changes mid-word.
+        const words = []; let word = [];
+        for (const run of runs) for (const char of run.text) {
+          if (/\s/u.test(char)) {
+            if (word.length) { words.push(word); word = []; }
+            words.push([{ ...run, text: char }]);
+          } else word.push({ ...run, text: char });
+        }
+        if (word.length) words.push(word);
+        for (const token of words) {
+          if (token[0].text === '\n') { flush(); continue; }
+          const size = token.reduce((sum, glyph) => sum + measure(glyph.text, glyph), 0);
+          if (used && used + size > width - 3) {
+            flush();
+            if (/^\s$/u.test(token[0].text)) continue;
+          }
+          for (const glyph of token) {
+            const advance = measure(glyph.text, glyph);
+            if (used && used + advance > width - 3) flush();
+            append(glyph.text, glyph, advance);
+          }
+        }
+        if (row.length || runs.at(-1)?.text.endsWith('\n')) flush();
+        return rows;
+      }
+      function formattedDescription(rows) {
+        for (const row of rows) {
+          ensure(14);
+          let x = LEFT;
+          for (const run of row) {
+            doc.font(run.bold ? 'Bold' : 'Regular').fontSize(9).fillColor(INK);
+            const advance = doc.widthOfString(run.text);
+            doc.text(run.text, x, y, { lineBreak: false, underline: !!run.underline, oblique: !!run.italic });
+            x += advance;
+          }
+          y += 14;
+        }
+        if (rows.length) y += 3;
+      }
       function header() {
         doc.rect(LEFT, 28, RIGHT - LEFT, 3).fill(ACCENT);
         text('QUOTE', LEFT, y, 300, 24, 'Bold', 'left', ACCENT);
@@ -112,7 +163,8 @@ export function renderQuotePdf(model) {
         for (const line of model.lines) {
           const rowHeight = Math.max(20, height(line.partNumber, 330, 10)
             + (line.productName ? height(line.productName, 330, 10, 'Bold') + 3 : 0));
-          const descriptionHeight = line.description ? height(line.description, 330, 9) + 3 : 0;
+          const rows = line.descriptionContent ? descriptionRows(line.descriptionContent) : null;
+          const descriptionHeight = rows ? rows.length * 14 + 3 : line.description ? height(line.description, 330, 9) + 3 : 0;
           const firstOptionHeight = line.options.length ? height(line.options[0].description, 350, 9) + 8 : 0;
           const groupHeight = rowHeight + descriptionHeight + line.options.reduce((sum, option) => sum + height(option.description, 350, 9) + 3, 0) + 10;
           ensure(Math.min(groupHeight <= 600 ? groupHeight : rowHeight + descriptionHeight + firstOptionHeight + 8, 600));
@@ -124,7 +176,8 @@ export function renderQuotePdf(model) {
           // Part numbers may themselves be long and must wrap naturally.
           flowing(line.partNumber, LEFT, 330, 10);
           if (doc.page === page) y = Math.max(y, top + 20);
-          if (line.description) flowing(line.description, LEFT, 330);
+          if (rows) formattedDescription(rows);
+          else if (line.description) flowing(line.description, LEFT, 330);
           for (const option of line.options) {
             ensure(Math.min(height(option.description, 350, 9) + 6, 60));
             text(money(option.addition), 430, y, 140, 9, 'Regular', 'right');

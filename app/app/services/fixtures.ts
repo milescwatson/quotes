@@ -264,6 +264,9 @@ export function createFixtures() {
           if (!validMultiple(body.multiple ?? 1)) fail(422, 'INVALID_INPUT', 'Enter a valid quote multiple.')
           const lines = body.lines.map((input: any) => {
             const old = previous?.lines?.find(l => l.id === input.id)
+            if (old && ((old.kind ?? 'configured') !== (input.kind ?? 'configured') || ((input.kind ?? 'configured') === 'configured' && (old.taxonomyId !== input.taxonomyId || old.versionId !== input.versionId)) || (input.kind === 'regular' && old.regularProductId !== input.regularProductId))) fail(422, 'INVALID_INPUT', 'To change products, remove this line and add a new product.')
+            if (input.descriptionContent === undefined && old?.descriptionContent !== undefined) input.descriptionContent = old.descriptionContent
+            if (input.descriptionVisible === undefined && old?.descriptionVisible !== undefined) input.descriptionVisible = old.descriptionVisible
             if (!Number.isInteger(input.quantity) || input.quantity < 1 || input.quantity > 1000000) fail(422,'INVALID_INPUT','Use a positive whole quantity.')
             if ('multiple' in input) fail(422, 'INVALID_INPUT', 'Unknown line field: multiple.')
             if (input.kind === 'regular' || input.kind === 'freeform') {
@@ -279,7 +282,7 @@ export function createFixtures() {
               let t: Taxonomy
               try { t = (configurations.request(`/organizations/${orgId}/taxonomies/${input.taxonomyId}`, 'GET', {}, org!, state.user) as { taxonomy:Taxonomy }).taxonomy }
               catch(e) { if (e instanceof ApiError && e.status===404) fail(422,'INVALID_INPUT','Choose a configuration with current access.'); throw e }
-              if (t.archivedAt || t.version.id !== input.versionId) fail(409,'CONFIGURATION_CHANGED','The configuration changed or was archived. Select the current product again and review its options.')
+              if (t.archivedAt || t.version.id !== input.versionId) fail(409,'CONFIGURATION_CHANGED','The configuration changed or was archived. Remove this line and add the current product again to review its options.')
               snapshot = { content: t.version.content, principalId: t.version.principalId, principalName: t.principalName }
             }
             if (input.selections.length !== snapshot.content.segments.length || input.selections.some((id: string | null,i: number) => id !== null && !snapshot!.content.segments[i]?.options.some(o => o.id === id))) fail(422,'INVALID_INPUT','Choose valid options.')

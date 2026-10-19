@@ -449,8 +449,19 @@ export interface components {
             }[];
             currentVersionId?: string;
         };
+        QuoteDescriptionRun: {
+            text: string;
+            bold?: boolean;
+            italic?: boolean;
+            underline?: boolean;
+        };
+        /** @description Quote-specific description; omitted uses the saved product default. Empty array clears it. At most 5000 total text characters, including newlines. */
+        QuoteDescriptionContent: components["schemas"]["QuoteDescriptionRun"][];
         /** @description Configured lines require taxonomyId, versionId and selections. Regular lines require regularProductId. Freeform lines require partNumber, description and listPrice. Server validates fields by kind. */
         QuoteLineInput: {
+            descriptionContent?: components["schemas"]["QuoteDescriptionContent"];
+            /** @description Whether to show the description on the quote and PDF; defaults to true. */
+            descriptionVisible?: boolean;
             id: string | null;
             taxonomyId?: string | null;
             versionId?: string | null;
@@ -481,6 +492,9 @@ export interface components {
             principalName: string | null;
         };
         QuoteLine: {
+            descriptionContent?: components["schemas"]["QuoteDescriptionContent"];
+            /** @description Whether to show the description on the quote and PDF; defaults to true. */
+            descriptionVisible?: boolean;
             id: string;
             taxonomyId: string | null;
             versionId: string | null;

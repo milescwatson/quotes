@@ -1,3 +1,4 @@
+import { checkedDescription } from './quote-description.mjs';
 import { createQuotePdfQueue, createQuotePdfStorage } from './quote-pdf-storage.mjs';
 import { multiple, netAmount, flatSnapshot } from './quote-pricing.mjs';
 import { productFields } from './regular-products.mjs';
@@ -68,14 +69,23 @@ export function createQuoteService(withTransaction, { logoStorage = createLogoSt
         if (!line || typeof line !== 'object' || Array.isArray(line)) invalid(path,'Provide a product line.');
         const kind = line.kind ?? 'configured';
         if (!['configured','regular','freeform'].includes(kind)) invalid(`${path}/kind`,'Choose a supported product type.');
-        const common = ['id','quantity','kind'];
+        const common = ['id','quantity','kind','descriptionVisible','descriptionContent'];
         const fields = kind === 'configured' ? ['taxonomyId','versionId','selections'] : kind === 'regular' ? ['regularProductId'] : ['partNumber','description','listPrice'];
         object(line,[...common,...fields],path,['id','quantity',...fields]);
         if (kind === 'configured') { identifier(line.taxonomyId); identifier(line.versionId); }
         if (!Number.isInteger(line.quantity) || line.quantity < 1 || line.quantity > 1000000) invalid(`${path}/quantity`,'Use a whole quantity between 1 and 1,000,000.');
         const previous = old?.lines.find(l => l.id === line.id);
         if (line.id !== null && (!previous || used.has(line.id))) invalid(`${path}/id`,'Use a unique saved line identity or null.');
+        if (line.descriptionVisible !== undefined && typeof line.descriptionVisible !== 'boolean') invalid(`${path}/descriptionVisible`,'Use true or false.');
+        const visibility = line.descriptionVisible ?? previous?.descriptionVisible;
+        const description = line.descriptionContent === undefined ? previous?.descriptionContent : checkedDescription(line.descriptionContent, `${path}/descriptionContent`);
+        const presentation = { ...(visibility === undefined ? {} : { descriptionVisible: visibility }), ...(description === undefined ? {} : { descriptionContent: description }) };
         used.add(line.id);
+        if (previous && ((previous.kind ?? 'configured') !== kind
+          || (kind === 'configured' && (previous.taxonomyId !== line.taxonomyId || previous.versionId !== line.versionId))
+          || (kind === 'regular' && previous.regularProductId !== line.regularProductId))) {
+          invalid(path,'To change products, remove this line and add a new product.');
+        }
         if (kind !== 'configured') {
           let snapshot, partNumber, price, parentTaxonomyId = null;
           if (kind === 'regular') {
@@ -95,7 +105,7 @@ export function createQuoteService(withTransaction, { logoStorage = createLogoSt
           const amount = cents(price) * BigInt(line.quantity);
           total += amount; netTotal += cents(netAmount(dollars(amount),quoteMultiple));
           if (total > 99999999999999n || netTotal > 99999999999999n) invalid('/lines','Quote total exceeds the supported USD limit.');
-          lines.push({id:previous?.id ?? randomUUID(),kind,regularProductId:kind === 'regular' ? line.regularProductId : null,parentTaxonomyId,taxonomyId:null,versionId:null,snapshot,selections:[],quantity:line.quantity,partNumber,complete:true,unitPrice:price,lineTotal:dollars(amount)});
+          lines.push({...presentation,id:previous?.id ?? randomUUID(),kind,regularProductId:kind === 'regular' ? line.regularProductId : null,parentTaxonomyId,taxonomyId:null,versionId:null,snapshot,selections:[],quantity:line.quantity,partNumber,complete:true,unitPrice:price,lineTotal:dollars(amount)});
           continue;
         }
 
@@ -113,7 +123,7 @@ export function createQuoteService(withTransaction, { logoStorage = createLogoSt
             LEFT JOIN public.principals p ON p.id=v.principal_id WHERE t.id=$1 AND ${configurationAccessPredicate}`,[line.taxonomyId,org.id]);
           if (!source) invalid(`${path}/taxonomyId`,'Choose a configuration in this organization.');
           if (String(source.owner_organization_id) !== String(org.id)) await guardOrganization(db,source.owner_organization_id);
-          if (source.archived_at || String(source.current_version_id) !== line.versionId) fail(409,'CONFIGURATION_CHANGED','The configuration changed or was archived. Select the current product again and review its options.');
+          if (source.archived_at || String(source.current_version_id) !== line.versionId) fail(409,'CONFIGURATION_CHANGED','The configuration changed or was archived. Remove this line and add the current product again to review its options.');
           checkedSnapshot(source.content);
           snapshot = { content: source.content, principalId: source.principal_id == null ? null : String(source.principal_id), principalName: source.principal_name };
         }
@@ -130,7 +140,7 @@ export function createQuoteService(withTransaction, { logoStorage = createLogoSt
         const amount = price * BigInt(line.quantity); total += amount; netTotal += cents(netAmount(dollars(amount),quoteMultiple));
         if (total > 99999999999999n || netTotal > 99999999999999n) invalid('/lines','Quote total exceeds the supported USD limit.');
         const separators = content.separators ?? Array(content.segments.length-1).fill('-');
-        lines.push({ id: previous?.id ?? randomUUID(), taxonomyId: line.taxonomyId, versionId: line.versionId, snapshot,
+        lines.push({ ...presentation, id: previous?.id ?? randomUUID(), taxonomyId: line.taxonomyId, versionId: line.versionId, snapshot,
           selections: line.selections, quantity: line.quantity, partNumber: codes.map((code,j) => (j ? separators[j-1] : '')+code).join(''),
           complete: line.selections.every(s => s !== null), unitPrice: dollars(price), lineTotal: dollars(amount) });
       }

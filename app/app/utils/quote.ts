@@ -20,7 +20,7 @@ export function adjustedAmount(list: string, quoteMultiple = 1) {
   return `${amount / 100n}.${String(amount % 100n).padStart(2, '0')}`
 }
 export function lineInput(line: LocalQuoteLine): QuoteLineInput {
-  const common = { id: line.id, quantity: line.quantity }
+  const common = { ...(line.descriptionContent !== undefined ? { descriptionContent: line.descriptionContent } : {}), id: line.id, quantity: line.quantity, ...(line.descriptionVisible !== undefined ? { descriptionVisible: line.descriptionVisible } : {}) }
   if (line.kind === 'regular') return { ...common, kind: 'regular', regularProductId: line.regularProductId! }
   if (line.kind === 'freeform') return { ...common, kind: 'freeform', partNumber: line.snapshot.content.productFamilyName, description: line.snapshot.content.productDescription ?? '', listPrice: line.snapshot.content.basePrice }
   return { ...common, taxonomyId: line.taxonomyId!, versionId: line.versionId!, selections: [...line.selections] }
